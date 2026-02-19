@@ -10,6 +10,7 @@ import { statusCommand } from "./commands/status.js";
 import { configCommand } from "./commands/config.js";
 import { inspectCommand } from "./commands/inspect.js";
 import { designCommand } from "./commands/design.js";
+import { planCommand } from "./commands/plan.js";
 
 const program = new Command();
 
@@ -29,5 +30,6 @@ program.addCommand(statusCommand);
 program.addCommand(configCommand);
 program.addCommand(inspectCommand);
 program.addCommand(designCommand);
+program.addCommand(planCommand);
 
 program.parse();
