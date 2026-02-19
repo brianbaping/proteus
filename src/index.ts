@@ -11,6 +11,7 @@ import { configCommand } from "./commands/config.js";
 import { inspectCommand } from "./commands/inspect.js";
 import { designCommand } from "./commands/design.js";
 import { planCommand } from "./commands/plan.js";
+import { splitCommand } from "./commands/split.js";
 
 const program = new Command();
 
@@ -31,5 +32,6 @@ program.addCommand(configCommand);
 program.addCommand(inspectCommand);
 program.addCommand(designCommand);
 program.addCommand(planCommand);
+program.addCommand(splitCommand);
 
 program.parse();
