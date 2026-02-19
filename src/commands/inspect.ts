@@ -143,6 +143,36 @@ export const inspectCommand = new Command("inspect")
           `\n  Output: ${featuresPath}`
         );
         console.log(`  Review: proteus review inspect\n`);
+      } else if (!result.success && featuresExist) {
+        // Session errored but artifacts were produced (e.g., network timeout after work was done)
+        console.log(
+          `\n[${project.name}] Inspection recovered (session error, but artifacts produced).\n`
+        );
+        if (result.errors && result.errors.length > 0) {
+          for (const err of result.errors) {
+            console.log(`  Warning: ${err}`);
+          }
+        }
+        console.log(`  Duration: ${result.cost.duration}`);
+
+        try {
+          await gitStageAndCommit(targetPath, "proteus: inspect complete (recovered)");
+          console.log(`  Committed: "proteus: inspect complete (recovered)"`);
+        } catch {
+          // Git commit may fail if nothing to commit
+        }
+
+        await appendCostEntry(targetPath, "inspect", result.cost);
+        await appendLogEntry(targetPath, {
+          action: "inspect",
+          status: "recovered",
+          duration: result.cost.duration,
+          cost: result.cost.estimatedCost,
+          details: result.errors?.join("; "),
+        });
+
+        console.log(`\n  Output: ${featuresPath}`);
+        console.log(`  Review: proteus review inspect\n`);
       } else {
         console.error(`\n[${project.name}] Inspection failed.\n`);
         if (result.errors && result.errors.length > 0) {
@@ -154,6 +184,15 @@ export const inspectCommand = new Command("inspect")
           console.error(
             "  features.json was not produced. The agent may have encountered issues."
           );
+        }
+
+        // Check for partial artifacts
+        const scoutPath = join(inspectDir, "scout.json");
+        if (existsSync(scoutPath)) {
+          console.error(
+            "\n  Partial artifacts found (scout.json exists). The agent made progress before failing."
+          );
+          console.error("  Re-run `proteus inspect` to try again.");
         }
 
         await appendLogEntry(targetPath, {

@@ -33,6 +33,7 @@ export async function launchSession(
 ): Promise<SessionResult> {
   const startTime = Date.now();
   let sessionId = "";
+  let resultMessage: SDKResultMessage | undefined;
 
   const sdkOptions: Options = {
     cwd: options.cwd,
@@ -44,25 +45,49 @@ export async function launchSession(
     persistSession: false,
   };
 
-  const session = query({ prompt: options.prompt, options: sdkOptions });
+  try {
+    const session = query({ prompt: options.prompt, options: sdkOptions });
 
-  let resultMessage: SDKResultMessage | undefined;
+    for await (const message of session) {
+      // Capture session ID from init message
+      if (
+        message.type === "system" &&
+        "subtype" in message &&
+        message.subtype === "init"
+      ) {
+        sessionId = message.session_id;
+      }
 
-  for await (const message of session) {
-    // Capture session ID from init message
-    if (message.type === "system" && "subtype" in message && message.subtype === "init") {
-      sessionId = message.session_id;
+      // Capture result
+      if (message.type === "result") {
+        resultMessage = message as SDKResultMessage;
+      }
+
+      // Forward to caller's message handler
+      if (options.onMessage) {
+        options.onMessage(message);
+      }
     }
+  } catch (err) {
+    const durationMs = Date.now() - startTime;
+    const errorMsg =
+      err instanceof Error ? err.message : "Unknown error during session";
+    console.error(`\n  Session error: ${errorMsg}`);
 
-    // Capture result
-    if (message.type === "result") {
-      resultMessage = message as SDKResultMessage;
-    }
-
-    // Forward to caller's message handler
-    if (options.onMessage) {
-      options.onMessage(message);
-    }
+    return {
+      success: false,
+      sessionId,
+      errors: [errorMsg],
+      cost: {
+        timestamp: new Date().toISOString(),
+        teammates: 0,
+        tier: options.model ?? "default",
+        duration: formatDuration(durationMs),
+        inputTokens: 0,
+        outputTokens: 0,
+        estimatedCost: resultMessage?.total_cost_usd ?? 0,
+      },
+    };
   }
 
   const durationMs = Date.now() - startTime;
@@ -84,7 +109,7 @@ export async function launchSession(
       result: resultMessage.result,
       cost: {
         timestamp: new Date().toISOString(),
-        teammates: 0, // Updated by the caller based on stage
+        teammates: 0,
         tier: options.model ?? "default",
         duration: durationStr,
         inputTokens: totalInputTokens,
@@ -94,7 +119,7 @@ export async function launchSession(
     };
   }
 
-  // Error case
+  // Non-success result (max turns, max budget, execution error)
   const errors =
     resultMessage && "errors" in resultMessage ? resultMessage.errors : [];
 
