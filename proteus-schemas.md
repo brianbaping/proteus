@@ -716,7 +716,7 @@ These rules are defined in the prompt schemas and enforced by the agent at gener
 
 ## CLI Command Reference
 
-### Implemented Commands (15)
+### All Commands (23)
 
 #### Global (2)
 
@@ -744,32 +744,27 @@ These rules are defined in the prompt schemas and enforced by the agent at gener
 | `proteus split [name]` | `--dry-run` `--budget` | Single Lead: partition into tracks |
 | `proteus execute [name]` | `--dry-run` `--budget` | Agent Team: wave-based parallel execution |
 
-#### Execution Control (2)
+#### Execution Control (4)
+
+| Command | Description |
+|---------|-------------|
+| `proteus inform <agent> <message>` | Send message to running teammate during execute |
+| `proteus resume [name]` | Resume execute from last wave git checkpoint |
+| `proteus abort [name]` | Signal running session to stop via inbox message |
+| `proteus watch [name]` | Monitor running session's log for updates |
+
+#### Analysis & Review (8)
 
 | Command | Description |
 |---------|-------------|
 | `proteus status [name]` | Pipeline state: stage completion, timestamps, staleness warnings |
-| `proteus inform <agent> <message>` | Send message to running teammate during execute |
-
-#### Analysis (2)
-
-| Command | Description |
-|---------|-------------|
-| `proteus log [name]` | View audit trail with timestamps, status, duration, costs. Supports `-n` for last N entries |
-| `proteus costs [name]` | Token usage and cost breakdown per stage with totals |
-
-### Planned Commands (not yet implemented)
-
-| Command | Description |
-|---------|-------------|
-| `proteus resume [name]` | Resume execute from last wave git checkpoint |
-| `proteus abort [name]` | Gracefully stop in-progress stage |
-| `proteus watch [name]` | Attach to live Agent Team session |
-| `proteus validate [name]` | Run cross-stage artifact validation |
+| `proteus validate [name]` | Run 11 cross-stage validation rules |
 | `proteus review <stage> [name]` | Open stage artifact in `$EDITOR` |
-| `proteus diff <stage> [name]` | Show changes between runs of a stage |
-| `proteus compare [name]` | Diff source vs target after execute |
-| `proteus explain "<question>" [name]` | Explain design/plan decisions |
+| `proteus diff <stage> [name]` | Show git changes for stage artifacts between runs |
+| `proteus compare [name]` | Compare source POC vs production target (files, lines, growth) |
+| `proteus costs [name]` | Token usage and cost breakdown per stage with totals |
+| `proteus explain "<question>" [name]` | AI-powered explanation of design/plan decisions |
+| `proteus log [name]` | View audit trail. Supports `-n` for last N entries |
 
 ---
 

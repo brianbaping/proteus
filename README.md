@@ -234,16 +234,119 @@ Send a message to a running teammate during execute. Requires an active execute 
 ```bash
 proteus inform backend-engineer "Use async bcrypt instead of sync"
 proteus inform frontend-engineer "Add aria-labels to all form inputs"
-proteus inform qa-engineer "Include account lockout in integration tests"
 ```
 
 Messages are delivered to the Lead via a file-based inbox, then relayed to the named teammate.
 
-### Analysis
+#### `proteus resume [name]`
+
+Resume execute from the last wave checkpoint. Detects the last `proteus: execute wave N complete` git commit and restarts from wave N+1.
+
+```bash
+proteus resume
+```
+
+#### `proteus abort [name]`
+
+Signal a running execute session to stop. Sends an abort message via the inbox, commits partial progress, and the session will shut down on its next turn.
+
+```bash
+proteus abort
+```
+
+#### `proteus watch [name]`
+
+Monitor a running execute session. Tails `.proteus/log.jsonl` for updates and auto-exits when the session ends.
+
+```bash
+proteus watch
+```
+
+### Analysis & Review
+
+#### `proteus validate [name]`
+
+Run cross-stage validation rules against all completed artifacts.
+
+```bash
+proteus validate
+```
+
+```
+[task-tracker] Validating artifacts...
+
+  ✓ Features array non-empty                 62 features found
+  ✓ Feature IDs unique                       62 unique IDs
+  ✓ No dangling feature dependencies         All dependency references valid
+  ✓ Feature-to-service map exists            62 features mapped
+  ✓ design.md exists                         Present
+  ✓ Task IDs unique                          14 unique task IDs
+  ✓ All tasks have file ownership            All tasks have ownership
+  ✓ No dangling task dependencies            All valid
+  ✓ Execution waves defined                  7 waves
+  ✓ Track manifest has tracks                6 tracks
+  ✓ No stale artifacts                       All artifacts up to date
+
+  11 passed, 0 failed
+```
+
+#### `proteus review <stage> [name]`
+
+Open a stage's primary artifact in `$EDITOR`.
+
+```bash
+proteus review design     # opens design.md
+proteus review plan       # opens plan.md
+proteus review inspect    # opens features.json
+```
+
+#### `proteus compare [name]`
+
+Compare the source POC against the production target.
+
+```bash
+proteus compare
+```
+
+```
+[task-tracker] Source vs Target Comparison
+
+  Source: /tmp/demo-poc
+    13 files, ~261 lines
+
+  Target: /tmp/demo-poc-prod
+    109 files, ~9,430 lines
+
+  Growth: 8.4x files, 36.1x lines
+
+  Production structure:
+    client               46 files
+    prisma               2 files
+    server               40 files
+    shared               11 files
+```
+
+#### `proteus diff <stage> [name]`
+
+Show git changes for a stage's artifacts between the last two commits.
+
+```bash
+proteus diff design
+proteus diff plan
+```
+
+#### `proteus explain "<question>" [name]`
+
+Launch an AI session that reads the project artifacts and answers a question about the design or plan.
+
+```bash
+proteus explain "why is auth in wave 1?"
+proteus explain "what services handle product CRUD?"
+```
 
 #### `proteus log [name]`
 
-View the audit trail for a project. Shows timestamps, status, duration, cost, and teammate counts.
+View the audit trail. Shows timestamps, status, duration, cost, and teammate counts.
 
 ```bash
 proteus log
@@ -472,22 +575,13 @@ Tests cover the config layer, all prompt generators, utility modules (costs, inb
 ```
 src/
 ├── index.ts                    # CLI entry point (Commander)
-├── commands/                   # 15 command handlers
-│   ├── setup.ts
-│   ├── new.ts
-│   ├── list.ts
-│   ├── use.ts
-│   ├── destroy.ts
-│   ├── status.ts
-│   ├── config.ts
-│   ├── inspect.ts
-│   ├── design.ts
-│   ├── plan.ts
-│   ├── split.ts
-│   ├── execute.ts
-│   ├── inform.ts
-│   ├── log.ts
-│   └── costs.ts
+├── commands/                   # 23 command handlers
+│   ├── setup.ts, config.ts
+│   ├── new.ts, list.ts, use.ts, destroy.ts
+│   ├── inspect.ts, design.ts, plan.ts, split.ts, execute.ts
+│   ├── inform.ts, resume.ts, abort.ts, watch.ts
+│   ├── status.ts, validate.ts, review.ts, diff.ts
+│   └── compare.ts, costs.ts, explain.ts, log.ts
 ├── config/                     # Configuration management
 │   ├── types.ts                # All TypeScript interfaces
 │   ├── global.ts               # ~/.proteus/config.json
