@@ -1,7 +1,7 @@
 # Proteus — Architecture & Artifact Schemas
 
 > Proteus transforms proof-of-concept codebases into production-ready applications using coordinated AI agent teams.
-> It is a standalone CLI tool built on Claude Code Agent Teams.
+> It is a standalone TypeScript CLI built on Claude Code Agent Teams via the Claude Agent SDK.
 > Source repos are read-only. Production code is built in a separate target repo.
 > Every command validates its required inputs before executing and refuses to proceed if they're malformed or missing.
 
@@ -11,10 +11,11 @@
 
 Proteus is a **workflow layer on top of Claude Code Agent Teams**. It does not implement its own orchestration. Instead, it:
 
-1. Defines what work needs to happen at each pipeline stage
-2. Generates Agent Teams configurations (Lead prompts, teammate spawn prompts, task lists with dependencies, hooks)
-3. Launches Agent Teams sessions via the Claude Agent SDK in the target repo's working directory
-4. Validates the artifacts each team produces
+1. Generates prompts for Agent Team Leads that instruct them to create teams, spawn teammates, and manage tasks
+2. Launches sessions via the Claude Agent SDK's `query()` function
+3. Monitors session progress and captures cost/duration metrics
+4. Validates that expected artifacts were produced
+5. Commits git checkpoints after each stage
 
 Agent Teams handles: teammate lifecycle, peer-to-peer messaging, shared task lists, dependency auto-unblocking, and display modes.
 
@@ -22,11 +23,11 @@ Agent Teams handles: teammate lifecycle, peer-to-peer messaging, shared task lis
 
 Stages that benefit from parallel analysis (inspect, design) follow a reusable three-beat pattern:
 
-1. **Scout/Scope**: A single Lead agent does a fast, shallow sweep to identify domains of concern
-2. **Specialize**: N specialist teammates work in parallel on their assigned domains, producing partial outputs and messaging each other about cross-domain findings
-3. **Synthesize**: The Lead merges all partials, resolves contradictions, and validates cross-domain consistency
+1. **Scout/Scope**: The Lead agent does a fast sweep to identify domains of concern
+2. **Specialize**: N specialist teammates work in parallel, producing partial outputs and messaging each other about cross-domain findings
+3. **Synthesize**: The Lead merges all partials into a unified output
 
-Stages that are mechanical transformations (plan, split) use a single Lead session with no teammates. The execute stage uses a wave-based variant with dependency-driven parallelism.
+Stages that are mechanical transformations (plan, split) use a single Lead session with no teammates. The execute stage uses a wave-based variant with one teammate per discipline track.
 
 ### Three-Repo Separation
 
@@ -36,17 +37,39 @@ Stages that are mechanical transformations (plan, split) use a single Lead sessi
 | Source (POC) | User-specified path | Read-only — never modified |
 | Target (production) | User-specified path | Agent Teams write here |
 
-The source POC is never touched. Agents read it as reference during inspect and execute but write all output to the target repo. The target repo gets its own `CLAUDE.md` controlled by Proteus — clean of any POC-era instructions.
+The source POC is never touched. Agents read it as reference via `additionalDirectories` in the SDK options but write all output to the target repo. The target repo gets its own `CLAUDE.md` controlled by Proteus.
 
 ### Fresh Agents Per Stage
 
 No agent carries context between stages. Each stage launches a fresh Agent Team that reads the prior stage's artifacts. Artifacts are the complete source of truth.
+
+### Agent SDK Integration
+
+Each stage command calls the Agent SDK's `query()` function:
+
+```typescript
+const session = query({
+  prompt: leadPrompt,
+  options: {
+    cwd: targetPath,
+    additionalDirectories: [sourcePath],
+    model: resolvedModel,
+    permissionMode: "acceptEdits",
+    settingSources: ["user", "project"],
+    maxBudgetUsd: budget,
+  }
+});
+```
+
+The `leadPrompt` is the key — it contains all instructions for team formation, task creation, teammate spawning, and synthesis. Proteus's prompt generators (`src/prompts/*.ts`) compose these prompts with full artifact schemas embedded.
 
 ---
 
 ## Global Configuration
 
 ### `~/.proteus/config.json`
+
+Created by `proteus setup`. Contains provider configuration and model tier mappings.
 
 ```json
 {
@@ -71,49 +94,29 @@ No agent carries context between stages. Each stage launches a fresh Agent Team 
     "plan-generator":     "standard",
     "execute-agent":      "advanced",
     "qa-agent":           "standard"
-  },
-  "notifications": {
-    "provider": "slack",
-    "webhook": "$SLACK_WEBHOOK_URL",
-    "events": ["stage-complete", "wave-complete", "failure", "escalation"]
   }
 }
 ```
 
-**Model tier system**: Roles reference tiers (`"fast"`, `"standard"`, `"advanced"`), tiers reference providers. This decouples Proteus from any specific AI provider. Users can map tiers to Anthropic, OpenAI, local models, or any combination. A role can also inline a `{ "provider": "...", "model": "..." }` object to bypass tiers for a specific role.
+Roles reference tiers, tiers reference providers. A role can also inline a `{ "provider": "...", "model": "..." }` object to bypass tiers.
 
 ### `~/.proteus/projects.json`
 
+Project registry managed by `proteus new`, `proteus use`, and `proteus destroy`.
+
 ```json
 {
-  "activeProject": "product-dashboard",
+  "activeProject": "task-tracker",
   "projects": {
-    "product-dashboard": {
-      "source": "/home/user/projects/product-dashboard-poc",
-      "target": "/home/user/projects/product-dashboard-prod",
-      "createdAt": "2026-02-19T10:00:00Z",
-      "currentStage": "design"
+    "task-tracker": {
+      "source": "/tmp/demo-poc",
+      "target": "/tmp/demo-poc-prod",
+      "createdAt": "2026-02-19T21:30:00Z",
+      "currentStage": "new"
     }
   }
 }
 ```
-
-### `~/.proteus/templates/`
-
-Pre-configured specialist catalogs for common POC types. Templates influence the scout's domain discovery and specialist selection.
-
-```json
-{
-  "templateName": "react-node",
-  "domains": ["frontend", "bff", "api", "data", "auth", "devops"],
-  "specialistHints": {
-    "frontend": { "focus": "React component tree, state management, routing" },
-    "bff": { "focus": "Backend-for-frontend pattern, API aggregation, caching" }
-  }
-}
-```
-
-Applied via: `proteus new myproject --source ./poc --template react-node`
 
 ---
 
@@ -121,107 +124,114 @@ Applied via: `proteus new myproject --source ./poc --template react-node`
 
 ### `{target}/.proteus/config.json`
 
+Created by `proteus new`. Records the source path and project name.
+
 ```json
 {
   "proteusVersion": "1.0.0",
-  "projectName": "product-dashboard",
+  "projectName": "task-tracker",
   "source": {
-    "path": "/home/user/projects/product-dashboard-poc",
+    "path": "/tmp/demo-poc",
     "readonly": true
-  },
-  "overrides": {
-    "roles": {
-      "execute-agent": { "provider": "anthropic", "model": "claude-opus-4-6" }
-    }
-  },
-  "hooks": {
-    "post-inspect": "scripts/validate-features.sh",
-    "post-execute": "scripts/run-security-scan.sh"
   }
 }
 ```
 
-Per-project overrides take precedence over global config. User-defined stage hooks run at stage boundaries; non-zero exit code blocks progression.
-
 ---
 
-## Target Directory Structure
+## Artifact Directory Structure
+
+Based on actual output from a complete pipeline run:
 
 ```
 {target}/
-├── CLAUDE.md                          # Proteus-controlled context for all Agent Teams
+├── CLAUDE.md                          # Proteus-controlled context for agents
 ├── .proteus/
-│   ├── config.json                    # project config (source path, overrides, hooks)
-│   ├── costs.json                     # token usage and cost tracking per stage
-│   ├── log.jsonl                      # structured audit trail
+│   ├── config.json                    # project config (source path)
+│   ├── costs.json                     # token usage per stage
+│   ├── log.jsonl                      # audit trail (newline-delimited JSON)
 │   │
 │   ├── 01-inspect/
 │   │   ├── scout.json                 # domain roster
-│   │   ├── team/
-│   │   │   ├── manifest.json          # teammate configs
-│   │   │   └── agent-{domain}.json    # spawn prompts
 │   │   ├── partials/
-│   │   │   └── {domain}.json          # per-specialist findings
+│   │   │   ├── domain-auth.json       # per-specialist findings
+│   │   │   ├── domain-data.json
+│   │   │   ├── domain-api.json
+│   │   │   ├── domain-frontend.json
+│   │   │   └── domain-devops.json
 │   │   └── features.json              # synthesized output
 │   │
 │   ├── 02-design/
 │   │   ├── scope.json                 # design domain assignments
-│   │   ├── team/
-│   │   │   ├── manifest.json
-│   │   │   └── agent-{domain}.json
 │   │   ├── partials/
-│   │   │   ├── {domain}.md            # per-specialist design (human-readable)
-│   │   │   └── {domain}.json          # per-specialist design (machine-readable)
-│   │   ├── design.md                  # synthesized design (human-reviewable/editable)
+│   │   │   ├── design-backend.md      # per-specialist design (narrative)
+│   │   │   ├── design-backend.json    # per-specialist design (metadata)
+│   │   │   ├── design-data.md
+│   │   │   ├── design-data.json
+│   │   │   ├── design-frontend.md
+│   │   │   ├── design-frontend.json
+│   │   │   ├── design-security.md
+│   │   │   ├── design-security.json
+│   │   │   ├── design-infrastructure.md
+│   │   │   └── design-infrastructure.json
+│   │   ├── design.md                  # synthesized design (human-editable)
 │   │   └── design-meta.json           # synthesized design (machine-readable)
 │   │
 │   ├── 03-plan/
 │   │   ├── plan.json                  # task DAG with dependencies
-│   │   └── plan.md                    # human-reviewable narrative
+│   │   └── plan.md                    # narrative plan (human-editable)
 │   │
 │   ├── 04-tracks/
 │   │   ├── manifest.json              # track list and dependencies
-│   │   ├── shared.json                # cross-cutting files track
+│   │   ├── shared.json
+│   │   ├── data.json
+│   │   ├── devops.json
 │   │   ├── backend.json
 │   │   ├── frontend.json
-│   │   └── ...
+│   │   └── qa.json
 │   │
 │   └── 05-execute/
-│       ├── team/
-│       │   ├── manifest.json          # execution agent configs
-│       │   └── agent-{track}.json     # spawn prompts per track
-│       ├── session.json               # live progress tracking
-│       └── logs/
-│           └── agent-{track}.log
+│       ├── session.json               # execution summary
+│       └── inbox/                     # message inbox for proteus inform
 │
-├── src/                               # production code (agents write here)
-├── tests/
+├── server/                            # production server code
+├── client/                            # production client code
+├── shared/                            # shared types and validators
+├── prisma/                            # database schema and migrations
 ├── Dockerfile
-└── ...
+├── docker-compose.yml
+└── .github/workflows/                 # CI/CD pipeline
 ```
 
 ---
 
 ## Stage 1 — `proteus inspect`
 
-Launches an Agent Team in the target directory. The Lead reads the source repo (read-only).
+Launches an Agent Team in the target directory. The Lead reads the source repo (read-only via `additionalDirectories`).
 
-### Sub-stage 1a — Scout
+**Model tier**: `roles.scout` → `fast` (claude-haiku-4-5 by default)
 
-The Lead (scout) does a shallow sweep of the source: file tree, package manifests, entry points, config files, CI pipelines, Dockerfiles. It identifies domains of concern and creates tasks for specialist teammates.
+### How It Works
 
-**Output:** `.proteus/01-inspect/scout.json`
+1. Lead scouts the source: file tree, package manifests, entry points, config files
+2. Lead identifies domains and spawns specialist teammates (one per domain)
+3. Specialists inspect in parallel, messaging each other about cross-domain findings
+4. Lead synthesizes partials into `features.json`
+
+### Artifacts
+
+**`scout.json`** — Domain roster produced by the Lead's initial analysis:
 
 ```json
 {
   "proteusVersion": "1.0.0",
   "stage": "inspect",
   "substage": "scout",
-  "generatedAt": "2026-02-19T10:00:00Z",
+  "generatedAt": "2026-02-19T14:30:00Z",
   "source": {
-    "path": "/home/user/projects/product-dashboard-poc",
-    "name": "product-dashboard-poc",
-    "fileCount": 47,
+    "path": "/tmp/demo-poc",
+    "name": "task-tracker-poc",
+    "fileCount": 10,
     "primaryLanguage": "TypeScript"
   },
   "domains": [
@@ -229,649 +239,372 @@ The Lead (scout) does a shallow sweep of the source: file tree, package manifest
       "id": "domain-auth",
       "name": "Authentication & Security",
       "specialist": "auth-inspector",
-      "entryFiles": ["src/auth/", "src/middleware/auth.ts"],
-      "rationale": "JWT middleware, login/logout routes, hardcoded secrets detected"
-    },
-    {
-      "id": "domain-data",
-      "name": "Data Layer",
-      "specialist": "data-inspector",
-      "entryFiles": ["prisma/schema.prisma", "src/db/"],
-      "rationale": "Prisma ORM with PostgreSQL, 4 entity types"
-    },
-    {
-      "id": "domain-api",
-      "name": "API & Service Layer",
-      "specialist": "api-inspector",
-      "entryFiles": ["src/routes/", "src/services/"],
-      "rationale": "Express routes with service layer pattern"
-    },
-    {
-      "id": "domain-frontend",
-      "name": "Frontend",
-      "specialist": "frontend-inspector",
-      "entryFiles": ["client/src/"],
-      "rationale": "React SPA with Vite build"
-    },
-    {
-      "id": "domain-devops",
-      "name": "DevOps & Infrastructure",
-      "specialist": "devops-inspector",
-      "entryFiles": ["Dockerfile", "docker-compose.yml", ".github/workflows/"],
-      "rationale": "Docker setup detected, CI pipeline present"
+      "entryFiles": ["src/auth/routes.ts", "src/middleware/auth.ts"],
+      "rationale": "JWT-based authentication with hardcoded secrets"
     }
   ]
 }
 ```
 
-### Sub-stage 1b — Specialize
-
-The Lead spawns one teammate per domain. Each specialist receives a spawn prompt scoped to their domain with entry files and output path. Specialists work in parallel and message each other about cross-domain findings via Agent Teams' peer-to-peer mailbox.
-
-**Output per specialist:** `.proteus/01-inspect/partials/{domain}.json`
+**`partials/{domain}.json`** — Per-specialist findings:
 
 ```json
 {
   "domainId": "domain-auth",
   "specialist": "auth-inspector",
-  "generatedAt": "2026-02-19T10:02:00Z",
+  "generatedAt": "2026-02-19T14:31:00Z",
   "features": [
     {
       "id": "feat-001",
-      "name": "User Authentication",
-      "description": "JWT-based auth with login, logout, and token refresh",
+      "name": "User Login API Route",
+      "description": "POST /auth/login endpoint...",
       "category": "security",
-      "sourceFiles": ["src/auth/login.ts", "src/auth/refresh.ts", "src/middleware/auth.ts"],
-      "dependencies": [],
-      "dependents": [],
+      "sourceFiles": ["src/auth/routes.ts"],
+      "dependencies": ["feat-004"],
+      "dependents": ["feat-010"],
       "complexity": "medium",
-      "pocQuality": "prototype",
-      "notes": "No refresh token rotation, secrets hardcoded in env vars"
+      "pocQuality": "functional",
+      "notes": "Uses hardcoded JWT secret..."
     }
   ],
   "patterns": {
     "tokenStrategy": "JWT with no rotation",
-    "sessionStorage": "stateless",
-    "middlewareChain": ["cors", "rateLimit", "authCheck"]
+    "sessionStorage": "stateless"
   },
   "crossDomainDependencies": [
-    {
-      "from": "domain-auth",
-      "to": "domain-data",
-      "reason": "User table lookups on every login"
-    },
-    {
-      "from": "domain-auth",
-      "to": "domain-api",
-      "reason": "Auth middleware applied to all /api/* routes"
-    }
+    { "from": "domain-auth", "to": "domain-data", "reason": "User table lookups on every login" }
   ],
-  "risks": [
-    "No refresh token rotation — token theft gives permanent access",
-    "Secrets loaded from process.env with no validation",
-    "No rate limiting on login endpoint"
-  ]
+  "risks": ["No refresh token rotation", "Hardcoded JWT secret"]
 }
 ```
 
-### Sub-stage 1c — Synthesize
-
-When all specialist tasks complete (auto-unblocked by Agent Teams dependency system), the Lead claims the synthesis task. It reads all partials, deduplicates features, resolves contradictions, validates cross-references, and merges into the final output.
-
-**Output:** `.proteus/01-inspect/features.json`
+**`features.json`** — Synthesized output (the authoritative inspect artifact):
 
 ```json
 {
   "proteusVersion": "1.0.0",
   "stage": "inspect",
-  "generatedAt": "2026-02-19T10:03:00Z",
+  "generatedAt": "2026-02-19T14:32:00Z",
   "source": {
-    "path": "/home/user/projects/product-dashboard-poc",
-    "name": "product-dashboard-poc",
+    "path": "/tmp/demo-poc",
+    "name": "task-tracker-poc",
     "primaryLanguage": "TypeScript",
-    "languages": ["TypeScript", "SQL", "Shell"],
-    "frameworks": ["Express", "React", "Prisma"],
-    "entryPoints": ["src/index.ts"],
+    "languages": ["TypeScript", "TSX", "JSON", "Dockerfile"],
+    "frameworks": ["Express.js", "React", "Prisma", "React Router", "Vite"],
+    "entryPoints": ["src/index.ts", "client/src/App.tsx"],
     "testCoverage": "none"
   },
   "features": [
     {
       "id": "feat-001",
-      "name": "User Authentication",
-      "description": "JWT-based auth with login, logout, and token refresh",
+      "name": "User Login API Route",
+      "description": "...",
       "category": "security",
-      "sourceFiles": ["src/auth/login.ts", "src/auth/refresh.ts", "src/middleware/auth.ts"],
-      "dependencies": [],
-      "dependents": ["feat-003", "feat-005"],
+      "sourceFiles": ["src/auth/routes.ts"],
+      "dependencies": ["feat-004"],
+      "dependents": ["feat-010"],
       "complexity": "medium",
-      "pocQuality": "prototype",
-      "notes": "No refresh token rotation, secrets hardcoded in env vars"
+      "pocQuality": "functional",
+      "notes": "..."
     }
   ],
   "dataModel": {
     "store": "PostgreSQL",
-    "ormOrDriver": "Prisma",
-    "entities": ["User", "Product", "Order", "OrderItem"],
+    "ormOrDriver": "Prisma ORM",
+    "entities": ["User", "Product"],
     "schemaFile": "prisma/schema.prisma"
   },
   "integrations": [
-    {
-      "name": "Stripe",
-      "type": "payment",
-      "status": "stubbed",
-      "sourceFiles": ["src/payments/stripe.ts"]
-    }
+    { "name": "PostgreSQL Database", "type": "database", "status": "active", "sourceFiles": ["prisma/schema.prisma", "src/db.ts"] }
   ],
   "knownIssues": [
-    "No error handling on database calls in product service",
-    "No input validation on POST /orders",
-    "CORS wildcard in production config"
+    "CRITICAL: Hardcoded JWT secret in source code",
+    "CRITICAL: CORS wildcard origin",
+    "HIGH: No input validation on product endpoints",
+    "..."
   ],
-  "summary": "E-commerce POC with auth, product catalog, and stubbed checkout. Core flows are functional but not production-ready."
+  "summary": "Task Tracker POC with authentication and product management. Critical security issues..."
 }
 ```
 
-### Agent Teams Configuration for Inspect
+### CLI Output
 
-```json
-{
-  "stage": "inspect",
-  "lead": {
-    "role": "scout",
-    "tier": "fast"
-  },
-  "teammates": [
-    {
-      "name": "auth-inspector",
-      "tier": "standard",
-      "spawnPrompt": "You are inspecting the authentication domain of the source repo at {source.path}. This repo is READ-ONLY. Focus on: {domain.entryFiles}. Write your findings to {target}/.proteus/01-inspect/partials/auth.json following the partial schema. Message other teammates about cross-domain dependencies you discover."
-    }
-  ],
-  "tasks": [
-    { "id": "inspect-auth", "assignTo": "auth-inspector", "dependsOn": [] },
-    { "id": "inspect-data", "assignTo": "data-inspector", "dependsOn": [] },
-    { "id": "synthesize", "assignTo": "lead", "dependsOn": ["inspect-auth", "inspect-data", "..."] }
-  ],
-  "hooks": {
-    "TaskCompleted": "proteus validate-task --stage inspect"
-  }
-}
 ```
+[task-tracker] Inspection complete.
 
-### Validation Rules
+  Agent Team (5 specialists):
+    • auth-inspector               Authentication & Security
+    • data-inspector               Data Layer & ORM
+    • api-inspector                API & Service Layer
+    • frontend-inspector           Frontend & UI
+    • devops-inspector             DevOps & Infrastructure
 
-- `features` array must be non-empty
-- Each feature must have a unique `id` matching the pattern `feat-NNN`
-- `dependencies` must reference valid feature IDs within the same artifact
-- No circular dependencies allowed (feature dependency graph must be a DAG)
-- Every domain in `scout.json` must have a corresponding partial
-- All partials must be merged into the synthesized output
+  Cost: $0.76
+  Duration: 4m 11s
+  Committed: "proteus: inspect complete"
+```
 
 ---
 
 ## Stage 2 — `proteus design`
 
-Same three-beat pattern. The Lead is an architect. It reads `features.json`, determines design domains, and spawns design specialists.
+Same three-beat pattern. The Lead is an architect that reads `features.json` and coordinates design specialists.
 
-### Sub-stage 2a — Scope
+**Model tier**: `roles.design-specialist` → `advanced` (claude-opus-4-6 by default)
 
-The Lead reads the inspect output and assigns design domains to specialists.
+Supports `--brief` and `--brief-file` flags for user architectural requirements that override the AI's default choices.
 
-**Output:** `.proteus/02-design/scope.json`
+### Artifacts
+
+**`scope.json`** — Design domain assignments:
 
 ```json
 {
   "proteusVersion": "1.0.0",
   "stage": "design",
   "substage": "scope",
-  "generatedAt": "2026-02-19T10:05:00Z",
+  "generatedAt": "2026-02-19T15:00:00Z",
   "designDomains": [
     {
-      "id": "design-auth",
-      "name": "Authentication & Authorization Architecture",
-      "specialist": "auth-designer",
-      "implementsFeatures": ["feat-001"],
-      "designFocus": "Token lifecycle, session strategy, RBAC, secrets management"
-    },
-    {
-      "id": "design-commerce",
-      "name": "Commerce Service Architecture",
-      "specialist": "commerce-designer",
-      "implementsFeatures": ["feat-002", "feat-003", "feat-004"],
-      "designFocus": "Service boundaries, data ownership, API contracts"
+      "id": "design-backend",
+      "name": "Backend Architecture",
+      "specialist": "backend-designer",
+      "implementsFeatures": ["feat-006", "feat-106", "..."],
+      "designFocus": "Service structure, middleware pipeline, API design..."
     }
   ]
 }
 ```
 
-### Sub-stage 2b — Design Specialists
+**`partials/{domain}.md`** and **`partials/{domain}.json`** — Per-specialist designs (narrative + machine-readable).
 
-Specialists produce partial designs. They negotiate with each other via peer-to-peer messaging — API contracts, shared types, data boundaries.
-
-**Output per specialist:** `.proteus/02-design/partials/{domain}.md` + `{domain}.json`
-
-The `.md` file is a narrative design document for the domain. The `.json` file is machine-readable metadata (services, interfaces, entities).
-
-### Sub-stage 2c — Synthesize
-
-The architect merges partial designs into unified outputs.
-
-**Output:** `.proteus/02-design/design.md` (human-reviewable/editable)
+**`design.md`** — Synthesized architecture document (human-editable):
 
 ```markdown
-# Architecture Design — product-dashboard
+# Architecture Design — Task Tracker
 
 **Generated:** 2026-02-19
 **Architecture Style:** Modular Monolith
-**Target Stack:** Node.js 22, TypeScript 5, Fastify, React 19, PostgreSQL 16, Redis
-
----
+**Target Stack:** Node.js 22 / TypeScript 5.x / Express.js / Prisma / PostgreSQL 16 / React 19 / Vite 6 / Docker
 
 ## Overview
-[narrative description of the target architecture]
-
-## Services
-### Auth Module
-Responsible for: authentication, authorization, token lifecycle
 ...
 
-## Data Architecture
-[data layer decisions]
-
-## Infrastructure
-[deployment, scaling, observability decisions]
-
-## Migration Notes
-[specific callouts from POC that need rework]
+## Services / Modules
+### svc-api-gateway — API Gateway & Middleware Pipeline
+### svc-auth — Authentication Service
+### svc-products — Products Service
+...
 ```
 
-**Output:** `.proteus/02-design/design-meta.json` (machine-readable)
+**`design-meta.json`** — Machine-readable metadata with services, stack, and feature-to-service mapping:
 
 ```json
 {
   "proteusVersion": "1.0.0",
   "stage": "design",
-  "generatedAt": "2026-02-19T10:06:00Z",
+  "generatedAt": "2026-02-19T15:45:00Z",
   "architectureStyle": "modular-monolith",
   "targetStack": {
-    "runtime": "Node.js 22",
-    "language": "TypeScript 5",
-    "framework": "Fastify",
+    "runtime": "Node.js 22 LTS",
+    "language": "TypeScript 5.x (strict mode)",
+    "framework": "Express.js 4.x",
     "database": "PostgreSQL 16",
     "cache": "Redis 7",
     "containerization": "Docker",
-    "orchestration": "AWS ECS"
+    "ci": "GitHub Actions"
   },
   "services": [
     {
       "id": "svc-auth",
-      "name": "Auth Module",
-      "description": "Handles authentication and authorization",
-      "implementsFeatures": ["feat-001"],
+      "name": "Authentication & Authorization Service",
+      "description": "...",
+      "implementsFeatures": ["feat-001", "feat-002", "..."],
       "exposedInterfaces": [
-        { "type": "REST", "path": "/auth", "methods": ["POST /login", "POST /refresh", "POST /logout"] }
+        { "type": "REST", "path": "/auth/login", "methods": ["POST"] }
       ],
-      "ownedEntities": ["User", "RefreshToken"],
+      "ownedEntities": ["User"],
       "discipline": "backend"
     }
   ],
-  "sharedInfrastructure": {
-    "apiGateway": false,
-    "centralLogging": "structured JSON logs",
-    "monitoring": "Prometheus + Grafana"
-  },
   "featureToServiceMap": {
     "feat-001": "svc-auth",
-    "feat-002": "svc-products"
+    "feat-106": "svc-products"
   }
 }
 ```
-
-### Validation Rules
-
-- Every feature ID from `features.json` must appear in `featureToServiceMap`
-- Every service must implement at least one feature
-- `design.md` and `design-meta.json` must be consistent (architecture style, stack, services)
 
 ---
 
 ## Stage 3 — `proteus plan`
 
-Single Lead session (no teammates). Reads the design artifacts and generates a task DAG with execution waves.
+Single Lead session (no teammates). Reads design artifacts and generates a task DAG.
 
-**Output:** `.proteus/03-plan/plan.json`
+**Model tier**: `roles.plan-generator` → `standard` (claude-sonnet-4-6 by default)
+
+### Artifacts
+
+**`plan.json`** — Task DAG with execution waves:
 
 ```json
 {
   "proteusVersion": "1.0.0",
   "stage": "plan",
-  "generatedAt": "2026-02-19T10:10:00Z",
+  "generatedAt": "2026-02-19T16:00:00Z",
   "tasks": [
     {
       "id": "task-001",
-      "title": "Design database schema for Auth Module",
-      "description": "Create migration for User and RefreshToken entities with proper indexes and constraints",
-      "discipline": "data",
-      "service": "svc-auth",
-      "implementsFeatures": ["feat-001"],
+      "title": "Scaffold project directory structure and root configuration",
+      "description": "...",
+      "discipline": "shared",
+      "service": "all",
+      "implementsFeatures": ["feat-402", "..."],
       "dependsOn": [],
-      "estimatedComplexity": "low",
-      "testingExpectation": "unit",
-      "testScope": "tests/unit/auth-schema/",
-      "acceptanceCriteria": [
-        "Migration runs cleanly on empty database",
-        "User table has unique constraint on email",
-        "RefreshToken has FK to User with cascade delete"
-      ],
-      "fileOwnership": ["prisma/schema.prisma", "prisma/migrations/auth/"]
-    },
-    {
-      "id": "task-002",
-      "title": "Implement Auth Module — core logic",
-      "description": "JWT login, refresh with rotation, logout with token invalidation",
-      "discipline": "backend",
-      "service": "svc-auth",
-      "implementsFeatures": ["feat-001"],
-      "dependsOn": ["task-001"],
       "estimatedComplexity": "medium",
-      "testingExpectation": "unit",
-      "testScope": "tests/unit/auth/",
-      "acceptanceCriteria": [
-        "Login returns access + refresh token",
-        "Refresh rotates refresh token",
-        "Logout invalidates refresh token in DB",
-        "All endpoints return correct HTTP status codes"
-      ],
-      "fileOwnership": ["src/auth/"]
-    },
-    {
-      "id": "task-003",
-      "title": "Write integration tests for Auth Module",
-      "description": "Full flow tests: login -> refresh -> logout, expired token handling, invalid credentials",
-      "discipline": "qa",
-      "service": "svc-auth",
-      "implementsFeatures": ["feat-001"],
-      "dependsOn": ["task-002"],
-      "estimatedComplexity": "medium",
-      "testingExpectation": "integration",
-      "testScope": "tests/integration/auth/",
-      "acceptanceCriteria": [
-        "All happy path flows pass",
-        "Error cases return correct status codes",
-        "Coverage > 80%"
-      ],
-      "fileOwnership": ["tests/integration/auth/"]
+      "testingExpectation": "none",
+      "acceptanceCriteria": ["package.json exists with all dependencies", "..."],
+      "fileOwnership": ["package.json", "tsconfig.json", "..."]
     }
   ],
   "executionWaves": [
-    { "wave": 1, "tasks": ["task-001"], "rationale": "Schema must exist before any service code" },
-    { "wave": 2, "tasks": ["task-002"], "rationale": "Auth module depends on schema" },
-    { "wave": 3, "tasks": ["task-003"], "rationale": "Integration tests after implementation" }
+    { "wave": 1, "tasks": ["task-001", "task-005", "task-006"], "rationale": "Foundation tasks with no dependencies" }
   ],
-  "criticalPath": ["task-001", "task-002", "task-003"]
+  "criticalPath": ["task-001", "task-002", "task-004", "task-007", "task-008", "task-009", "task-013"]
 }
 ```
 
-**Output:** `.proteus/03-plan/plan.md` (human-reviewable narrative)
-
-```markdown
-# Production Plan — product-dashboard
-
-**Generated:** 2026-02-19
-**Total Tasks:** 14
-**Estimated Waves:** 4
-
-## Executive Summary
-[high level description of the production build approach]
-
-## Wave 1 — Foundation
-[narrative of what happens first and why]
-
-## Wave 2 — Core Services
-[narrative]
-
-## Wave 3 — Frontend
-[narrative]
-
-## Wave 4 — Production Readiness
-[narrative]
-
-## Risk Areas
-[specific things to watch out for]
-```
+**`plan.md`** — Human-readable narrative with executive summary, wave descriptions, critical path analysis, and risk areas.
 
 ### Task Testing Model
 
-Tasks use a two-tier testing model:
+Tasks specify a `testingExpectation` field:
 
-- `testingExpectation: "unit"` — The implementing agent writes unit tests alongside the implementation. The `testScope` field specifies where tests go.
-- `testingExpectation: "integration"` — The QA track writes integration tests that run after the implementation is complete.
-
-This eliminates the circular dependency between QA writing tests and agents needing tests to validate their work.
-
-### Validation Rules
-
-- Every task must have a unique `id` matching `task-NNN`
-- `dependsOn` must reference valid task IDs
-- No circular dependencies (task dependency graph must be a DAG)
-- Every task must have non-empty `fileOwnership`
-- No task in wave N may depend on a task in wave N or later
-- `testingExpectation` must be `"unit"` or `"integration"`
-- Every feature from `features.json` should be covered by at least one task's `implementsFeatures`
+- `"unit"` — The implementing agent writes unit tests alongside the code
+- `"integration"` — The QA track writes integration tests after implementation
+- `"none"` — Infrastructure/config tasks that don't need tests
 
 ---
 
 ## Stage 4 — `proteus split`
 
-Single Lead session. Partitions tasks from the plan into discipline-specific tracks with file ownership boundaries.
+Single Lead session. Partitions plan tasks into discipline-specific tracks.
 
-**Output:** `.proteus/04-tracks/manifest.json`
+**Model tier**: `roles.plan-generator` → `standard`
+
+### Artifacts
+
+**`manifest.json`** — Track list with dependencies:
 
 ```json
 {
   "proteusVersion": "1.0.0",
   "stage": "split",
-  "generatedAt": "2026-02-19T10:15:00Z",
+  "generatedAt": "2026-02-19T16:15:00Z",
   "tracks": [
     {
-      "id": "track-data",
-      "discipline": "data",
-      "taskCount": 3,
-      "file": "04-tracks/data.json",
+      "id": "track-shared",
+      "discipline": "shared",
+      "taskCount": 2,
+      "file": "04-tracks/shared.json",
       "dependsOnTracks": [],
-      "requiredByTracks": ["track-backend"]
+      "requiredByTracks": ["track-data", "track-backend", "track-frontend"]
     },
     {
       "id": "track-backend",
       "discipline": "backend",
-      "taskCount": 5,
+      "taskCount": 3,
       "file": "04-tracks/backend.json",
-      "dependsOnTracks": ["track-data"],
+      "dependsOnTracks": ["track-shared", "track-data"],
       "requiredByTracks": ["track-frontend", "track-qa"]
-    },
-    {
-      "id": "track-frontend",
-      "discipline": "frontend",
-      "taskCount": 4,
-      "file": "04-tracks/frontend.json",
-      "dependsOnTracks": ["track-backend"],
-      "requiredByTracks": ["track-qa"]
-    },
-    {
-      "id": "track-devops",
-      "discipline": "devops",
-      "taskCount": 2,
-      "file": "04-tracks/devops.json",
-      "dependsOnTracks": [],
-      "requiredByTracks": []
-    },
-    {
-      "id": "track-qa",
-      "discipline": "qa",
-      "taskCount": 2,
-      "file": "04-tracks/qa.json",
-      "dependsOnTracks": ["track-backend", "track-frontend"],
-      "requiredByTracks": []
-    },
-    {
-      "id": "track-shared",
-      "discipline": "shared",
-      "taskCount": 0,
-      "file": "04-tracks/shared.json",
-      "dependsOnTracks": [],
-      "requiredByTracks": ["track-backend", "track-frontend", "track-devops"],
-      "note": "Cross-cutting files managed by the Lead between waves"
     }
   ]
 }
 ```
 
-**Individual track file** (e.g. `backend.json`):
+**Individual track files** (e.g., `backend.json`):
 
 ```json
 {
   "trackId": "track-backend",
   "discipline": "backend",
-  "tasks": ["task-002", "task-005", "task-008"],
+  "tasks": ["task-007", "task-008", "task-009"],
   "context": {
-    "targetStack": "Node.js 22, TypeScript 5, Fastify",
-    "services": ["svc-auth", "svc-products"],
-    "sharedPatterns": "Use repository pattern, all services expose typed interfaces",
+    "targetStack": "Node.js 22, TypeScript 5.x, Express.js 4.x, Prisma 5.x",
+    "services": ["svc-api-gateway", "svc-auth", "svc-products"],
+    "sharedPatterns": "Feature-based module structure, repository pattern...",
     "fileOwnershipMap": {
-      "task-002": ["src/auth/"],
-      "task-005": ["src/products/"],
-      "task-008": ["src/orders/"]
+      "task-007": ["server/src/app.ts", "server/src/middleware/", "server/src/index.ts"],
+      "task-008": ["server/src/features/auth/"],
+      "task-009": ["server/src/features/products/"]
     }
   }
 }
 ```
-
-**Shared track** (`shared.json`):
-
-```json
-{
-  "trackId": "track-shared",
-  "discipline": "shared",
-  "ownedFiles": ["tsconfig.json", "package.json", "src/types/", "docker-compose.yml"],
-  "managedBy": "lead",
-  "note": "The Lead manages shared files directly. Teammates that need changes to shared files message the Lead with a change request."
-}
-```
-
-### Validation Rules
-
-- No file may appear in more than one track's file ownership (except `track-shared`)
-- Files in `track-shared` must not appear in any other track
-- Every task from `plan.json` must appear in exactly one track
-- Track dependency graph must be a DAG
 
 ---
 
 ## Stage 5 — `proteus execute`
 
-Launches an Agent Team. The Lead is an orchestrator. One teammate per track.
+Launches an Agent Team with one teammate per track. The Lead handles shared tasks directly, then coordinates track engineers.
 
-### Agent Teams Configuration
+**Model tier**: `roles.execute-agent` → `advanced` (claude-opus-4-6 by default)
 
-The Lead creates ALL tasks on the Agent Teams shared task list with full dependency chains. Dependencies encode wave ordering: wave 2 tasks depend on wave 1 tasks. Agent Teams natively auto-unblocks tasks as dependencies complete. Teammates self-claim available tasks.
+### How It Works
 
-```json
-{
-  "stage": "execute",
-  "lead": {
-    "role": "orchestrator",
-    "tier": "advanced"
-  },
-  "teammates": [
-    {
-      "name": "backend-engineer",
-      "tier": "advanced",
-      "trackId": "track-backend",
-      "spawnPrompt": "You are a backend engineer building production code. Your track: {track.context}. The original POC is at {source.path} for reference — do not copy POC code, reimplement according to the design. You own: {track.fileOwnershipMap}. Do not modify files outside your ownership. Complete one task at a time, write unit tests for each, verify acceptance criteria, then mark done."
-    }
-  ],
-  "hooks": {
-    "TaskCompleted": "proteus validate-task --stage execute",
-    "TeammateIdle": "proteus on-idle --stage execute"
-  }
-}
+1. Lead reads design, plan, and track files for full context
+2. Lead completes shared-discipline tasks (scaffolding, shared types) directly
+3. Lead spawns one teammate per non-shared track (data-engineer, devops-engineer, backend-engineer, frontend-engineer, qa-engineer)
+4. Lead creates all tasks on Agent Teams shared task list with dependency chains
+5. Agent Teams auto-unblocks tasks as dependencies complete
+6. Teammates self-claim and execute tasks, writing production code
+7. Lead writes `session.json` summary on completion
+
+### Message Inbox
+
+During execute, Proteus creates a file-based inbox at `.proteus/05-execute/inbox/`. Users can send messages to running teammates via `proteus inform`:
+
+```bash
+proteus inform backend-engineer "Use async bcrypt instead of sync"
 ```
 
-### Hooks
+The session launcher polls the inbox every 3 seconds and injects messages into the running session via the Agent SDK's `streamInput()` method. The Lead relays messages to the named teammate.
 
-**TaskCompleted** (`proteus validate-task`):
-- Runs the task's unit tests
-- Checks that the code compiles/lints
-- Validates acceptance criteria markers
-- Updates cost tracking
-- If the hook exits with code 2, Agent Teams rejects the completion and sends feedback to the teammate
-- On wave completion, triggers a git checkpoint commit
+### Artifacts
 
-**TeammateIdle** (`proteus on-idle`):
-- Checks if unblocked tasks remain for this teammate's track
-- If none, allows the teammate to idle or shut down
-- If tasks exist in other tracks and this teammate could help, notifies the Lead
-
-### Wave-Level Checkpointing
-
-After each wave completes, Proteus commits the target repo:
-
-```
-git commit -m "proteus: execute wave 1 complete"
-git commit -m "proteus: execute wave 2 complete"
-...
-```
-
-If the session crashes, `proteus resume` reads the git log, finds the last wave checkpoint, and restarts from wave N+1.
-
-### Session State
-
-**Output:** `.proteus/05-execute/session.json` (live, updated during execution)
+**`session.json`** — Execution summary (written by the Lead on completion):
 
 ```json
 {
   "proteusVersion": "1.0.0",
   "stage": "execute",
-  "sessionId": "sess-20260219-abc123",
-  "startedAt": "2026-02-19T10:30:00Z",
-  "status": "running",
-  "teammates": [
-    {
-      "name": "backend-engineer",
-      "trackId": "track-backend",
-      "status": "running",
-      "currentTask": "task-002",
-      "tasksCompleted": [],
-      "tasksFailed": [],
-      "startedAt": "2026-02-19T10:30:00Z"
-    }
-  ],
-  "waves": [
-    { "wave": 1, "status": "completed", "completedAt": "2026-02-19T10:45:00Z" },
-    { "wave": 2, "status": "running", "startedAt": "2026-02-19T10:46:00Z" }
-  ],
+  "sessionId": "...",
+  "startedAt": "2026-02-19T15:36:00Z",
+  "completedAt": "2026-02-19T15:57:00Z",
+  "status": "completed",
   "progress": {
     "totalTasks": 14,
-    "completed": 3,
-    "running": 2,
-    "pending": 9,
+    "completed": 14,
     "failed": 0
-  },
-  "failurePolicy": {
-    "maxRetries": 2,
-    "retryStrategy": "restart-task",
-    "onExhaustedRetries": "pause-and-escalate",
-    "cascadePolicy": "block-dependents"
   }
 }
 ```
 
-### Failure Recovery
+### CLI Output
 
-- **Retry**: Teammate retries the same task with its previous error output as additional context
-- **Block dependents**: If a task fails, downstream dependent tasks remain pending
-- **Escalate**: After max retries, the teammate pauses and the Lead surfaces the failure for human intervention
-- **Checkpoint rollback**: If a task fails mid-execution, the wave checkpoint provides a known-good state
+```
+[task-tracker] Execution complete.
+
+  Agent Team (5 teammates):
+    • data-engineer                data
+    • devops-engineer              devops
+    • backend-engineer             backend
+    • frontend-engineer            frontend
+    • qa-engineer                  qa
+
+  Cost: $8.50
+  Duration: 21m 48s
+  Committed: "proteus: execute complete"
+```
 
 ---
 
@@ -879,33 +612,26 @@ If the session crashes, `proteus resume` reads the git log, finds the last wave 
 
 ### `.proteus/costs.json`
 
+Updated after each stage with token counts and estimated cost:
+
 ```json
 {
   "stages": {
     "inspect": {
-      "timestamp": "2026-02-19T10:03:00Z",
-      "teammates": 4,
-      "tier": "standard",
-      "duration": "2m 15s",
-      "inputTokens": 125000,
-      "outputTokens": 45000,
-      "estimatedCost": 0.38
-    },
-    "design": {
-      "timestamp": "2026-02-19T10:06:00Z",
-      "teammates": 3,
-      "tier": "advanced",
-      "duration": "3m 40s",
-      "inputTokens": 340000,
-      "outputTokens": 120000,
-      "estimatedCost": 1.05
+      "timestamp": "2026-02-19T21:34:44.308Z",
+      "teammates": 0,
+      "tier": "claude-haiku-4-5",
+      "duration": "4m 11s",
+      "inputTokens": 22641,
+      "outputTokens": 49510,
+      "estimatedCost": 0.76
     }
   },
-  "totalCost": 8.79
+  "totalCost": 0.76
 }
 ```
 
-Before launching any Agent Team stage, Proteus estimates token usage based on source repo size, number of teammates, and tier costs. For stages above a configurable cost threshold, the user must confirm before proceeding.
+The `teammates` count is set by the command handler (execute passes the actual count; other stages report 0 since teammate spawning happens inside the Lead's session).
 
 ---
 
@@ -915,145 +641,206 @@ Before launching any Agent Team stage, Proteus estimates token usage based on so
 
 One JSON object per line, appended after each action:
 
-```json
-{"timestamp": "2026-02-19T10:00:00Z", "action": "setup", "status": "success", "details": "Agent Teams enabled, Anthropic configured"}
-{"timestamp": "2026-02-19T10:01:00Z", "action": "new", "status": "success", "details": "project product-dashboard created"}
-{"timestamp": "2026-02-19T10:03:00Z", "action": "inspect", "status": "success", "teammates": 4, "duration": "2m 15s", "cost": 0.38}
-{"timestamp": "2026-02-19T10:05:30Z", "action": "edit", "status": "info", "details": "user edited design.md"}
-{"timestamp": "2026-02-19T10:06:00Z", "action": "design", "status": "success", "teammates": 3, "duration": "3m 40s", "cost": 1.05}
+```jsonl
+{"timestamp":"2026-02-19T21:34:44Z","action":"inspect","status":"success","duration":"4m 11s","cost":0.76}
+{"timestamp":"2026-02-19T21:50:14Z","action":"design","status":"recovered","duration":"11m 41s","cost":0}
+{"timestamp":"2026-02-19T22:12:23Z","action":"plan","status":"success","duration":"8m 47s","cost":1.17}
 ```
 
-Viewable via `proteus log`.
+Status values: `"success"`, `"recovered"` (session errored but artifacts produced), `"failed"`.
+
+---
+
+## Git Checkpointing
+
+Each stage commits artifacts to the target repo's git history:
+
+```
+cdfba0b proteus: execute complete (recovered)
+538af7c proteus: split complete
+b7d371b proteus: plan complete
+d1ea68b proteus: design complete (recovered)
+ac72a61 proteus: inspect complete
+```
+
+This provides recovery — if a stage needs to be re-run, previous artifacts are preserved in git history.
+
+---
+
+## Staleness Warnings
+
+Before running any stage, Proteus checks modification timestamps. If an upstream artifact was modified after a downstream artifact was generated:
+
+```
+  ⚠ inspect was modified after design was generated. Re-run `proteus design`.
+```
+
+Implemented in `src/utils/stages.ts` — compares `mtime` of stage artifacts in sequential order.
 
 ---
 
 ## Editing Artifacts Between Stages
 
-The Markdown files (`design.md`, `plan.md`) are intentionally human-editable. Proteus re-reads them before proceeding to the next stage. If you edit the design doc to change an architectural decision, run `proteus plan` again to regenerate the plan from your updated design.
+`design.md` and `plan.md` are intentionally human-editable. Proteus re-reads them before the next stage. After editing:
 
-### Staleness Warnings
+```bash
+# Edit the design
+vi {target}/.proteus/02-design/design.md
 
-Before running any stage, Proteus checks modification timestamps. If an upstream artifact was modified after a downstream artifact was generated, Proteus warns:
-
+# Regenerate downstream stages
+proteus plan
+proteus split
+proteus execute
 ```
-Warning: design.md was modified after plan was generated.
-Run `proteus plan` first to regenerate from the updated design.
-```
-
-Re-running any stage overwrites its artifacts and marks all downstream stages as stale. The previous artifacts are preserved in git history.
 
 ---
 
 ## Cross-Stage Validation Rules
 
+These rules are defined in the prompt schemas and enforced by the agent at generation time:
+
 | Check | When | What |
 |-------|------|------|
 | Feature IDs unique | inspect output | No duplicate `feat-NNN` IDs |
 | No circular feature deps | inspect output | Feature dependency graph is a DAG |
-| All domains have partials | inspect output | Every domain in `scout.json` has a partial |
 | All features mapped | design output | Every feature ID in `featureToServiceMap` |
 | All tasks have owners | plan output | Every task has non-empty `fileOwnership` |
 | No overlapping ownership | split output | No file in more than one track (except shared) |
 | Shared track exclusive | split output | Shared files only in `track-shared` |
 | Dependency wave ordering | plan output | No task in wave N depends on wave N or later |
-| All task IDs valid | execute team | All task IDs in spawn prompts exist in `plan.json` |
+| No circular task deps | plan output | Task dependency graph is a DAG |
 | Staleness check | all stages | Upstream artifacts not modified after downstream |
-| Agent Teams available | all stages | `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` set |
+| Agent Teams available | setup | `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` set |
 
 ---
 
 ## CLI Command Reference
 
-### Global (2)
+### Implemented Commands (13)
+
+#### Global (2)
 
 | Command | Description |
 |---------|-------------|
-| `proteus setup` | One-time configuration: enable Agent Teams, configure providers, set tier defaults |
-| `proteus config [set\|get] <key> [value]` | Modify global or project config without editing JSON |
+| `proteus setup` | Enable Agent Teams, configure providers, write `~/.proteus/config.json` |
+| `proteus config get\|set <key> [value]` | Read/write config via dot-notation keys |
 
-### Project Management (4)
+#### Project Management (4)
 
 | Command | Description |
 |---------|-------------|
-| `proteus new <name> --source <path> [--target <path>] [--template <name>]` | Create project, init target repo, register in project list |
-| `proteus list` | Show all projects with status and active marker |
+| `proteus new <name> --source <path> [--target <path>]` | Create project, init target repo with git and `.proteus/` |
+| `proteus list` | Show all projects with current stage and active marker |
 | `proteus use <name>` | Set active project (default for all commands) |
-| `proteus destroy <name>` | Remove project: delete target repo (with confirmation), remove from registry |
+| `proteus destroy <name>` | Delete target repo (with confirmation), remove from registry |
 
-### Pipeline Stages (5)
+#### Pipeline Stages (5)
 
-| Command | Description |
-|---------|-------------|
-| `proteus inspect [name]` | Agent Team: scout -> specialists -> synthesize |
-| `proteus design [name]` | Agent Team: scope -> specialists -> synthesize |
-| `proteus plan [name]` | Single Lead: generate task DAG with execution waves |
-| `proteus split [name]` | Single Lead: partition tasks into discipline tracks |
-| `proteus execute [name]` | Agent Team: wave-based parallel code generation |
+| Command | Options | Description |
+|---------|---------|-------------|
+| `proteus inspect [name]` | `--dry-run` `--budget` | Agent Team: scout → specialists → synthesize |
+| `proteus design [name]` | `--dry-run` `--budget` `--brief` `--brief-file` | Agent Team: scope → specialists → synthesize |
+| `proteus plan [name]` | `--dry-run` `--budget` | Single Lead: generate task DAG |
+| `proteus split [name]` | `--dry-run` `--budget` | Single Lead: partition into tracks |
+| `proteus execute [name]` | `--dry-run` `--budget` | Agent Team: wave-based parallel execution |
 
-### Execution Control (3)
-
-| Command | Description |
-|---------|-------------|
-| `proteus resume [name]` | Resume execute from last wave checkpoint |
-| `proteus abort [name]` | Gracefully stop in-progress stage, preserve checkpoints |
-| `proteus watch [name]` | Attach to live Agent Team session to observe and intervene |
-
-### Analysis & Review (8)
+#### Execution Control (2)
 
 | Command | Description |
 |---------|-------------|
-| `proteus status [name]` | Pipeline state summary: which stages complete, current stage |
-| `proteus validate [name]` | Run all cross-stage validation rules |
+| `proteus status [name]` | Pipeline state: stage completion, timestamps, staleness warnings |
+| `proteus inform <agent> <message>` | Send message to running teammate during execute |
+
+### Planned Commands (not yet implemented)
+
+| Command | Description |
+|---------|-------------|
+| `proteus resume [name]` | Resume execute from last wave git checkpoint |
+| `proteus abort [name]` | Gracefully stop in-progress stage |
+| `proteus watch [name]` | Attach to live Agent Team session |
+| `proteus validate [name]` | Run cross-stage artifact validation |
 | `proteus review <stage> [name]` | Open stage artifact in `$EDITOR` |
-| `proteus diff <stage> [name]` | Show changes between current and previous run of a stage |
-| `proteus compare [name]` | Diff source vs target: what was added, replaced, removed, preserved |
-| `proteus costs [name]` | Token usage and cost breakdown per stage |
-| `proteus explain "<question>" [name]` | Explain design/plan decisions by reading artifacts |
-| `proteus log [name]` | View structured audit trail |
+| `proteus diff <stage> [name]` | Show changes between runs of a stage |
+| `proteus compare [name]` | Diff source vs target after execute |
+| `proteus costs [name]` | Token usage and cost breakdown |
+| `proteus explain "<question>" [name]` | Explain design/plan decisions |
+| `proteus log [name]` | View audit trail |
 
-### Global Flags
+---
 
-| Flag | Description |
-|------|-------------|
-| `--dry-run` | Preview without launching agents: show tasks, teammates, estimated cost |
-| `--budget <amount>` | Spending cap for the stage |
-| `--project <name>` | Explicit project name (alternative to `proteus use`) |
+## ID Reference System
 
-All `[name]` parameters are optional if an active project is set via `proteus use`.
+| Type | Pattern | Examples | Produced By |
+|------|---------|----------|-------------|
+| Features | `feat-NNN` | feat-001, feat-042 | Inspect |
+| Services | `svc-xxx` | svc-auth, svc-products | Design |
+| Tasks | `task-NNN` | task-001, task-014 | Plan |
+| Tracks | `track-xxx` | track-backend, track-shared | Split |
+| Inspect domains | `domain-xxx` | domain-auth, domain-data | Inspect scout |
+| Design domains | `design-xxx` | design-backend, design-security | Design scope |
 
 ---
 
 ## Implementation
 
-Proteus is a TypeScript CLI built on the Claude Agent SDK.
+### Technology
 
-- **Language**: TypeScript
-- **Runtime**: Node.js
-- **CLI framework**: Commander or oclif
-- **Agent interface**: Claude Agent SDK (programmatic Agent Teams session creation and monitoring)
-- **Package**: npm (`npm install -g proteus`)
+| | |
+|---|---|
+| Language | TypeScript (strict mode, ES modules) |
+| Runtime | Node.js >= 22.0.0 |
+| CLI framework | Commander ^13.0.0 |
+| Agent interface | @anthropic-ai/claude-agent-sdk ^0.1.0 |
+| Bundler | tsup ^8.0.0 |
+| Linter | ESLint ^10.0.0 with typescript-eslint |
+| Test framework | Vitest ^4.0.18 |
+| Build pipeline | `npm run build` = lint → typecheck → test → bundle |
 
-### Key Components
+### Source Structure
 
-| Component | Responsibility |
-|-----------|---------------|
-| `src/cli/` | CLI framework, 22 command handlers |
-| `src/prompts/` | Prompt generators for Lead and specialist spawn prompts |
-| `src/session/` | Agent SDK session launcher and monitor |
-| `src/hooks/` | TaskCompleted and TeammateIdle hook scripts |
-| `src/validator/` | JSON Schema validation for all artifact types |
-| `src/git/` | Checkpoint commits, snapshots, diff |
-| `src/config/` | Global/project config, project registry |
-| `src/costs/` | Token estimation and cost tracking |
+```
+src/
+├── index.ts                    # CLI entry point, registers 13 commands
+├── commands/                   # Command handlers (one file per command)
+│   ├── setup.ts, new.ts, list.ts, use.ts, destroy.ts
+│   ├── status.ts, config.ts
+│   ├── inspect.ts, design.ts, plan.ts, split.ts, execute.ts
+│   └── inform.ts
+├── config/                     # Configuration management
+│   ├── types.ts                # TypeScript interfaces for all configs
+│   ├── global.ts               # ~/.proteus/config.json
+│   ├── project.ts              # {target}/.proteus/config.json
+│   └── registry.ts             # ~/.proteus/projects.json
+├── prompts/                    # Prompt generators (one per pipeline stage)
+│   ├── inspect.ts, design.ts, plan.ts, split.ts, execute.ts
+├── session/
+│   └── launcher.ts             # Agent SDK query() wrapper + inbox streaming
+└── utils/
+    ├── claude-settings.ts      # Read/write ~/.claude/settings.json
+    ├── costs.ts                # Cost tracking (.proteus/costs.json)
+    ├── git.ts                  # Git init, add, commit, checkpoint detection
+    ├── inbox.ts                # File-based message inbox for proteus inform
+    ├── log.ts                  # Audit trail (.proteus/log.jsonl)
+    ├── resolve-project.ts      # Project name → ProjectEntry resolution
+    ├── stages.ts               # Stage artifact detection, staleness checks
+    └── team-summary.ts         # Read scout.json/scope.json for team display
+```
 
-### What Proteus Does NOT Implement
+### Tests
 
-Proteus is glue code. It does not:
+106 tests across 12 test files:
 
-- Make AI model calls directly (Claude Code does this)
-- Spawn or manage agents (Agent Teams does this)
-- Manage task lists or dependencies (Agent Teams shared task list does this)
-- Handle inter-agent messaging (Agent Teams mailbox does this)
-- Edit files or generate code (Agent Teams teammates do this)
-
-Proteus composes prompts, launches sessions, validates outputs, and manages project state.
+| Test File | Tests | Covers |
+|-----------|-------|--------|
+| config/global.test.ts | 6 | Default config, tier mappings, role assignments |
+| config/project.test.ts | 7 | Read/write project config, path helpers |
+| config/registry.test.ts | 4 | JSON roundtrip, multiple projects, unregister |
+| prompts/inspect.test.ts | 11 | Source/target paths, schemas, team instructions |
+| prompts/design.test.ts | 15 | Paths, schemas, brief injection, priority |
+| prompts/plan.test.ts | 12 | Input references, task schema, wave rules |
+| prompts/split.test.ts | 11 | Track names, ownership rules, DAG constraint |
+| prompts/execute.test.ts | 15 | Task summary, teammate defs, file ownership |
+| utils/costs.test.ts | 4 | Append, accumulate, overwrite on re-run |
+| utils/inbox.test.ts | 9 | Write, consume, ordering, sentinel detection |
+| utils/log.test.ts | 3 | File creation, JSONL format, multi-entry |
+| utils/stages.test.ts | 9 | Stage detection, current stage, staleness |
