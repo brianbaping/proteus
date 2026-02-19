@@ -716,7 +716,7 @@ These rules are defined in the prompt schemas and enforced by the agent at gener
 
 ## CLI Command Reference
 
-### Implemented Commands (13)
+### Implemented Commands (15)
 
 #### Global (2)
 
@@ -751,6 +751,13 @@ These rules are defined in the prompt schemas and enforced by the agent at gener
 | `proteus status [name]` | Pipeline state: stage completion, timestamps, staleness warnings |
 | `proteus inform <agent> <message>` | Send message to running teammate during execute |
 
+#### Analysis (2)
+
+| Command | Description |
+|---------|-------------|
+| `proteus log [name]` | View audit trail with timestamps, status, duration, costs. Supports `-n` for last N entries |
+| `proteus costs [name]` | Token usage and cost breakdown per stage with totals |
+
 ### Planned Commands (not yet implemented)
 
 | Command | Description |
@@ -762,9 +769,7 @@ These rules are defined in the prompt schemas and enforced by the agent at gener
 | `proteus review <stage> [name]` | Open stage artifact in `$EDITOR` |
 | `proteus diff <stage> [name]` | Show changes between runs of a stage |
 | `proteus compare [name]` | Diff source vs target after execute |
-| `proteus costs [name]` | Token usage and cost breakdown |
 | `proteus explain "<question>" [name]` | Explain design/plan decisions |
-| `proteus log [name]` | View audit trail |
 
 ---
 

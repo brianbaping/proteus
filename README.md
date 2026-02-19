@@ -239,6 +239,47 @@ proteus inform qa-engineer "Include account lockout in integration tests"
 
 Messages are delivered to the Lead via a file-based inbox, then relayed to the named teammate.
 
+### Analysis
+
+#### `proteus log [name]`
+
+View the audit trail for a project. Shows timestamps, status, duration, cost, and teammate counts.
+
+```bash
+proteus log
+proteus log -n 3          # last 3 entries
+```
+
+```
+[task-tracker] Audit Trail
+
+  2/19/2026, 2:34:44 PM  ✓ inspect     4m 11s  $0.76
+  2/19/2026, 2:50:14 PM  ⚠ design      11m 41s
+  2/19/2026, 3:17:03 PM  ✓ plan        8m 47s  $1.17
+  2/19/2026, 3:22:31 PM  ✓ split       2m 52s  $0.68
+  2/19/2026, 3:58:17 PM  ⚠ execute     21m 48s  5 teammates
+```
+
+#### `proteus costs [name]`
+
+Show token usage and cost breakdown per stage.
+
+```bash
+proteus costs
+```
+
+```
+[task-tracker] Cost Breakdown
+
+  inspect    $  0.76   4m 11s     single session   23K in / 50K out
+  design     $  0.00   11m 41s    single session
+  plan       $  1.17   8m 47s     single session   35K in / 30K out
+  split      $  0.68   2m 52s     single session   17K in / 12K out
+  execute    $  0.00   21m 48s    5 teammates
+  ────────────────────────────────────────────────────────────
+  Total      $  2.62
+```
+
 ---
 
 ## Model Tiers
@@ -431,7 +472,7 @@ Tests cover the config layer, all prompt generators, utility modules (costs, inb
 ```
 src/
 ├── index.ts                    # CLI entry point (Commander)
-├── commands/                   # 13 command handlers
+├── commands/                   # 15 command handlers
 │   ├── setup.ts
 │   ├── new.ts
 │   ├── list.ts
@@ -444,7 +485,9 @@ src/
 │   ├── plan.ts
 │   ├── split.ts
 │   ├── execute.ts
-│   └── inform.ts
+│   ├── inform.ts
+│   ├── log.ts
+│   └── costs.ts
 ├── config/                     # Configuration management
 │   ├── types.ts                # All TypeScript interfaces
 │   ├── global.ts               # ~/.proteus/config.json
