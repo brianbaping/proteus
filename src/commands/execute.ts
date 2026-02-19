@@ -139,6 +139,11 @@ export const executeCommand = new Command("execute")
 
       console.log("\n  Launching Agent Team...\n");
 
+      // Set up inbox for `proteus inform` messages
+      const inboxDir = join(targetPath, ".proteus", "05-execute", "inbox");
+      await mkdir(inboxDir, { recursive: true });
+      console.log(`  Inbox active — send messages with: proteus inform <agent> "<message>"\n`);
+
       const result = await launchSession({
         prompt: leadPrompt,
         cwd: targetPath,
@@ -146,6 +151,7 @@ export const executeCommand = new Command("execute")
         model,
         maxBudgetUsd: options.budget,
         permissionMode: "acceptEdits",
+        inboxDir,
         onMessage: (message) => {
           if (message.type === "assistant" && "message" in message) {
             const content = message.message.content;

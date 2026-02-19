@@ -1,10 +1,12 @@
 import { query } from "@anthropic-ai/claude-agent-sdk";
 import type {
   SDKMessage,
+  SDKUserMessage,
   SDKResultMessage,
   Options,
 } from "@anthropic-ai/claude-agent-sdk";
 import type { StageCost } from "../config/types.js";
+import { consumeInboxMessages } from "../utils/inbox.js";
 
 export interface LaunchOptions {
   prompt: string;
@@ -14,6 +16,8 @@ export interface LaunchOptions {
   maxBudgetUsd?: number;
   permissionMode?: Options["permissionMode"];
   onMessage?: (message: SDKMessage) => void;
+  /** Directory to watch for incoming user messages (file-based inbox). */
+  inboxDir?: string;
 }
 
 export interface SessionResult {
@@ -48,6 +52,22 @@ export async function launchSession(
   try {
     const session = query({ prompt: options.prompt, options: sdkOptions });
 
+    // Start inbox watcher if configured — injects user messages via streamInput()
+    let inboxCleanup: (() => void) | undefined;
+    if (options.inboxDir) {
+      const abortController = new AbortController();
+      inboxCleanup = () => abortController.abort();
+
+      const inboxStream = createInboxStream(
+        options.inboxDir,
+        abortController.signal
+      );
+      // streamInput runs in the background — don't await it
+      session.streamInput(inboxStream).catch(() => {
+        // Expected to error when session ends or abort fires
+      });
+    }
+
     for await (const message of session) {
       // Capture session ID from init message
       if (
@@ -68,6 +88,9 @@ export async function launchSession(
         options.onMessage(message);
       }
     }
+
+    // Stop inbox watcher when session ends
+    if (inboxCleanup) inboxCleanup();
   } catch (err) {
     const durationMs = Date.now() - startTime;
     const errorMsg =
@@ -145,4 +168,41 @@ function formatDuration(ms: number): string {
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = seconds % 60;
   return `${minutes}m ${remainingSeconds}s`;
+}
+
+/**
+ * Creates an async iterable of SDKUserMessages by polling an inbox directory.
+ * Messages are consumed (deleted) after reading.
+ * Stops when the abort signal fires.
+ */
+async function* createInboxStream(
+  inboxDir: string,
+  signal: AbortSignal,
+  pollIntervalMs: number = 3000
+): AsyncGenerator<SDKUserMessage> {
+  // Derive the target path from inboxDir (strip .proteus/05-execute/inbox)
+  const targetPath = inboxDir.replace(
+    /\/.proteus\/05-execute\/inbox\/?$/,
+    ""
+  );
+
+  while (!signal.aborted) {
+    const messages = await consumeInboxMessages(targetPath);
+    for (const msg of messages) {
+      const text = `[USER MESSAGE for teammate "${msg.targetAgent}"] The user wants you to relay this to the "${msg.targetAgent}" teammate immediately: ${msg.message}`;
+      yield {
+        type: "user",
+        message: { role: "user", content: text },
+        parent_tool_use_id: null,
+        session_id: "",
+      } as unknown as SDKUserMessage;
+    }
+    await new Promise<void>((resolve) => {
+      const timer = setTimeout(resolve, pollIntervalMs);
+      signal.addEventListener("abort", () => {
+        clearTimeout(timer);
+        resolve();
+      }, { once: true });
+    });
+  }
 }

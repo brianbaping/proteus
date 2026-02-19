@@ -13,6 +13,7 @@ import { designCommand } from "./commands/design.js";
 import { planCommand } from "./commands/plan.js";
 import { splitCommand } from "./commands/split.js";
 import { executeCommand } from "./commands/execute.js";
+import { informCommand } from "./commands/inform.js";
 
 const program = new Command();
 
@@ -35,5 +36,6 @@ program.addCommand(designCommand);
 program.addCommand(planCommand);
 program.addCommand(splitCommand);
 program.addCommand(executeCommand);
+program.addCommand(informCommand);
 
 program.parse();
