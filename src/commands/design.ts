@@ -10,6 +10,7 @@ import { gitStageAndCommit } from "../utils/git.js";
 import { appendCostEntry } from "../utils/costs.js";
 import { appendLogEntry } from "../utils/log.js";
 import { checkStaleness } from "../utils/stages.js";
+import { printDesignTeamSummary } from "../utils/team-summary.js";
 
 export const designCommand = new Command("design")
   .description("Design the production architecture based on inspection findings")
@@ -139,7 +140,8 @@ export const designCommand = new Command("design")
         console.log(
           `\n[${project.name}] Design complete.\n`
         );
-        console.log(`  Cost: $${result.cost.estimatedCost.toFixed(2)}`);
+        await printDesignTeamSummary(targetPath);
+        console.log(`\n  Cost: $${result.cost.estimatedCost.toFixed(2)}`);
         console.log(`  Duration: ${result.cost.duration}`);
 
         try {
@@ -169,9 +171,10 @@ export const designCommand = new Command("design")
         console.log(
           `\n[${project.name}] Design recovered (session error, but artifacts produced).\n`
         );
+        await printDesignTeamSummary(targetPath);
         if (result.errors && result.errors.length > 0) {
           for (const err of result.errors) {
-            console.log(`  Warning: ${err}`);
+            console.log(`\n  Warning: ${err}`);
           }
         }
         console.log(`  Duration: ${result.cost.duration}`);

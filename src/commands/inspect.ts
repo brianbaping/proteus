@@ -10,6 +10,7 @@ import { launchSession } from "../session/launcher.js";
 import { gitStageAndCommit } from "../utils/git.js";
 import { appendCostEntry } from "../utils/costs.js";
 import { appendLogEntry } from "../utils/log.js";
+import { printInspectTeamSummary } from "../utils/team-summary.js";
 
 export const inspectCommand = new Command("inspect")
   .description("Analyze the source POC and produce a feature inventory")
@@ -119,7 +120,8 @@ export const inspectCommand = new Command("inspect")
 
       if (result.success && featuresExist) {
         console.log(`\n[${project.name}] Inspection complete.\n`);
-        console.log(`  Cost: $${result.cost.estimatedCost.toFixed(2)}`);
+        await printInspectTeamSummary(targetPath);
+        console.log(`\n  Cost: $${result.cost.estimatedCost.toFixed(2)}`);
         console.log(`  Duration: ${result.cost.duration}`);
 
         // Git checkpoint
@@ -148,9 +150,10 @@ export const inspectCommand = new Command("inspect")
         console.log(
           `\n[${project.name}] Inspection recovered (session error, but artifacts produced).\n`
         );
+        await printInspectTeamSummary(targetPath);
         if (result.errors && result.errors.length > 0) {
           for (const err of result.errors) {
-            console.log(`  Warning: ${err}`);
+            console.log(`\n  Warning: ${err}`);
           }
         }
         console.log(`  Duration: ${result.cost.duration}`);
