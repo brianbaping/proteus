@@ -14,6 +14,8 @@ import { planCommand } from "./commands/plan.js";
 import { splitCommand } from "./commands/split.js";
 import { executeCommand } from "./commands/execute.js";
 import { informCommand } from "./commands/inform.js";
+import { logCommand } from "./commands/log.js";
+import { costsCommand } from "./commands/costs.js";
 
 const program = new Command();
 
@@ -37,5 +39,7 @@ program.addCommand(planCommand);
 program.addCommand(splitCommand);
 program.addCommand(executeCommand);
 program.addCommand(informCommand);
+program.addCommand(logCommand);
+program.addCommand(costsCommand);
 
 program.parse();
