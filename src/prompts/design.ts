@@ -8,10 +8,26 @@
  */
 export function generateDesignLeadPrompt(
   sourcePath: string,
-  targetPath: string
+  targetPath: string,
+  brief?: string
 ): string {
-  return `You are the Lead Architect for a Proteus design stage. Your job is to read the inspection findings and coordinate a team of design specialists to produce a production architecture.
+  const briefSection = brief
+    ? `
+## User Architectural Requirements
 
+The user has specified the following requirements for the production architecture. These take HIGHEST PRIORITY and must be followed by you and all specialists:
+
+${brief}
+
+Design the architecture to satisfy these requirements. If a requirement conflicts with what the POC currently uses, the user's requirement wins — the goal is to build the production system they want, not to replicate the POC's technology choices.
+
+---
+
+`
+    : "";
+
+  return `You are the Lead Architect for a Proteus design stage. Your job is to read the inspection findings and coordinate a team of design specialists to produce a production architecture.
+${briefSection}
 ## Context
 
 The source POC has been inspected. The findings are at:

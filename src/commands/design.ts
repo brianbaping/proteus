@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import { existsSync } from "node:fs";
-import { mkdir } from "node:fs/promises";
-import { join } from "node:path";
+import { mkdir, readFile } from "node:fs/promises";
+import { join, resolve } from "node:path";
 import { resolveProject } from "../utils/resolve-project.js";
 import { readGlobalConfig } from "../config/global.js";
 import { generateDesignLeadPrompt } from "../prompts/design.js";
@@ -17,10 +17,12 @@ export const designCommand = new Command("design")
   .argument("[name]", "Project name (uses active project if omitted)")
   .option("--dry-run", "Preview what would happen without launching agents")
   .option("--budget <amount>", "Maximum budget in USD for this stage", parseFloat)
+  .option("--brief <text>", "Architectural requirements (e.g., 'Use microservices with Go and gRPC')")
+  .option("--brief-file <path>", "Path to a file containing architectural requirements")
   .action(
     async (
       name: string | undefined,
-      options: { dryRun?: boolean; budget?: number }
+      options: { dryRun?: boolean; budget?: number; brief?: string; briefFile?: string }
     ) => {
       // Resolve project
       let project;
@@ -79,6 +81,23 @@ export const designCommand = new Command("design")
         console.log(`  Model: ${model} (${designTier} tier)`);
       }
 
+      // Resolve brief
+      let brief: string | undefined;
+      if (options.briefFile) {
+        const briefPath = resolve(options.briefFile);
+        if (!existsSync(briefPath)) {
+          console.error(`Brief file not found: ${briefPath}`);
+          process.exit(1);
+        }
+        brief = await readFile(briefPath, "utf-8");
+      } else if (options.brief) {
+        brief = options.brief;
+      }
+
+      if (brief) {
+        console.log(`  Brief: ${brief.length > 100 ? brief.slice(0, 100) + "..." : brief}`);
+      }
+
       // Dry run mode
       if (options.dryRun) {
         console.log("\n  [Dry run] Would launch Agent Team:");
@@ -89,6 +108,9 @@ export const designCommand = new Command("design")
           "    Teammates: one per design domain (spawned dynamically)"
         );
         console.log("    Tasks: one per domain + synthesis");
+        if (brief) {
+          console.log(`    Brief: user architectural requirements provided`);
+        }
         console.log(`\n  Estimated cost: depends on feature count and complexity`);
         console.log("  Run without --dry-run to proceed.\n");
         return;
@@ -100,7 +122,7 @@ export const designCommand = new Command("design")
       await mkdir(partialsDir, { recursive: true });
 
       // Generate the Lead prompt
-      const leadPrompt = generateDesignLeadPrompt(sourcePath, targetPath);
+      const leadPrompt = generateDesignLeadPrompt(sourcePath, targetPath, brief);
 
       console.log("\n  Launching Agent Team...\n");
 

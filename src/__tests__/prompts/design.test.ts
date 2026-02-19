@@ -64,4 +64,35 @@ describe("design prompt", () => {
     expect(prompt.toLowerCase()).toContain("production");
     expect(prompt.toLowerCase()).toContain("known issues");
   });
+
+  describe("with brief", () => {
+    it("includes the brief text in the prompt", () => {
+      const brief = "Use microservices architecture with Go and gRPC";
+      const prompt = generateDesignLeadPrompt(sourcePath, targetPath, brief);
+      expect(prompt).toContain(brief);
+    });
+
+    it("marks brief as highest priority", () => {
+      const brief = "Convert to Rust with Actix-web";
+      const prompt = generateDesignLeadPrompt(sourcePath, targetPath, brief);
+      expect(prompt).toContain("HIGHEST PRIORITY");
+    });
+
+    it("instructs that user requirements override POC technology", () => {
+      const brief = "Use Python with FastAPI";
+      const prompt = generateDesignLeadPrompt(sourcePath, targetPath, brief);
+      expect(prompt.toLowerCase()).toContain("user's requirement wins");
+    });
+
+    it("does not include brief section when no brief provided", () => {
+      const prompt = generateDesignLeadPrompt(sourcePath, targetPath);
+      expect(prompt).not.toContain("HIGHEST PRIORITY");
+      expect(prompt).not.toContain("User Architectural Requirements");
+    });
+
+    it("does not include brief section when brief is undefined", () => {
+      const prompt = generateDesignLeadPrompt(sourcePath, targetPath, undefined);
+      expect(prompt).not.toContain("User Architectural Requirements");
+    });
+  });
 });
