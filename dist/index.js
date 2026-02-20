@@ -1078,18 +1078,21 @@ function extractAgentName(input) {
   return "agent";
 }
 var NOISE_PATTERNS = [
-  /^using\s+\w+/i,
-  /^TaskOutput/i,
-  /^TaskCreate/i,
-  /^TaskUpdate/i,
-  /^TaskList/i,
-  /^TaskGet/i,
-  /^SendMessage/i,
-  /^I('ll| will) (use|call|invoke|run|check|now)/i,
+  /TaskOutput/i,
+  /TaskCreate/i,
+  /TaskUpdate/i,
+  /TaskList/i,
+  /TaskGet/i,
+  /TaskStop/i,
+  /SendMessage/i,
+  /ExitPlanMode/i,
+  /EnterPlanMode/i,
+  /^I('ll| will| need to| should| want to) (use|call|invoke|run|check|now)/i,
   /^Let me (use|call|invoke|run|check)/i,
   /^Now (let me|I('ll| will))/i,
   /^Calling /i,
-  /^Invoking /i
+  /^Invoking /i,
+  /\busing\s+(the\s+)?(Task|Read|Write|Edit|Bash|Grep|Glob|SendMessage)\b/i
 ];
 function isInternalNoise(text) {
   return NOISE_PATTERNS.some((p) => p.test(text));
