@@ -4,26 +4,26 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import type { GlobalConfig } from "./types.js";
 
-const PROTEUS_DIR = join(homedir(), ".proteus");
-const CONFIG_PATH = join(PROTEUS_DIR, "config.json");
+const FORGE_DIR = join(homedir(), ".proteus-forge");
+const CONFIG_PATH = join(FORGE_DIR, "config.json");
 
-export function getProteusDir(): string {
-  return PROTEUS_DIR;
+export function getForgeDir(): string {
+  return FORGE_DIR;
 }
 
 export function getGlobalConfigPath(): string {
   return CONFIG_PATH;
 }
 
-export async function ensureProteusDir(): Promise<void> {
-  if (!existsSync(PROTEUS_DIR)) {
-    await mkdir(PROTEUS_DIR, { recursive: true });
+export async function ensureForgeDir(): Promise<void> {
+  if (!existsSync(FORGE_DIR)) {
+    await mkdir(FORGE_DIR, { recursive: true });
   }
 }
 
 export function getDefaultGlobalConfig(): GlobalConfig {
   return {
-    proteusVersion: "1.0.0",
+    forgeVersion: "1.0.0",
     providers: {
       anthropic: {
         type: "anthropic",
@@ -57,7 +57,7 @@ export async function readGlobalConfig(): Promise<GlobalConfig | null> {
 }
 
 export async function writeGlobalConfig(config: GlobalConfig): Promise<void> {
-  await ensureProteusDir();
+  await ensureForgeDir();
   await writeFile(CONFIG_PATH, JSON.stringify(config, null, 2) + "\n");
 }
 

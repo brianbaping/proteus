@@ -10,7 +10,7 @@ export function generateInspectLeadPrompt(
   sourcePath: string,
   targetPath: string
 ): string {
-  return `You are the Scout for a Proteus inspection. Your job is to analyze a source codebase and coordinate a team of domain specialists to produce a comprehensive feature inventory.
+  return `You are the Scout for a Proteus Forge inspection. Your job is to analyze a source codebase and coordinate a team of domain specialists to produce a comprehensive feature inventory.
 
 ## Source Repository (READ-ONLY)
 
@@ -22,7 +22,7 @@ Do NOT modify any files in this directory. It is a proof-of-concept that you are
 
 Path: ${targetPath}
 
-Write all inspection outputs under: ${targetPath}/.proteus/01-inspect/
+Write all inspection outputs under: ${targetPath}/.proteus-forge/01-inspect/
 
 ## Instructions
 
@@ -45,12 +45,12 @@ Identify the major domains of concern. Domains are functional areas like:
 - Real-time / Messaging (WebSocket, queues)
 - External Integrations (payment, email, storage)
 
-Write your scout findings to: ${targetPath}/.proteus/01-inspect/scout.json
+Write your scout findings to: ${targetPath}/.proteus-forge/01-inspect/scout.json
 
 The scout.json should contain:
 \`\`\`json
 {
-  "proteusVersion": "1.0.0",
+  "forgeVersion": "1.0.0",
   "stage": "inspect",
   "substage": "scout",
   "generatedAt": "<ISO timestamp>",
@@ -79,7 +79,7 @@ Create an agent team to inspect this codebase. For each domain you discovered, s
 Each specialist's spawn prompt should tell them:
 1. They are inspecting a specific domain of the source at ${sourcePath} (read-only)
 2. Which entry files to start with
-3. To write their findings to ${targetPath}/.proteus/01-inspect/partials/<domain-id>.json
+3. To write their findings to ${targetPath}/.proteus-forge/01-inspect/partials/<domain-id>.json
 4. To message other teammates about any cross-domain dependencies they discover
 5. The schema for their partial output (see below)
 
@@ -127,7 +127,7 @@ Create a task on the shared task list for each domain specialist. Then create a 
 
 Wait for all specialist tasks to complete. Then claim the synthesize task.
 
-Read all partial findings from ${targetPath}/.proteus/01-inspect/partials/ and merge them into a unified features.json.
+Read all partial findings from ${targetPath}/.proteus-forge/01-inspect/partials/ and merge them into a unified features.json.
 
 During synthesis:
 - Merge all features into a single array
@@ -138,12 +138,12 @@ During synthesis:
 - Identify external integrations
 - Write a summary of the overall POC
 
-Write the final output to: ${targetPath}/.proteus/01-inspect/features.json
+Write the final output to: ${targetPath}/.proteus-forge/01-inspect/features.json
 
 The features.json schema:
 \`\`\`json
 {
-  "proteusVersion": "1.0.0",
+  "forgeVersion": "1.0.0",
   "stage": "inspect",
   "generatedAt": "<ISO timestamp>",
   "source": {
@@ -178,7 +178,7 @@ The features.json schema:
 ## Important
 
 - The source repo at ${sourcePath} is READ-ONLY. Never modify it.
-- Create the directories ${targetPath}/.proteus/01-inspect/partials/ before specialists start writing.
+- Create the directories ${targetPath}/.proteus-forge/01-inspect/partials/ before specialists start writing.
 - Ensure all feature IDs are unique across the entire features.json.
 - Feature dependencies must reference valid feature IDs (no dangling refs).
 - No circular dependencies in the feature graph.

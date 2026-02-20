@@ -23,10 +23,10 @@ export function getStageOrder(): StageName[] {
 }
 
 export function getStageStatuses(targetPath: string): StageStatus[] {
-  const proteusDir = join(targetPath, ".proteus");
+  const forgeDir = join(targetPath, ".proteus-forge");
 
   return STAGE_ORDER.map((stage) => {
-    const artifactPath = join(proteusDir, STAGE_ARTIFACTS[stage]);
+    const artifactPath = join(forgeDir, STAGE_ARTIFACTS[stage]);
     const complete = existsSync(artifactPath);
     let modifiedAt: Date | undefined;
 

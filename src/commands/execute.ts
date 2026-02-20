@@ -28,9 +28,9 @@ export async function runExecute(
   const sourcePath = entry.source;
   const targetPath = entry.target;
 
-  const manifestPath = join(targetPath, ".proteus", "04-tracks", "manifest.json");
+  const manifestPath = join(targetPath, ".proteus-forge", "04-tracks", "manifest.json");
   if (!existsSync(manifestPath)) {
-    console.error("Split stage not complete. Run `proteus split` first.");
+    console.error("Split stage not complete. Run `proteus-forge split` first.");
     return false;
   }
 
@@ -43,7 +43,7 @@ export async function runExecute(
 
   const globalConfig = await readGlobalConfig();
   if (!globalConfig) {
-    console.error("Global config not found. Run `proteus setup` first.");
+    console.error("Global config not found. Run `proteus-forge setup` first.");
     return false;
   }
 
@@ -84,10 +84,10 @@ export async function runExecute(
     return true;
   }
 
-  const executeDir = join(targetPath, ".proteus", "05-execute");
+  const executeDir = join(targetPath, ".proteus-forge", "05-execute");
   const inboxDir = join(executeDir, "inbox");
   await mkdir(inboxDir, { recursive: true });
-  console.log(`\n  Inbox active — send messages with: proteus inform <agent> "<message>"\n`);
+  console.log(`\n  Inbox active — send messages with: proteus-forge inform <agent> "<message>"\n`);
 
   const leadPrompt = generateExecuteLeadPrompt(sourcePath, targetPath, ctx);
   console.log("  Launching Agent Team...\n");
@@ -116,7 +116,7 @@ export async function runExecute(
     console.log(`  Duration: ${result.cost.duration}`);
 
     try {
-      const msg = result.success ? "proteus: execute complete" : "proteus: execute complete (recovered)";
+      const msg = result.success ? "proteus-forge: execute complete" : "proteus-forge: execute complete (recovered)";
       await gitStageAndCommit(targetPath, msg);
       console.log(`  Committed: "${msg}"`);
     } catch { /* empty */ }
@@ -140,7 +140,7 @@ export async function runExecute(
   }
 
   try {
-    await gitStageAndCommit(targetPath, "proteus: execute partial (failed)");
+    await gitStageAndCommit(targetPath, "proteus-forge: execute partial (failed)");
   } catch { /* empty */ }
 
   await appendLogEntry(targetPath, {

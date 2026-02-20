@@ -25,7 +25,7 @@ export async function printInspectTeamSummary(
   targetPath: string
 ): Promise<void> {
   const scoutPath = join(
-    targetPath, ".proteus", "01-inspect", "scout.json"
+    targetPath, ".proteus-forge", "01-inspect", "scout.json"
   );
   if (!existsSync(scoutPath)) return;
 
@@ -52,7 +52,7 @@ export async function printDesignTeamSummary(
   targetPath: string
 ): Promise<void> {
   const scopePath = join(
-    targetPath, ".proteus", "02-design", "scope.json"
+    targetPath, ".proteus-forge", "02-design", "scope.json"
   );
   if (!existsSync(scopePath)) return;
 

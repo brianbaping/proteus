@@ -29,9 +29,9 @@ export async function runDesign(
   const sourcePath = entry.source;
   const targetPath = entry.target;
 
-  const featuresPath = join(targetPath, ".proteus", "01-inspect", "features.json");
+  const featuresPath = join(targetPath, ".proteus-forge", "01-inspect", "features.json");
   if (!existsSync(featuresPath)) {
-    console.error("Inspect stage not complete. Run `proteus inspect` first.");
+    console.error("Inspect stage not complete. Run `proteus-forge inspect` first.");
     return false;
   }
 
@@ -44,7 +44,7 @@ export async function runDesign(
 
   const globalConfig = await readGlobalConfig();
   if (!globalConfig) {
-    console.error("Global config not found. Run `proteus setup` first.");
+    console.error("Global config not found. Run `proteus-forge setup` first.");
     return false;
   }
 
@@ -85,7 +85,7 @@ export async function runDesign(
     return true;
   }
 
-  const designDir = join(targetPath, ".proteus", "02-design");
+  const designDir = join(targetPath, ".proteus-forge", "02-design");
   await mkdir(join(designDir, "partials"), { recursive: true });
 
   const leadPrompt = generateDesignLeadPrompt(sourcePath, targetPath, brief);
@@ -111,7 +111,7 @@ export async function runDesign(
     console.log(`  Duration: ${result.cost.duration}`);
 
     try {
-      const msg = result.success ? "proteus: design complete" : "proteus: design complete (recovered)";
+      const msg = result.success ? "proteus-forge: design complete" : "proteus-forge: design complete (recovered)";
       await gitStageAndCommit(targetPath, msg);
       console.log(`  Committed: "${msg}"`);
     } catch { /* empty */ }
@@ -124,7 +124,7 @@ export async function runDesign(
       cost: result.cost.estimatedCost,
     });
 
-    console.log(`\n  Review: proteus review design\n`);
+    console.log(`\n  Review: proteus-forge review design\n`);
     return true;
   }
 

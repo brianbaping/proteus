@@ -20,9 +20,9 @@ export interface NotificationConfig {
   events: string[];
 }
 
-// Global config (~/.proteus/config.json)
+// Global config (~/.proteus-forge/config.json)
 export interface GlobalConfig {
-  proteusVersion: string;
+  forgeVersion: string;
   providers: Record<string, ProviderConfig>;
   tiers: Record<string, TierConfig>;
   roles: Record<string, RoleMapping>;
@@ -37,15 +37,15 @@ export interface ProjectEntry {
   currentStage: string;
 }
 
-// Project registry (~/.proteus/projects.json)
+// Project registry (~/.proteus-forge/projects.json)
 export interface ProjectRegistry {
   activeProject: string | null;
   projects: Record<string, ProjectEntry>;
 }
 
-// Project-level config ({target}/.proteus/config.json)
+// Project-level config ({target}/.proteus-forge/config.json)
 export interface ProjectConfig {
-  proteusVersion: string;
+  forgeVersion: string;
   projectName: string;
   source: {
     path: string;

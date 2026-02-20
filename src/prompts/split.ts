@@ -5,26 +5,26 @@
 export function generateSplitLeadPrompt(
   targetPath: string
 ): string {
-  return `You are the Lead for a Proteus split stage. Your job is to read the task plan and partition tasks into discipline-specific tracks with file ownership boundaries.
+  return `You are the Lead for a Proteus Forge split stage. Your job is to read the task plan and partition tasks into discipline-specific tracks with file ownership boundaries.
 
 ## Context
 
 You are working in: ${targetPath}
 
 The task plan is at:
-  ${targetPath}/.proteus/03-plan/plan.json
-  ${targetPath}/.proteus/03-plan/plan.md
+  ${targetPath}/.proteus-forge/03-plan/plan.json
+  ${targetPath}/.proteus-forge/03-plan/plan.md
 
 The design is at:
-  ${targetPath}/.proteus/02-design/design-meta.json
+  ${targetPath}/.proteus-forge/02-design/design-meta.json
 
 ## Instructions
 
 ### Step 1: Read the Plan
 
-Read ${targetPath}/.proteus/03-plan/plan.json thoroughly. Understand every task's discipline, file ownership, and dependencies.
+Read ${targetPath}/.proteus-forge/03-plan/plan.json thoroughly. Understand every task's discipline, file ownership, and dependencies.
 
-Also read ${targetPath}/.proteus/02-design/design-meta.json for the service definitions.
+Also read ${targetPath}/.proteus-forge/02-design/design-meta.json for the service definitions.
 
 ### Step 2: Group Tasks by Discipline
 
@@ -59,12 +59,12 @@ For each track, compile context that an execution agent would need:
 
 ### Step 6: Write Outputs
 
-Create the directory ${targetPath}/.proteus/04-tracks/ and write:
+Create the directory ${targetPath}/.proteus-forge/04-tracks/ and write:
 
 **manifest.json** — Track list and dependencies:
 \`\`\`json
 {
-  "proteusVersion": "1.0.0",
+  "forgeVersion": "1.0.0",
   "stage": "split",
   "generatedAt": "<ISO timestamp>",
   "tracks": [
@@ -121,6 +121,6 @@ Create the directory ${targetPath}/.proteus/04-tracks/ and write:
 - Every task from plan.json must appear in exactly one track.
 - No file ownership overlap between tracks (except track-shared which is exclusive).
 - Track dependency graph must be a DAG (no circular dependencies between tracks).
-- Create the directory ${targetPath}/.proteus/04-tracks/ before writing.
+- Create the directory ${targetPath}/.proteus-forge/04-tracks/ before writing.
 `;
 }

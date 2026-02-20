@@ -54,7 +54,7 @@ export const runCommand = new Command("run")
 
       const globalConfig = await readGlobalConfig();
       if (!globalConfig) {
-        console.error("Global config not found. Run `proteus setup` first.");
+        console.error("Global config not found. Run `proteus-forge setup` first.");
         process.exit(1);
       }
 

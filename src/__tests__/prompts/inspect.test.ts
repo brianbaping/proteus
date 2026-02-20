@@ -27,22 +27,22 @@ describe("inspect prompt", () => {
 
   it("includes the output path for features.json", () => {
     const prompt = generateInspectLeadPrompt(sourcePath, targetPath);
-    expect(prompt).toContain(".proteus/01-inspect/features.json");
+    expect(prompt).toContain(".proteus-forge/01-inspect/features.json");
   });
 
   it("includes the output path for partials", () => {
     const prompt = generateInspectLeadPrompt(sourcePath, targetPath);
-    expect(prompt).toContain(".proteus/01-inspect/partials/");
+    expect(prompt).toContain(".proteus-forge/01-inspect/partials/");
   });
 
   it("includes the scout.json output path", () => {
     const prompt = generateInspectLeadPrompt(sourcePath, targetPath);
-    expect(prompt).toContain(".proteus/01-inspect/scout.json");
+    expect(prompt).toContain(".proteus-forge/01-inspect/scout.json");
   });
 
   it("includes the features.json schema structure", () => {
     const prompt = generateInspectLeadPrompt(sourcePath, targetPath);
-    expect(prompt).toContain("proteusVersion");
+    expect(prompt).toContain("forgeVersion");
     expect(prompt).toContain("features");
     expect(prompt).toContain("dataModel");
     expect(prompt).toContain("integrations");

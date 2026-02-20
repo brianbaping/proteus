@@ -29,7 +29,7 @@ import { watchCommand } from "./commands/watch.js";
 const program = new Command();
 
 program
-  .name("proteus")
+  .name("proteus-forge")
   .description(
     "Transform POC codebases into production-ready applications using coordinated AI agent teams"
   )

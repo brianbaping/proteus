@@ -26,7 +26,7 @@ export const informCommand = new Command("inform")
       // Check if an execute session is active
       if (!isInboxActive(targetPath)) {
         console.error(
-          "No active execute session found. `proteus inform` only works while `proteus execute` is running."
+          "No active execute session found. `proteus-forge inform` only works while `proteus-forge execute` is running."
         );
         process.exit(1);
       }

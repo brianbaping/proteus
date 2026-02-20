@@ -37,14 +37,14 @@ export const diffCommand = new Command("diff")
 
     const targetPath = project.entry.target;
     const paths = STAGE_ARTIFACTS[stage].map((p) =>
-      join(".proteus", p)
+      join(".proteus-forge", p)
     );
 
     // Check at least one artifact exists
     const existing = paths.filter((p) => existsSync(join(targetPath, p)));
     if (existing.length === 0) {
       console.error(
-        `No ${stage} artifacts found. Run \`proteus ${stage}\` first.`
+        `No ${stage} artifacts found. Run \`proteus-forge ${stage}\` first.`
       );
       process.exit(1);
     }

@@ -7,7 +7,7 @@ import {
   writeProjectConfig,
   readProjectConfig,
   createProjectConfig,
-  getProjectProteusDir,
+  getProjectForgeDir,
   getProjectConfigPath,
   ensureProjectDir,
 } from "../../config/project.js";
@@ -29,18 +29,18 @@ describe("project config", () => {
       expect(config.projectName).toBe("my-project");
       expect(config.source.path).toBe("/home/user/poc");
       expect(config.source.readonly).toBe(true);
-      expect(config.proteusVersion).toBe("1.0.0");
+      expect(config.forgeVersion).toBe("1.0.0");
     });
   });
 
   describe("path helpers", () => {
-    it("returns correct .proteus directory path", () => {
-      expect(getProjectProteusDir("/tmp/target")).toBe("/tmp/target/.proteus");
+    it("returns correct .proteus-forge directory path", () => {
+      expect(getProjectForgeDir("/tmp/target")).toBe("/tmp/target/.proteus-forge");
     });
 
     it("returns correct config path", () => {
       expect(getProjectConfigPath("/tmp/target")).toBe(
-        "/tmp/target/.proteus/config.json"
+        "/tmp/target/.proteus-forge/config.json"
       );
     });
   });
@@ -51,8 +51,8 @@ describe("project config", () => {
 
       await writeProjectConfig(tempDir, config);
 
-      const proteusDir = getProjectProteusDir(tempDir);
-      expect(existsSync(proteusDir)).toBe(true);
+      const forgeDir = getProjectForgeDir(tempDir);
+      expect(existsSync(forgeDir)).toBe(true);
 
       const read = await readProjectConfig(tempDir);
       expect(read).not.toBeNull();
@@ -67,18 +67,18 @@ describe("project config", () => {
   });
 
   describe("ensureProjectDir", () => {
-    it("creates .proteus directory if it does not exist", async () => {
-      const proteusDir = getProjectProteusDir(tempDir);
-      expect(existsSync(proteusDir)).toBe(false);
+    it("creates .proteus-forge directory if it does not exist", async () => {
+      const forgeDir = getProjectForgeDir(tempDir);
+      expect(existsSync(forgeDir)).toBe(false);
 
       await ensureProjectDir(tempDir);
-      expect(existsSync(proteusDir)).toBe(true);
+      expect(existsSync(forgeDir)).toBe(true);
     });
 
     it("is idempotent", async () => {
       await ensureProjectDir(tempDir);
       await ensureProjectDir(tempDir);
-      expect(existsSync(getProjectProteusDir(tempDir))).toBe(true);
+      expect(existsSync(getProjectForgeDir(tempDir))).toBe(true);
     });
   });
 });

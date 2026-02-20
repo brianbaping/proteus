@@ -64,11 +64,11 @@ export const compareCommand = new Command("compare")
       "dist",
     ]);
 
-    // Count target files (excluding .proteus and node_modules)
+    // Count target files (excluding .proteus-forge and node_modules)
     const targetStats = await countFiles(targetPath, [
       "node_modules",
       ".git",
-      ".proteus",
+      ".proteus-forge",
       "dist",
     ]);
 

@@ -72,6 +72,6 @@ const setSubcommand = new Command("set")
   });
 
 export const configCommand = new Command("config")
-  .description("Get or set Proteus configuration values")
+  .description("Get or set Proteus Forge configuration values")
   .addCommand(getSubcommand)
   .addCommand(setSubcommand);

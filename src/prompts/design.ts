@@ -26,12 +26,12 @@ Design the architecture to satisfy these requirements. If a requirement conflict
 `
     : "";
 
-  return `You are the Lead Architect for a Proteus design stage. Your job is to read the inspection findings and coordinate a team of design specialists to produce a production architecture.
+  return `You are the Lead Architect for a Proteus Forge design stage. Your job is to read the inspection findings and coordinate a team of design specialists to produce a production architecture.
 ${briefSection}
 ## Context
 
 The source POC has been inspected. The findings are at:
-  ${targetPath}/.proteus/01-inspect/features.json
+  ${targetPath}/.proteus-forge/01-inspect/features.json
 
 The original source code is available (read-only) at:
   ${sourcePath}
@@ -43,7 +43,7 @@ You are working in the target directory:
 
 ### Step 1: Read Inspection Findings
 
-Read ${targetPath}/.proteus/01-inspect/features.json thoroughly. Understand:
+Read ${targetPath}/.proteus-forge/01-inspect/features.json thoroughly. Understand:
 - What features the POC implements
 - What technologies it uses
 - What integrations exist
@@ -59,12 +59,12 @@ Based on the features and issues found, determine what design domains are needed
 - **Security architecture** — auth redesign, secrets management, CORS, input validation
 - **Infrastructure** — containerization, CI/CD, deployment, observability
 
-Write your scoping decisions to: ${targetPath}/.proteus/02-design/scope.json
+Write your scoping decisions to: ${targetPath}/.proteus-forge/02-design/scope.json
 
 The scope.json schema:
 \`\`\`json
 {
-  "proteusVersion": "1.0.0",
+  "forgeVersion": "1.0.0",
   "stage": "design",
   "substage": "scope",
   "generatedAt": "<ISO timestamp>",
@@ -88,7 +88,7 @@ Each specialist's spawn prompt should tell them:
 1. They are designing the production architecture for a specific domain
 2. To read the features.json for context on what the POC does and its issues
 3. The source code is at ${sourcePath} if they need to reference implementation details
-4. To write their partial design to ${targetPath}/.proteus/02-design/partials/<domain-id>.md (narrative) and ${targetPath}/.proteus/02-design/partials/<domain-id>.json (machine-readable)
+4. To write their partial design to ${targetPath}/.proteus-forge/02-design/partials/<domain-id>.md (narrative) and ${targetPath}/.proteus-forge/02-design/partials/<domain-id>.json (machine-readable)
 5. To message other specialists about cross-domain concerns (API contracts, shared types, data boundaries)
 
 The partial JSON schema for each specialist:
@@ -138,7 +138,7 @@ Create a task on the shared task list for each design specialist. Then create a 
 
 After all specialist tasks complete, claim the synthesize task. Read all partial designs and produce two unified outputs:
 
-**${targetPath}/.proteus/02-design/design.md** — Human-readable architecture document:
+**${targetPath}/.proteus-forge/02-design/design.md** — Human-readable architecture document:
 \`\`\`markdown
 # Architecture Design — <project name>
 
@@ -170,10 +170,10 @@ After all specialist tasks complete, claim the synthesize task. Read all partial
 [specific callouts from POC that need rework, in priority order]
 \`\`\`
 
-**${targetPath}/.proteus/02-design/design-meta.json** — Machine-readable metadata:
+**${targetPath}/.proteus-forge/02-design/design-meta.json** — Machine-readable metadata:
 \`\`\`json
 {
-  "proteusVersion": "1.0.0",
+  "forgeVersion": "1.0.0",
   "stage": "design",
   "generatedAt": "<ISO timestamp>",
   "architectureStyle": "<monolith|modular-monolith|microservices>",
@@ -205,7 +205,7 @@ Ensure every feature from features.json is mapped to at least one service in fea
 
 - Read features.json FIRST before doing anything else.
 - The source at ${sourcePath} is READ-ONLY reference material.
-- Create the directories ${targetPath}/.proteus/02-design/partials/ before specialists start.
+- Create the directories ${targetPath}/.proteus-forge/02-design/partials/ before specialists start.
 - Design for production quality — address the known issues from inspection.
 - Keep the architecture pragmatic — don't over-engineer for a POC-to-production transformation.
 `;

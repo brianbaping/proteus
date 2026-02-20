@@ -1,15 +1,15 @@
-# Proteus — Architecture & Artifact Schemas
+# Proteus Forge — Architecture & Artifact Schemas
 
-> Proteus transforms proof-of-concept codebases into production-ready applications using coordinated AI agent teams.
+> Proteus Forge transforms proof-of-concept codebases into production-ready applications using coordinated AI agent teams.
 > It is a standalone TypeScript CLI built on Claude Code Agent Teams via the Claude Agent SDK.
 > Source repos are read-only. Production code is built in a separate target repo.
 > Every command validates its required inputs before executing and refuses to proceed if they're malformed or missing.
 
 ---
 
-## How Proteus Works
+## How Proteus Forge Works
 
-Proteus is a **workflow layer on top of Claude Code Agent Teams**. It does not implement its own orchestration. Instead, it:
+Proteus Forge is a **workflow layer on top of Claude Code Agent Teams**. It does not implement its own orchestration. Instead, it:
 
 1. Generates prompts for Agent Team Leads that instruct them to create teams, spawn teammates, and manage tasks
 2. Launches sessions via the Claude Agent SDK's `query()` function
@@ -33,7 +33,7 @@ Stages that are mechanical transformations (plan, split) use a single Lead sessi
 
 | Concern | Location | Access |
 |---------|----------|--------|
-| Proteus global config | `~/.proteus/` | Tool configuration |
+| Proteus Forge global config | `~/.proteus-forge/` | Tool configuration |
 | Source (POC) | User-specified path | Read-only — never modified |
 | Target (production) | User-specified path | Agent Teams write here |
 
@@ -67,9 +67,9 @@ The `leadPrompt` is the key — it contains all instructions for team formation,
 
 ## Global Configuration
 
-### `~/.proteus/config.json`
+### `~/.proteus-forge/config.json`
 
-Created by `proteus setup`. Contains provider configuration and model tier mappings.
+Created by `proteus-forge setup`. Contains provider configuration and model tier mappings.
 
 ```json
 {
@@ -100,9 +100,9 @@ Created by `proteus setup`. Contains provider configuration and model tier mappi
 
 Roles reference tiers, tiers reference providers. A role can also inline a `{ "provider": "...", "model": "..." }` object to bypass tiers.
 
-### `~/.proteus/projects.json`
+### `~/.proteus-forge/projects.json`
 
-Project registry managed by `proteus new`, `proteus use`, and `proteus destroy`.
+Project registry managed by `proteus-forge new`, `proteus-forge use`, and `proteus-forge destroy`.
 
 ```json
 {
@@ -122,9 +122,9 @@ Project registry managed by `proteus new`, `proteus use`, and `proteus destroy`.
 
 ## Project Configuration
 
-### `{target}/.proteus/config.json`
+### `{target}/.proteus-forge/config.json`
 
-Created by `proteus new`. Records the source path and project name.
+Created by `proteus-forge new`. Records the source path and project name.
 
 ```json
 {
@@ -145,8 +145,8 @@ Based on actual output from a complete pipeline run:
 
 ```
 {target}/
-├── CLAUDE.md                          # Proteus-controlled context for agents
-├── .proteus/
+├── CLAUDE.md                          # Proteus Forge-controlled context for agents
+├── .proteus-forge/
 │   ├── config.json                    # project config (source path)
 │   ├── costs.json                     # token usage per stage
 │   ├── log.jsonl                      # audit trail (newline-delimited JSON)
@@ -192,7 +192,7 @@ Based on actual output from a complete pipeline run:
 │   │
 │   └── 05-execute/
 │       ├── session.json               # execution summary
-│       └── inbox/                     # message inbox for proteus inform
+│       └── inbox/                     # message inbox for proteus-forge inform
 │
 ├── server/                            # production server code
 ├── client/                            # production client code
@@ -205,7 +205,7 @@ Based on actual output from a complete pipeline run:
 
 ---
 
-## Stage 1 — `proteus inspect`
+## Stage 1 — `proteus-forge inspect`
 
 Launches an Agent Team in the target directory. The Lead reads the source repo (read-only via `additionalDirectories`).
 
@@ -341,12 +341,12 @@ Launches an Agent Team in the target directory. The Lead reads the source repo (
 
   Cost: $0.76
   Duration: 4m 11s
-  Committed: "proteus: inspect complete"
+  Committed: "proteus-forge: inspect complete"
 ```
 
 ---
 
-## Stage 2 — `proteus design`
+## Stage 2 — `proteus-forge design`
 
 Same three-beat pattern. The Lead is an architect that reads `features.json` and coordinates design specialists.
 
@@ -436,7 +436,7 @@ Supports `--brief` and `--brief-file` flags for user architectural requirements 
 
 ---
 
-## Stage 3 — `proteus plan`
+## Stage 3 — `proteus-forge plan`
 
 Single Lead session (no teammates). Reads design artifacts and generates a task DAG.
 
@@ -485,7 +485,7 @@ Tasks specify a `testingExpectation` field:
 
 ---
 
-## Stage 4 — `proteus split`
+## Stage 4 — `proteus-forge split`
 
 Single Lead session. Partitions plan tasks into discipline-specific tracks.
 
@@ -543,7 +543,7 @@ Single Lead session. Partitions plan tasks into discipline-specific tracks.
 
 ---
 
-## Stage 5 — `proteus execute`
+## Stage 5 — `proteus-forge execute`
 
 Launches an Agent Team with one teammate per track. The Lead handles shared tasks directly, then coordinates track engineers.
 
@@ -561,10 +561,10 @@ Launches an Agent Team with one teammate per track. The Lead handles shared task
 
 ### Message Inbox
 
-During execute, Proteus creates a file-based inbox at `.proteus/05-execute/inbox/`. Users can send messages to running teammates via `proteus inform`:
+During execute, Proteus Forge creates a file-based inbox at `.proteus-forge/05-execute/inbox/`. Users can send messages to running teammates via `proteus-forge inform`:
 
 ```bash
-proteus inform backend-engineer "Use async bcrypt instead of sync"
+proteus-forge inform backend-engineer "Use async bcrypt instead of sync"
 ```
 
 The session launcher polls the inbox every 3 seconds and injects messages into the running session via the Agent SDK's `streamInput()` method. The Lead relays messages to the named teammate.
@@ -603,14 +603,14 @@ The session launcher polls the inbox every 3 seconds and injects messages into t
 
   Cost: $8.50
   Duration: 21m 48s
-  Committed: "proteus: execute complete"
+  Committed: "proteus-forge: execute complete"
 ```
 
 ---
 
 ## Cost Tracking
 
-### `.proteus/costs.json`
+### `.proteus-forge/costs.json`
 
 Updated after each stage with token counts and estimated cost:
 
@@ -637,7 +637,7 @@ The `teammates` count is set by the command handler (execute passes the actual c
 
 ## Audit Trail
 
-### `.proteus/log.jsonl`
+### `.proteus-forge/log.jsonl`
 
 One JSON object per line, appended after each action:
 
@@ -656,11 +656,11 @@ Status values: `"success"`, `"recovered"` (session errored but artifacts produce
 Each stage commits artifacts to the target repo's git history:
 
 ```
-cdfba0b proteus: execute complete (recovered)
-538af7c proteus: split complete
-b7d371b proteus: plan complete
-d1ea68b proteus: design complete (recovered)
-ac72a61 proteus: inspect complete
+cdfba0b proteus-forge: execute complete (recovered)
+538af7c proteus-forge: split complete
+b7d371b proteus-forge: plan complete
+d1ea68b proteus-forge: design complete (recovered)
+ac72a61 proteus-forge: inspect complete
 ```
 
 This provides recovery — if a stage needs to be re-run, previous artifacts are preserved in git history.
@@ -669,10 +669,10 @@ This provides recovery — if a stage needs to be re-run, previous artifacts are
 
 ## Staleness Warnings
 
-Before running any stage, Proteus checks modification timestamps. If an upstream artifact was modified after a downstream artifact was generated:
+Before running any stage, Proteus Forge checks modification timestamps. If an upstream artifact was modified after a downstream artifact was generated:
 
 ```
-  ⚠ inspect was modified after design was generated. Re-run `proteus design`.
+  ⚠ inspect was modified after design was generated. Re-run `proteus-forge design`.
 ```
 
 Implemented in `src/utils/stages.ts` — compares `mtime` of stage artifacts in sequential order.
@@ -681,16 +681,16 @@ Implemented in `src/utils/stages.ts` — compares `mtime` of stage artifacts in 
 
 ## Editing Artifacts Between Stages
 
-`design.md` and `plan.md` are intentionally human-editable. Proteus re-reads them before the next stage. After editing:
+`design.md` and `plan.md` are intentionally human-editable. Proteus Forge re-reads them before the next stage. After editing:
 
 ```bash
 # Edit the design
-vi {target}/.proteus/02-design/design.md
+vi {target}/.proteus-forge/02-design/design.md
 
 # Regenerate downstream stages
-proteus plan
-proteus split
-proteus execute
+proteus-forge plan
+proteus-forge split
+proteus-forge execute
 ```
 
 ---
@@ -722,50 +722,50 @@ These rules are defined in the prompt schemas and enforced by the agent at gener
 
 | Command | Description |
 |---------|-------------|
-| `proteus setup` | Enable Agent Teams, configure providers, write `~/.proteus/config.json` |
-| `proteus config get\|set <key> [value]` | Read/write config via dot-notation keys |
+| `proteus-forge setup` | Enable Agent Teams, configure providers, write `~/.proteus-forge/config.json` |
+| `proteus-forge config get\|set <key> [value]` | Read/write config via dot-notation keys |
 
 #### Project Management (4)
 
 | Command | Description |
 |---------|-------------|
-| `proteus new <name> --source <path> [--target <path>]` | Create project, init target repo with git and `.proteus/` |
-| `proteus list` | Show all projects with current stage and active marker |
-| `proteus use <name>` | Set active project (default for all commands) |
-| `proteus destroy <name>` | Delete target repo (with confirmation), remove from registry |
+| `proteus-forge new <name> --source <path> [--target <path>]` | Create project, init target repo with git and `.proteus-forge/` |
+| `proteus-forge list` | Show all projects with current stage and active marker |
+| `proteus-forge use <name>` | Set active project (default for all commands) |
+| `proteus-forge destroy <name>` | Delete target repo (with confirmation), remove from registry |
 
 #### Pipeline Stages (6)
 
 | Command | Options | Description |
 |---------|---------|-------------|
-| `proteus inspect [name]` | `--dry-run` `--budget` | Agent Team: scout → specialists → synthesize |
-| `proteus design [name]` | `--dry-run` `--budget` `--brief` `--brief-file` | Agent Team: scope → specialists → synthesize |
-| `proteus plan [name]` | `--dry-run` `--budget` | Single Lead: generate task DAG |
-| `proteus split [name]` | `--dry-run` `--budget` | Single Lead: partition into tracks |
-| `proteus execute [name]` | `--dry-run` `--budget` | Agent Team: wave-based parallel execution |
-| `proteus run [name]` | `--from` `--to` `--budget` `--brief` `--brief-file` | Run full pipeline or a range of stages without stopping |
+| `proteus-forge inspect [name]` | `--dry-run` `--budget` | Agent Team: scout → specialists → synthesize |
+| `proteus-forge design [name]` | `--dry-run` `--budget` `--brief` `--brief-file` | Agent Team: scope → specialists → synthesize |
+| `proteus-forge plan [name]` | `--dry-run` `--budget` | Single Lead: generate task DAG |
+| `proteus-forge split [name]` | `--dry-run` `--budget` | Single Lead: partition into tracks |
+| `proteus-forge execute [name]` | `--dry-run` `--budget` | Agent Team: wave-based parallel execution |
+| `proteus-forge run [name]` | `--from` `--to` `--budget` `--brief` `--brief-file` | Run full pipeline or a range of stages without stopping |
 
 #### Execution Control (4)
 
 | Command | Description |
 |---------|-------------|
-| `proteus inform <agent> <message>` | Send message to running teammate during execute |
-| `proteus resume [name]` | Resume execute from last wave git checkpoint |
-| `proteus abort [name]` | Signal running session to stop via inbox message |
-| `proteus watch [name]` | Monitor running session's log for updates |
+| `proteus-forge inform <agent> <message>` | Send message to running teammate during execute |
+| `proteus-forge resume [name]` | Resume execute from last wave git checkpoint |
+| `proteus-forge abort [name]` | Signal running session to stop via inbox message |
+| `proteus-forge watch [name]` | Monitor running session's log for updates |
 
 #### Analysis & Review (8)
 
 | Command | Description |
 |---------|-------------|
-| `proteus status [name]` | Pipeline state: stage completion, timestamps, staleness warnings |
-| `proteus validate [name]` | Run 11 cross-stage validation rules |
-| `proteus review <stage> [name]` | Open stage artifact in `$EDITOR` |
-| `proteus diff <stage> [name]` | Show git changes for stage artifacts between runs |
-| `proteus compare [name]` | Compare source POC vs production target (files, lines, growth) |
-| `proteus costs [name]` | Token usage and cost breakdown per stage with totals |
-| `proteus explain "<question>" [name]` | AI-powered explanation of design/plan decisions |
-| `proteus log [name]` | View audit trail. Supports `-n` for last N entries |
+| `proteus-forge status [name]` | Pipeline state: stage completion, timestamps, staleness warnings |
+| `proteus-forge validate [name]` | Run 11 cross-stage validation rules |
+| `proteus-forge review <stage> [name]` | Open stage artifact in `$EDITOR` |
+| `proteus-forge diff <stage> [name]` | Show git changes for stage artifacts between runs |
+| `proteus-forge compare [name]` | Compare source POC vs production target (files, lines, growth) |
+| `proteus-forge costs [name]` | Token usage and cost breakdown per stage with totals |
+| `proteus-forge explain "<question>" [name]` | AI-powered explanation of design/plan decisions |
+| `proteus-forge log [name]` | View audit trail. Supports `-n` for last N entries |
 
 ---
 
@@ -809,19 +809,19 @@ src/
 │   └── inform.ts
 ├── config/                     # Configuration management
 │   ├── types.ts                # TypeScript interfaces for all configs
-│   ├── global.ts               # ~/.proteus/config.json
-│   ├── project.ts              # {target}/.proteus/config.json
-│   └── registry.ts             # ~/.proteus/projects.json
+│   ├── global.ts               # ~/.proteus-forge/config.json
+│   ├── project.ts              # {target}/.proteus-forge/config.json
+│   └── registry.ts             # ~/.proteus-forge/projects.json
 ├── prompts/                    # Prompt generators (one per pipeline stage)
 │   ├── inspect.ts, design.ts, plan.ts, split.ts, execute.ts
 ├── session/
 │   └── launcher.ts             # Agent SDK query() wrapper + inbox streaming
 └── utils/
     ├── claude-settings.ts      # Read/write ~/.claude/settings.json
-    ├── costs.ts                # Cost tracking (.proteus/costs.json)
+    ├── costs.ts                # Cost tracking (.proteus-forge/costs.json)
     ├── git.ts                  # Git init, add, commit, checkpoint detection
-    ├── inbox.ts                # File-based message inbox for proteus inform
-    ├── log.ts                  # Audit trail (.proteus/log.jsonl)
+    ├── inbox.ts                # File-based message inbox for proteus-forge inform
+    ├── log.ts                  # Audit trail (.proteus-forge/log.jsonl)
     ├── resolve-project.ts      # Project name → ProjectEntry resolution
     ├── stages.ts               # Stage artifact detection, staleness checks
     └── team-summary.ts         # Read scout.json/scope.json for team display

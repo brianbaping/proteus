@@ -22,7 +22,7 @@ describe("log", () => {
       status: "success",
     });
 
-    const logPath = join(tempDir, ".proteus", "log.jsonl");
+    const logPath = join(tempDir, ".proteus-forge", "log.jsonl");
     expect(existsSync(logPath)).toBe(true);
   });
 
@@ -34,7 +34,7 @@ describe("log", () => {
       cost: 0.38,
     });
 
-    const logPath = join(tempDir, ".proteus", "log.jsonl");
+    const logPath = join(tempDir, ".proteus-forge", "log.jsonl");
     const content = await readFile(logPath, "utf-8");
     const lines = content.trim().split("\n");
     expect(lines).toHaveLength(1);
@@ -52,7 +52,7 @@ describe("log", () => {
     await appendLogEntry(tempDir, { action: "design", status: "success" });
     await appendLogEntry(tempDir, { action: "plan", status: "failed", details: "timeout" });
 
-    const logPath = join(tempDir, ".proteus", "log.jsonl");
+    const logPath = join(tempDir, ".proteus-forge", "log.jsonl");
     const content = await readFile(logPath, "utf-8");
     const lines = content.trim().split("\n");
     expect(lines).toHaveLength(3);

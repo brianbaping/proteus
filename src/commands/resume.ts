@@ -32,7 +32,7 @@ export const resumeCommand = new Command("resume")
     const targetPath = entry.target;
 
     // Check prerequisite
-    const manifestPath = join(targetPath, ".proteus", "04-tracks", "manifest.json");
+    const manifestPath = join(targetPath, ".proteus-forge", "04-tracks", "manifest.json");
     if (!existsSync(manifestPath)) {
       console.error("Split stage not complete. Run the full pipeline first.");
       process.exit(1);
@@ -42,7 +42,7 @@ export const resumeCommand = new Command("resume")
     const lastWave = await getLastWaveCheckpoint(targetPath);
 
     if (lastWave === null) {
-      console.error("No wave checkpoints found. Run `proteus execute` instead.");
+      console.error("No wave checkpoints found. Run `proteus-forge execute` instead.");
       process.exit(1);
     }
 
@@ -53,7 +53,7 @@ export const resumeCommand = new Command("resume")
 
     const globalConfig = await readGlobalConfig();
     if (!globalConfig) {
-      console.error("Global config not found. Run `proteus setup` first.");
+      console.error("Global config not found. Run `proteus-forge setup` first.");
       process.exit(1);
     }
 
@@ -82,7 +82,7 @@ The code from those waves already exists in the target directory.
 DO NOT re-do work from waves 1-${lastWave}. Start from wave ${lastWave + 1}.
 Check what files already exist before creating new ones.`;
 
-    const executeDir = join(targetPath, ".proteus", "05-execute");
+    const executeDir = join(targetPath, ".proteus-forge", "05-execute");
     const inboxDir = join(executeDir, "inbox");
     await mkdir(inboxDir, { recursive: true });
 
@@ -123,8 +123,8 @@ Check what files already exist before creating new ones.`;
       console.log(`  Duration: ${result.cost.duration}`);
 
       try {
-        await gitStageAndCommit(targetPath, "proteus: execute resumed and completed");
-        console.log(`  Committed: "proteus: execute resumed and completed"`);
+        await gitStageAndCommit(targetPath, "proteus-forge: execute resumed and completed");
+        console.log(`  Committed: "proteus-forge: execute resumed and completed"`);
       } catch {
         // Nothing to commit
       }

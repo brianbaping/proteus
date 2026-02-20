@@ -30,7 +30,7 @@ export interface SessionResult {
 
 /**
  * Launch a Claude Code session via the Agent SDK.
- * This is the core interface between Proteus and Claude Code.
+ * This is the core interface between Proteus Forge and Claude Code.
  */
 export async function launchSession(
   options: LaunchOptions
@@ -180,9 +180,9 @@ async function* createInboxStream(
   signal: AbortSignal,
   pollIntervalMs: number = 3000
 ): AsyncGenerator<SDKUserMessage> {
-  // Derive the target path from inboxDir (strip .proteus/05-execute/inbox)
+  // Derive the target path from inboxDir (strip .proteus-forge/05-execute/inbox)
   const targetPath = inboxDir.replace(
-    /\/.proteus\/05-execute\/inbox\/?$/,
+    /\/.proteus-forge\/05-execute\/inbox\/?$/,
     ""
   );
 

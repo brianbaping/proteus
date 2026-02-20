@@ -2,9 +2,9 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## What is Proteus?
+## What is Proteus Forge?
 
-Proteus is a TypeScript CLI that transforms POC codebases into production-ready applications using Claude Code Agent Teams. It generates prompts, launches sessions via the Claude Agent SDK's `query()` function, and validates the artifacts produced. All AI work is delegated to Agent Teams.
+Proteus Forge is a TypeScript CLI that transforms POC codebases into production-ready applications using Claude Code Agent Teams. It generates prompts, launches sessions via the Claude Agent SDK's `query()` function, and validates the artifacts produced. All AI work is delegated to Agent Teams.
 
 ## Build & Test
 
@@ -21,18 +21,18 @@ npm run dev          # tsup watch mode
 
 - **TypeScript CLI** using Commander (13 commands). Entry point: `src/index.ts`
 - **Agent SDK integration** via `query()` in `src/session/launcher.ts`. Each stage composes a Lead prompt and launches a Claude Code session with `cwd` set to the target repo and `additionalDirectories` pointing to the source POC (read-only).
-- **Three-repo separation**: Proteus config at `~/.proteus/`, source POC (never modified), target production repo (agents write here)
-- **Provider-agnostic tiers**: `fast`/`standard`/`advanced` mapped to any provider in `~/.proteus/config.json`
+- **Three-repo separation**: Proteus Forge config at `~/.proteus-forge/`, source POC (never modified), target production repo (agents write here)
+- **Provider-agnostic tiers**: `fast`/`standard`/`advanced` mapped to any provider in `~/.proteus-forge/config.json`
 
 ## Pipeline Stages
 
 | Stage | Command | Agent Pattern | Model Tier | Key Output |
 |-------|---------|---------------|------------|------------|
-| Inspect | `proteus inspect` | Agent Team (scout + specialists) | fast | `01-inspect/features.json` |
-| Design | `proteus design` | Agent Team (architect + specialists) | advanced | `02-design/design.md` + `design-meta.json` |
-| Plan | `proteus plan` | Single Lead | standard | `03-plan/plan.json` + `plan.md` |
-| Split | `proteus split` | Single Lead | standard | `04-tracks/manifest.json` + track files |
-| Execute | `proteus execute` | Agent Team (orchestrator + track engineers) | advanced | Production source code + `05-execute/session.json` |
+| Inspect | `proteus-forge inspect` | Agent Team (scout + specialists) | fast | `01-inspect/features.json` |
+| Design | `proteus-forge design` | Agent Team (architect + specialists) | advanced | `02-design/design.md` + `design-meta.json` |
+| Plan | `proteus-forge plan` | Single Lead | standard | `03-plan/plan.json` + `plan.md` |
+| Split | `proteus-forge split` | Single Lead | standard | `04-tracks/manifest.json` + track files |
+| Execute | `proteus-forge execute` | Agent Team (orchestrator + track engineers) | advanced | Production source code + `05-execute/session.json` |
 
 ## Source Structure
 
@@ -50,7 +50,7 @@ src/
 
 - **Prompt generators** (`src/prompts/*.ts`) compose the Lead prompt with full artifact schemas embedded. The prompt quality determines output quality — these are the most important files.
 - **Session launcher** (`src/session/launcher.ts`) wraps `query()`, captures session ID from init messages, extracts cost/tokens from result messages, handles errors gracefully (returns `SessionResult` instead of throwing).
-- **Inbox system** (`src/utils/inbox.ts`) enables `proteus inform` — writes JSON message files that the session launcher polls and injects via `streamInput()`.
+- **Inbox system** (`src/utils/inbox.ts`) enables `proteus-forge inform` — writes JSON message files that the session launcher polls and injects via `streamInput()`.
 - **Staleness detection** (`src/utils/stages.ts`) compares artifact mtimes to warn when upstream changes invalidate downstream stages.
 - **Git checkpointing** — each stage commits artifacts to the target repo for recovery.
 
@@ -74,12 +74,12 @@ src/
 
 | File | Purpose |
 |------|---------|
-| `~/.proteus/config.json` | Global: providers, tiers, role→tier mappings |
-| `~/.proteus/projects.json` | Project registry: name → source/target paths |
-| `{target}/.proteus/config.json` | Per-project: source path, overrides |
-| `{target}/.proteus/costs.json` | Token usage per stage |
-| `{target}/.proteus/log.jsonl` | Audit trail (JSONL) |
+| `~/.proteus-forge/config.json` | Global: providers, tiers, role→tier mappings |
+| `~/.proteus-forge/projects.json` | Project registry: name → source/target paths |
+| `{target}/.proteus-forge/config.json` | Per-project: source path, overrides |
+| `{target}/.proteus-forge/costs.json` | Token usage per stage |
+| `{target}/.proteus-forge/log.jsonl` | Audit trail (JSONL) |
 
 ## Schema Reference
 
-See `proteus-schemas.md` for complete artifact schemas, CLI command reference, and example payloads from actual pipeline runs.
+See `proteus-forge-schemas.md` for complete artifact schemas, CLI command reference, and example payloads from actual pipeline runs.

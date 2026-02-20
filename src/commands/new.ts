@@ -11,19 +11,19 @@ const CLAUDE_MD_CONTENT = `# CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-This is a Proteus-managed production repository. The source POC is read-only reference material.
+This is a Proteus Forge-managed production repository. The source POC is read-only reference material.
 All production code is built here by coordinated AI agent teams.
 
-## Proteus Context
+## Proteus Forge Context
 
-- This repo was created by \`proteus new\`
-- Pipeline artifacts are in \`.proteus/\`
-- Do not manually edit files in \`.proteus/\` unless you know what you're doing
-- Human-editable artifacts: \`.proteus/02-design/design.md\`, \`.proteus/03-plan/plan.md\`
+- This repo was created by \`proteus-forge new\`
+- Pipeline artifacts are in \`.proteus-forge/\`
+- Do not manually edit files in \`.proteus-forge/\` unless you know what you're doing
+- Human-editable artifacts: \`.proteus-forge/02-design/design.md\`, \`.proteus-forge/03-plan/plan.md\`
 `;
 
 export const newCommand = new Command("new")
-  .description("Create a new Proteus project")
+  .description("Create a new Proteus Forge project")
   .argument("<name>", "Project name")
   .requiredOption("--source <path>", "Path to the source POC repository")
   .option("--target <path>", "Path for the production target repository")
@@ -31,7 +31,7 @@ export const newCommand = new Command("new")
   .action(async (name: string, options: { source: string; target?: string; template?: string }) => {
     // Check setup
     if (!globalConfigExists()) {
-      console.error("Proteus is not configured. Run `proteus setup` first.");
+      console.error("Proteus Forge is not configured. Run `proteus-forge setup` first.");
       process.exit(1);
     }
 
@@ -64,9 +64,9 @@ export const newCommand = new Command("new")
     await gitInit(targetPath);
     console.log("  \u2713 Initialized git repo");
 
-    // Create .proteus/ and project config
+    // Create .proteus-forge/ and project config
     await writeProjectConfig(targetPath, createProjectConfig(name, sourcePath));
-    console.log("  \u2713 Created .proteus/config.json");
+    console.log("  \u2713 Created .proteus-forge/config.json");
 
     // Create CLAUDE.md
     await writeFile(resolve(targetPath, "CLAUDE.md"), CLAUDE_MD_CONTENT);
@@ -81,5 +81,5 @@ export const newCommand = new Command("new")
     });
     console.log("  \u2713 Registered project (set as active)");
 
-    console.log(`\nProject ready. Run \`proteus inspect\` to begin.`);
+    console.log(`\nProject ready. Run \`proteus-forge inspect\` to begin.`);
   });

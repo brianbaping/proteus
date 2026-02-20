@@ -33,7 +33,7 @@ export const validateCommand = new Command("validate")
     }
 
     const targetPath = project.entry.target;
-    const proteusDir = join(targetPath, ".proteus");
+    const forgeDir = join(targetPath, ".proteus-forge");
     const results: ValidationResult[] = [];
 
     console.log(`\n[${project.name}] Validating artifacts...\n`);
@@ -49,7 +49,7 @@ export const validateCommand = new Command("validate")
 
     // Validate inspect
     if (completedStages.includes("inspect")) {
-      const features = await readJson(join(proteusDir, "01-inspect", "features.json"));
+      const features = await readJson(join(forgeDir, "01-inspect", "features.json"));
       if (features) {
         const featureArr = features.features as Array<{ id: string; dependencies?: string[] }> | undefined;
 
@@ -90,7 +90,7 @@ export const validateCommand = new Command("validate")
 
     // Validate design
     if (completedStages.includes("design")) {
-      const designMeta = await readJson(join(proteusDir, "02-design", "design-meta.json"));
+      const designMeta = await readJson(join(forgeDir, "02-design", "design-meta.json"));
       if (designMeta) {
         const featureMap = designMeta.featureToServiceMap as Record<string, string> | undefined;
         results.push({
@@ -100,7 +100,7 @@ export const validateCommand = new Command("validate")
         });
       }
 
-      const designMd = join(proteusDir, "02-design", "design.md");
+      const designMd = join(forgeDir, "02-design", "design.md");
       results.push({
         rule: "design.md exists",
         passed: existsSync(designMd),
@@ -110,7 +110,7 @@ export const validateCommand = new Command("validate")
 
     // Validate plan
     if (completedStages.includes("plan")) {
-      const plan = await readJson(join(proteusDir, "03-plan", "plan.json"));
+      const plan = await readJson(join(forgeDir, "03-plan", "plan.json"));
       if (plan) {
         const tasks = plan.tasks as Array<{ id: string; dependsOn?: string[]; fileOwnership?: string[] }> | undefined;
         const waves = plan.executionWaves as Array<{ wave: number; tasks: string[] }> | undefined;
@@ -161,7 +161,7 @@ export const validateCommand = new Command("validate")
 
     // Validate split
     if (completedStages.includes("split")) {
-      const manifest = await readJson(join(proteusDir, "04-tracks", "manifest.json"));
+      const manifest = await readJson(join(forgeDir, "04-tracks", "manifest.json"));
       if (manifest) {
         const tracks = manifest.tracks as Array<{ id: string; taskCount: number }> | undefined;
         results.push({

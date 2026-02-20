@@ -14,7 +14,7 @@ async function confirm(message: string): Promise<boolean> {
 }
 
 export const destroyCommand = new Command("destroy")
-  .description("Remove a Proteus project")
+  .description("Remove a Proteus Forge project")
   .argument("<name>", "Project name")
   .action(async (name: string) => {
     const entry = await getProject(name);

@@ -5,7 +5,7 @@ import { ensureProjectDir } from "../config/project.js";
 import type { StageCost, CostTracking } from "../config/types.js";
 
 function getCostsPath(targetPath: string): string {
-  return join(targetPath, ".proteus", "costs.json");
+  return join(targetPath, ".proteus-forge", "costs.json");
 }
 
 export async function readCosts(targetPath: string): Promise<CostTracking> {

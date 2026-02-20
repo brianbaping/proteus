@@ -30,9 +30,9 @@ export async function runSplit(
 
   const targetPath = project.entry.target;
 
-  const planJsonPath = join(targetPath, ".proteus", "03-plan", "plan.json");
+  const planJsonPath = join(targetPath, ".proteus-forge", "03-plan", "plan.json");
   if (!existsSync(planJsonPath)) {
-    console.error("Plan stage not complete. Run `proteus plan` first.");
+    console.error("Plan stage not complete. Run `proteus-forge plan` first.");
     return false;
   }
 
@@ -45,7 +45,7 @@ export async function runSplit(
 
   const globalConfig = await readGlobalConfig();
   if (!globalConfig) {
-    console.error("Global config not found. Run `proteus setup` first.");
+    console.error("Global config not found. Run `proteus-forge setup` first.");
     return false;
   }
 
@@ -68,7 +68,7 @@ export async function runSplit(
     return true;
   }
 
-  const tracksDir = join(targetPath, ".proteus", "04-tracks");
+  const tracksDir = join(targetPath, ".proteus-forge", "04-tracks");
   await mkdir(tracksDir, { recursive: true });
 
   const leadPrompt = generateSplitLeadPrompt(targetPath);
@@ -104,7 +104,7 @@ export async function runSplit(
     console.log(`  Duration: ${result.cost.duration}`);
 
     try {
-      const msg = result.success ? "proteus: split complete" : "proteus: split complete (recovered)";
+      const msg = result.success ? "proteus-forge: split complete" : "proteus-forge: split complete (recovered)";
       await gitStageAndCommit(targetPath, msg);
       console.log(`  Committed: "${msg}"`);
     } catch { /* empty */ }
@@ -117,7 +117,7 @@ export async function runSplit(
       cost: result.cost.estimatedCost,
     });
 
-    console.log(`\n  Next: proteus execute\n`);
+    console.log(`\n  Next: proteus-forge execute\n`);
     return true;
   }
 

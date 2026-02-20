@@ -28,10 +28,10 @@ export async function runPlan(
   const sourcePath = entry.source;
   const targetPath = entry.target;
 
-  const designMdPath = join(targetPath, ".proteus", "02-design", "design.md");
-  const designMetaPath = join(targetPath, ".proteus", "02-design", "design-meta.json");
+  const designMdPath = join(targetPath, ".proteus-forge", "02-design", "design.md");
+  const designMetaPath = join(targetPath, ".proteus-forge", "02-design", "design-meta.json");
   if (!existsSync(designMdPath) && !existsSync(designMetaPath)) {
-    console.error("Design stage not complete. Run `proteus design` first.");
+    console.error("Design stage not complete. Run `proteus-forge design` first.");
     return false;
   }
 
@@ -44,7 +44,7 @@ export async function runPlan(
 
   const globalConfig = await readGlobalConfig();
   if (!globalConfig) {
-    console.error("Global config not found. Run `proteus setup` first.");
+    console.error("Global config not found. Run `proteus-forge setup` first.");
     return false;
   }
 
@@ -68,7 +68,7 @@ export async function runPlan(
     return true;
   }
 
-  const planDir = join(targetPath, ".proteus", "03-plan");
+  const planDir = join(targetPath, ".proteus-forge", "03-plan");
   await mkdir(planDir, { recursive: true });
 
   const leadPrompt = generatePlanLeadPrompt(sourcePath, targetPath);
@@ -105,7 +105,7 @@ export async function runPlan(
     console.log(`  Duration: ${result.cost.duration}`);
 
     try {
-      const msg = result.success ? "proteus: plan complete" : "proteus: plan complete (recovered)";
+      const msg = result.success ? "proteus-forge: plan complete" : "proteus-forge: plan complete (recovered)";
       await gitStageAndCommit(targetPath, msg);
       console.log(`  Committed: "${msg}"`);
     } catch { /* empty */ }
@@ -118,7 +118,7 @@ export async function runPlan(
       cost: result.cost.estimatedCost,
     });
 
-    console.log(`\n  Review: proteus review plan\n`);
+    console.log(`\n  Review: proteus-forge review plan\n`);
     return true;
   }
 

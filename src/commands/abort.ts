@@ -46,12 +46,12 @@ export const abortCommand = new Command("abort")
 
     console.log(`\n[${project.name}] Abort signal sent.\n`);
     console.log("  The Lead will receive the abort message on its next turn.");
-    console.log("  Completed work is preserved. Use `proteus resume` to continue later.\n");
+    console.log("  Completed work is preserved. Use `proteus-forge resume` to continue later.\n");
 
     // Commit any partial progress
     try {
-      await gitStageAndCommit(targetPath, "proteus: execute aborted by user");
-      console.log(`  Committed partial progress: "proteus: execute aborted by user"\n`);
+      await gitStageAndCommit(targetPath, "proteus-forge: execute aborted by user");
+      console.log(`  Committed partial progress: "proteus-forge: execute aborted by user"\n`);
     } catch {
       // Nothing to commit
     }

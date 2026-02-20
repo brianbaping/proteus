@@ -19,7 +19,7 @@ export const explainCommand = new Command("explain")
     }
 
     const targetPath = project.entry.target;
-    const proteusDir = join(targetPath, ".proteus");
+    const forgeDir = join(targetPath, ".proteus-forge");
 
     // Gather available artifacts for context
     const contextFiles: string[] = [];
@@ -33,13 +33,13 @@ export const explainCommand = new Command("explain")
     ];
 
     for (const p of artifactPaths) {
-      if (existsSync(join(proteusDir, p))) {
+      if (existsSync(join(forgeDir, p))) {
         contextFiles.push(p);
       }
     }
 
     if (contextFiles.length === 0) {
-      console.error("No pipeline artifacts found. Run at least `proteus inspect` first.");
+      console.error("No pipeline artifacts found. Run at least `proteus-forge inspect` first.");
       process.exit(1);
     }
 
@@ -49,10 +49,10 @@ export const explainCommand = new Command("explain")
     const tierConfig = planTier ? globalConfig?.tiers[planTier] : undefined;
     const model = tierConfig?.model;
 
-    const prompt = `You are answering a question about a Proteus project's architecture and plan.
+    const prompt = `You are answering a question about a Proteus Forge project's architecture and plan.
 
-Read the following artifact files in ${targetPath}/.proteus/ to understand the project:
-${contextFiles.map((f) => `- ${targetPath}/.proteus/${f}`).join("\n")}
+Read the following artifact files in ${targetPath}/.proteus-forge/ to understand the project:
+${contextFiles.map((f) => `- ${targetPath}/.proteus-forge/${f}`).join("\n")}
 
 Then answer this question concisely and specifically, referencing the artifacts:
 

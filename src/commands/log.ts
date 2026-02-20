@@ -17,7 +17,7 @@ export const logCommand = new Command("log")
       process.exit(1);
     }
 
-    const logPath = join(project.entry.target, ".proteus", "log.jsonl");
+    const logPath = join(project.entry.target, ".proteus-forge", "log.jsonl");
     if (!existsSync(logPath)) {
       console.log(`\n[${project.name}] No log entries yet.\n`);
       return;

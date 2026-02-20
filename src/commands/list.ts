@@ -3,13 +3,13 @@ import { readRegistry } from "../config/registry.js";
 import { getCurrentStage } from "../utils/stages.js";
 
 export const listCommand = new Command("list")
-  .description("Show all Proteus projects")
+  .description("Show all Proteus Forge projects")
   .action(async () => {
     const registry = await readRegistry();
     const names = Object.keys(registry.projects);
 
     if (names.length === 0) {
-      console.log("No projects. Run `proteus new <name> --source <path>` to create one.");
+      console.log("No projects. Run `proteus-forge new <name> --source <path>` to create one.");
       return;
     }
 

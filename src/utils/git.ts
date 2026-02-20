@@ -37,13 +37,13 @@ export async function getLastWaveCheckpoint(
   try {
     const { stdout } = await execFileAsync(
       "git",
-      ["log", "--oneline", "--all", "--grep=proteus: execute wave"],
+      ["log", "--oneline", "--all", "--grep=proteus-forge: execute wave"],
       { cwd }
     );
     const lines = stdout.trim().split("\n").filter(Boolean);
     if (lines.length === 0) return null;
 
-    const match = lines[0].match(/proteus: execute wave (\d+) complete/);
+    const match = lines[0].match(/proteus-forge: execute wave (\d+) complete/);
     return match ? parseInt(match[1], 10) : null;
   } catch {
     return null;

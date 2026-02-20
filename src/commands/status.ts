@@ -32,7 +32,7 @@ export const statusCommand = new Command("status")
     if (warnings.length > 0) {
       console.log("");
       for (const warning of warnings) {
-        console.log(`  \u26a0 ${warning.staleReason}. Re-run \`proteus ${warning.stage}\`.`);
+        console.log(`  \u26a0 ${warning.staleReason}. Re-run \`proteus-forge ${warning.stage}\`.`);
       }
     }
 

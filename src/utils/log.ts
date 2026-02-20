@@ -12,7 +12,7 @@ export interface LogEntry {
 }
 
 function getLogPath(targetPath: string): string {
-  return join(targetPath, ".proteus", "log.jsonl");
+  return join(targetPath, ".proteus-forge", "log.jsonl");
 }
 
 export async function appendLogEntry(

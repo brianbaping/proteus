@@ -13,7 +13,7 @@ export async function resolveProject(
     const entry = await getProject(nameArg);
     if (!entry) {
       throw new Error(
-        `Project "${nameArg}" not found. Run \`proteus list\` to see available projects.`
+        `Project "${nameArg}" not found. Run \`proteus-forge list\` to see available projects.`
       );
     }
     return { name: nameArg, entry };
@@ -22,7 +22,7 @@ export async function resolveProject(
   const active = await getActiveProject();
   if (!active) {
     throw new Error(
-      "No active project set. Run `proteus use <name>` or pass a project name."
+      "No active project set. Run `proteus-forge use <name>` or pass a project name."
     );
   }
   return active;

@@ -8,14 +8,14 @@ import {
   globalConfigExists,
   writeGlobalConfig,
   getDefaultGlobalConfig,
-  ensureProteusDir,
+  ensureForgeDir,
 } from "../config/global.js";
 import { readRegistry, writeRegistry } from "../config/registry.js";
 
 export const setupCommand = new Command("setup")
   .description("One-time configuration: enable Agent Teams, configure providers, set tier defaults")
   .action(async () => {
-    console.log("Setting up Proteus...\n");
+    console.log("Setting up Proteus Forge...\n");
 
     // Check Claude Code
     console.log("  Checking prerequisites...");
@@ -43,16 +43,16 @@ export const setupCommand = new Command("setup")
       console.log("    \u2713 Found OPENAI_API_KEY in environment");
     } else {
       console.log("    \u26a0 No API key found in environment.");
-      console.log("      Set ANTHROPIC_API_KEY or configure providers via `proteus config`.");
+      console.log("      Set ANTHROPIC_API_KEY or configure providers via `proteus-forge config`.");
     }
 
     // Write global config
-    await ensureProteusDir();
+    await ensureForgeDir();
     if (globalConfigExists()) {
-      console.log("\n  \u2713 Global config already exists (~/.proteus/config.json)");
+      console.log("\n  \u2713 Global config already exists (~/.proteus-forge/config.json)");
     } else {
       await writeGlobalConfig(getDefaultGlobalConfig());
-      console.log("\n  \u2713 Created ~/.proteus/config.json with default tiers:");
+      console.log("\n  \u2713 Created ~/.proteus-forge/config.json with default tiers:");
       console.log("      fast     \u2192 claude-haiku-4-5");
       console.log("      standard \u2192 claude-sonnet-4-6");
       console.log("      advanced \u2192 claude-opus-4-6");
@@ -64,5 +64,5 @@ export const setupCommand = new Command("setup")
       await writeRegistry(registry);
     }
 
-    console.log("\nSetup complete. Run `proteus new <name> --source <path>` to create a project.");
+    console.log("\nSetup complete. Run `proteus-forge new <name> --source <path>` to create a project.");
   });

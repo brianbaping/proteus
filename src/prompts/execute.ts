@@ -46,8 +46,8 @@ export interface ExecuteContext {
 export async function loadExecuteContext(
   targetPath: string
 ): Promise<ExecuteContext> {
-  const tracksDir = join(targetPath, ".proteus", "04-tracks");
-  const planPath = join(targetPath, ".proteus", "03-plan", "plan.json");
+  const tracksDir = join(targetPath, ".proteus-forge", "04-tracks");
+  const planPath = join(targetPath, ".proteus-forge", "03-plan", "plan.json");
 
   // Read manifest
   const manifest = JSON.parse(
@@ -58,7 +58,7 @@ export async function loadExecuteContext(
   // Read each track detail
   const trackDetails = new Map<string, TrackDetail>();
   for (const track of tracks) {
-    const trackPath = join(targetPath, ".proteus", track.file);
+    const trackPath = join(targetPath, ".proteus-forge", track.file);
     if (existsSync(trackPath)) {
       const detail = JSON.parse(
         await readFile(trackPath, "utf-8")
@@ -129,16 +129,16 @@ ${Object.entries(sharedTrack.context?.fileOwnershipMap ?? {})
 `
     : "";
 
-  return `You are the Orchestrator for a Proteus execute stage. Your job is to coordinate a team of engineers to build production code based on the plan.
+  return `You are the Orchestrator for a Proteus Forge execute stage. Your job is to coordinate a team of engineers to build production code based on the plan.
 
 ## Context
 
 Source POC (read-only reference): ${sourcePath}
 Target repo (build here): ${targetPath}
 
-Architecture design: ${targetPath}/.proteus/02-design/design.md
-Plan: ${targetPath}/.proteus/03-plan/plan.json
-Tracks: ${targetPath}/.proteus/04-tracks/
+Architecture design: ${targetPath}/.proteus-forge/02-design/design.md
+Plan: ${targetPath}/.proteus-forge/03-plan/plan.json
+Tracks: ${targetPath}/.proteus-forge/04-tracks/
 
 ## All Tasks (${ctx.tasks.length} tasks across ${ctx.waveCount} waves)
 
@@ -149,9 +149,9 @@ ${taskSummary}
 ### Step 1: Read Context
 
 Read these files to understand the full picture:
-1. ${targetPath}/.proteus/02-design/design.md — the architecture
-2. ${targetPath}/.proteus/03-plan/plan.json — every task with acceptance criteria
-3. Each track file in ${targetPath}/.proteus/04-tracks/ — per-discipline context
+1. ${targetPath}/.proteus-forge/02-design/design.md — the architecture
+2. ${targetPath}/.proteus-forge/03-plan/plan.json — every task with acceptance criteria
+3. Each track file in ${targetPath}/.proteus-forge/04-tracks/ — per-discipline context
 
 Also have the source POC at ${sourcePath} available as reference for understanding the original implementation intent. Do NOT copy POC code — reimplement according to the design.
 
@@ -193,12 +193,12 @@ Tasks that you (the Lead) already completed in Step 2 should be created as alrea
 
 After all tasks are complete:
 1. Verify key files exist (package.json, tsconfig.json, main entry points)
-2. Write a brief session summary to ${targetPath}/.proteus/05-execute/session.json
+2. Write a brief session summary to ${targetPath}/.proteus-forge/05-execute/session.json
 
 The session.json schema:
 \`\`\`json
 {
-  "proteusVersion": "1.0.0",
+  "forgeVersion": "1.0.0",
   "stage": "execute",
   "sessionId": "<your session ID>",
   "startedAt": "<ISO timestamp>",
@@ -217,7 +217,7 @@ The session.json schema:
 - The source at ${sourcePath} is READ-ONLY. Never modify it. Reimplement, don't copy.
 - Each teammate owns specific files — enforce ownership boundaries.
 - Teammates should write unit tests for tasks with testingExpectation "unit".
-- Create ${targetPath}/.proteus/05-execute/ directory before writing session.json.
+- Create ${targetPath}/.proteus-forge/05-execute/ directory before writing session.json.
 - If you complete shared tasks first, ensure the scaffolding is committed/written before spawning teammates so they can build on it.
 `;
 }

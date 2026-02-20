@@ -3,18 +3,18 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { ProjectConfig } from "./types.js";
 
-export function getProjectProteusDir(targetPath: string): string {
-  return join(targetPath, ".proteus");
+export function getProjectForgeDir(targetPath: string): string {
+  return join(targetPath, ".proteus-forge");
 }
 
 export function getProjectConfigPath(targetPath: string): string {
-  return join(targetPath, ".proteus", "config.json");
+  return join(targetPath, ".proteus-forge", "config.json");
 }
 
 export async function ensureProjectDir(targetPath: string): Promise<void> {
-  const proteusDir = getProjectProteusDir(targetPath);
-  if (!existsSync(proteusDir)) {
-    await mkdir(proteusDir, { recursive: true });
+  const forgeDir = getProjectForgeDir(targetPath);
+  if (!existsSync(forgeDir)) {
+    await mkdir(forgeDir, { recursive: true });
   }
 }
 
@@ -43,7 +43,7 @@ export function createProjectConfig(
   sourcePath: string
 ): ProjectConfig {
   return {
-    proteusVersion: "1.0.0",
+    forgeVersion: "1.0.0",
     projectName: name,
     source: {
       path: sourcePath,

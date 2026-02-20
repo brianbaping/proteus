@@ -24,7 +24,7 @@ describe("inbox", () => {
   describe("getInboxDir", () => {
     it("returns correct inbox path", () => {
       expect(getInboxDir("/tmp/target")).toBe(
-        "/tmp/target/.proteus/05-execute/inbox"
+        "/tmp/target/.proteus-forge/05-execute/inbox"
       );
     });
   });

@@ -22,16 +22,16 @@ export const watchCommand = new Command("watch")
 
     if (!existsSync(sentinelPath)) {
       console.error(
-        "No active execute session found. Run `proteus execute` first."
+        "No active execute session found. Run `proteus-forge execute` first."
       );
       process.exit(1);
     }
 
     console.log(`\n[${project.name}] Watching execute session...\n`);
-    console.log("  Monitoring .proteus/log.jsonl for updates.");
+    console.log("  Monitoring .proteus-forge/log.jsonl for updates.");
     console.log("  Press Ctrl+C to stop watching.\n");
 
-    const logPath = join(targetPath, ".proteus", "log.jsonl");
+    const logPath = join(targetPath, ".proteus-forge", "log.jsonl");
     let lastSize = 0;
 
     // Print existing log

@@ -2,14 +2,14 @@ import { describe, it, expect } from "vitest";
 import { getDefaultGlobalConfig } from "../../config/global.js";
 
 // We test the pure functions and use a temp dir for file I/O tests
-// Note: read/writeGlobalConfig use a hardcoded path (~/.proteus/config.json)
+// Note: read/writeGlobalConfig use a hardcoded path (~/.proteus-forge/config.json)
 // so we test the default config generation and structure instead
 
 describe("global config", () => {
   describe("getDefaultGlobalConfig", () => {
-    it("returns a config with proteusVersion", () => {
+    it("returns a config with forgeVersion", () => {
       const config = getDefaultGlobalConfig();
-      expect(config.proteusVersion).toBe("1.0.0");
+      expect(config.forgeVersion).toBe("1.0.0");
     });
 
     it("includes three default tiers", () => {

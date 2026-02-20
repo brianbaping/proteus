@@ -1,10 +1,10 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { getProteusDir, ensureProteusDir } from "./global.js";
+import { getForgeDir, ensureForgeDir } from "./global.js";
 import type { ProjectRegistry, ProjectEntry } from "./types.js";
 
-const REGISTRY_PATH = join(getProteusDir(), "projects.json");
+const REGISTRY_PATH = join(getForgeDir(), "projects.json");
 
 function getDefaultRegistry(): ProjectRegistry {
   return {
@@ -22,7 +22,7 @@ export async function readRegistry(): Promise<ProjectRegistry> {
 }
 
 export async function writeRegistry(registry: ProjectRegistry): Promise<void> {
-  await ensureProteusDir();
+  await ensureForgeDir();
   await writeFile(REGISTRY_PATH, JSON.stringify(registry, null, 2) + "\n");
 }
 
@@ -49,7 +49,7 @@ export async function unregisterProject(name: string): Promise<void> {
 export async function setActiveProject(name: string): Promise<void> {
   const registry = await readRegistry();
   if (!registry.projects[name]) {
-    throw new Error(`Project "${name}" not found. Run \`proteus list\` to see available projects.`);
+    throw new Error(`Project "${name}" not found. Run \`proteus-forge list\` to see available projects.`);
   }
   registry.activeProject = name;
   await writeRegistry(registry);

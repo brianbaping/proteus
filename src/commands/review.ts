@@ -34,13 +34,13 @@ export const reviewCommand = new Command("review")
 
     const artifactPath = join(
       project.entry.target,
-      ".proteus",
+      ".proteus-forge",
       STAGE_REVIEW_FILES[stage]
     );
 
     if (!existsSync(artifactPath)) {
       console.error(
-        `${stage} artifact not found. Run \`proteus ${stage}\` first.`
+        `${stage} artifact not found. Run \`proteus-forge ${stage}\` first.`
       );
       process.exit(1);
     }

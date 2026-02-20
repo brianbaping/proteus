@@ -15,7 +15,7 @@ import { logProgress } from "../utils/progress.js";
 
 /**
  * Run the inspect stage. Returns true on success, false on failure.
- * Exported for use by `proteus run`.
+ * Exported for use by `proteus-forge run`.
  */
 export async function runInspect(
   name: string | undefined,
@@ -42,7 +42,7 @@ export async function runInspect(
   const _projectConfig = await readProjectConfig(targetPath);
 
   if (!globalConfig) {
-    console.error("Global config not found. Run `proteus setup` first.");
+    console.error("Global config not found. Run `proteus-forge setup` first.");
     return false;
   }
 
@@ -66,7 +66,7 @@ export async function runInspect(
     return true;
   }
 
-  const inspectDir = join(targetPath, ".proteus", "01-inspect");
+  const inspectDir = join(targetPath, ".proteus-forge", "01-inspect");
   const partialsDir = join(inspectDir, "partials");
   await mkdir(partialsDir, { recursive: true });
 
@@ -95,7 +95,7 @@ export async function runInspect(
     console.log(`  Duration: ${result.cost.duration}`);
 
     try {
-      const msg = result.success ? "proteus: inspect complete" : "proteus: inspect complete (recovered)";
+      const msg = result.success ? "proteus-forge: inspect complete" : "proteus-forge: inspect complete (recovered)";
       await gitStageAndCommit(targetPath, msg);
       console.log(`  Committed: "${msg}"`);
     } catch { /* empty */ }
