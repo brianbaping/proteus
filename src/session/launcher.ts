@@ -6,7 +6,20 @@ import type {
   Options,
 } from "@anthropic-ai/claude-agent-sdk";
 import type { StageCost } from "../config/types.js";
+import { readGlobalConfig } from "../config/global.js";
 import { consumeInboxMessages } from "../utils/inbox.js";
+
+/**
+ * Resolve the Anthropic API key from config or environment.
+ * Config values starting with "$" are treated as env var references.
+ */
+async function resolveApiKey(): Promise<string | undefined> {
+  const config = await readGlobalConfig();
+  const apiKey = config?.providers?.anthropic?.apiKey;
+  if (!apiKey) return process.env.ANTHROPIC_API_KEY;
+  if (apiKey.startsWith("$")) return process.env[apiKey.slice(1)];
+  return apiKey;
+}
 
 export interface LaunchOptions {
   prompt: string;
@@ -39,6 +52,9 @@ export async function launchSession(
   let sessionId = "";
   let resultMessage: SDKResultMessage | undefined;
 
+  // Resolve API key from config (supports stored keys and env var references)
+  const apiKey = await resolveApiKey();
+
   const sdkOptions: Options = {
     cwd: options.cwd,
     additionalDirectories: options.additionalDirectories,
@@ -47,6 +63,7 @@ export async function launchSession(
     permissionMode: options.permissionMode ?? "acceptEdits",
     settingSources: ["user", "project"],
     persistSession: false,
+    ...(apiKey ? { env: { ...process.env, ANTHROPIC_API_KEY: apiKey } } : {}),
   };
 
   try {

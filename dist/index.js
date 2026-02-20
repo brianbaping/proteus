@@ -11,6 +11,7 @@ import { Command as Command25 } from "commander";
 
 // src/commands/setup.ts
 import { Command } from "commander";
+import { createInterface } from "readline/promises";
 
 // src/utils/claude-settings.ts
 import { readFile, writeFile } from "fs/promises";
@@ -160,6 +161,20 @@ async function getProject(name) {
 }
 
 // src/commands/setup.ts
+async function promptForApiKey() {
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    console.log("");
+    console.log("      Proteus Forge needs an Anthropic API key to launch agent sessions.");
+    console.log("      This is separate from Claude Code's internal auth.");
+    console.log("      Get your key at: https://console.anthropic.com/settings/keys");
+    console.log("");
+    const key = await rl.question("      Enter your Anthropic API key (or press Enter to skip): ");
+    return key.trim() || null;
+  } finally {
+    rl.close();
+  }
+}
 var setupCommand = new Command("setup").description("One-time configuration: enable Agent Teams, configure providers, set tier defaults").action(async () => {
   console.log("Setting up Proteus Forge...\n");
   console.log("  Checking prerequisites...");
@@ -177,21 +192,6 @@ var setupCommand = new Command("setup").description("One-time configuration: ena
     console.error("      Ensure Claude Code is installed and ~/.claude/settings.json exists.");
     process.exit(1);
   }
-  if (process.env.ANTHROPIC_API_KEY) {
-    console.log("    \u2713 Found ANTHROPIC_API_KEY in environment");
-  } else if (process.env.OPENAI_API_KEY) {
-    console.log("    \u2713 Found OPENAI_API_KEY in environment");
-  } else {
-    console.log("    \u26A0 No API key found in environment.");
-    console.log("");
-    console.log("      Proteus Forge uses the Anthropic Agent SDK, which requires an API key");
-    console.log("      in your shell environment (separate from Claude Code's internal auth).");
-    console.log("");
-    console.log("      1. Get your key at: https://console.anthropic.com/settings/keys");
-    console.log("      2. Add to your shell profile (~/.bashrc or ~/.zshrc):");
-    console.log('         export ANTHROPIC_API_KEY="sk-ant-..."');
-    console.log("      3. Reload your shell: source ~/.bashrc");
-  }
   await ensureForgeDir();
   if (globalConfigExists()) {
     console.log("\n  \u2713 Global config already exists (~/.proteus-forge/config.json)");
@@ -201,6 +201,26 @@ var setupCommand = new Command("setup").description("One-time configuration: ena
     console.log("      fast     \u2192 claude-haiku-4-5");
     console.log("      standard \u2192 claude-sonnet-4-6");
     console.log("      advanced \u2192 claude-opus-4-6");
+  }
+  const config = await readGlobalConfig();
+  const storedKey = config.providers?.anthropic?.apiKey;
+  const hasStoredKey = storedKey && !storedKey.startsWith("$");
+  const hasEnvKey = !!process.env.ANTHROPIC_API_KEY;
+  if (hasStoredKey) {
+    console.log("  \u2713 API key configured in ~/.proteus-forge/config.json");
+  } else if (hasEnvKey) {
+    console.log("  \u2713 Found ANTHROPIC_API_KEY in environment");
+  } else {
+    console.log("  \u26A0 No API key found.");
+    const key = await promptForApiKey();
+    if (key) {
+      config.providers.anthropic.apiKey = key;
+      await writeGlobalConfig(config);
+      console.log("    \u2713 API key saved to ~/.proteus-forge/config.json");
+    } else {
+      console.log("    Skipped. You can add it later:");
+      console.log('    proteus-forge config set providers.anthropic.apiKey "sk-ant-..."');
+    }
   }
   const registry = await readRegistry();
   if (Object.keys(registry.projects).length === 0) {
@@ -448,9 +468,9 @@ var useCommand = new Command4("use").description("Set the active project").argum
 // src/commands/destroy.ts
 import { Command as Command5 } from "commander";
 import { rm } from "fs/promises";
-import { createInterface } from "readline";
+import { createInterface as createInterface2 } from "readline";
 async function confirm(message) {
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  const rl = createInterface2({ input: process.stdin, output: process.stdout });
   return new Promise((resolve3) => {
     rl.question(`${message} (y/N): `, (answer) => {
       rl.close();
@@ -777,10 +797,18 @@ The features.json schema:
 
 // src/session/launcher.ts
 import { query } from "@anthropic-ai/claude-agent-sdk";
+async function resolveApiKey() {
+  const config = await readGlobalConfig();
+  const apiKey = config?.providers?.anthropic?.apiKey;
+  if (!apiKey) return process.env.ANTHROPIC_API_KEY;
+  if (apiKey.startsWith("$")) return process.env[apiKey.slice(1)];
+  return apiKey;
+}
 async function launchSession(options) {
   const startTime = Date.now();
   let sessionId = "";
   let resultMessage;
+  const apiKey = await resolveApiKey();
   const sdkOptions = {
     cwd: options.cwd,
     additionalDirectories: options.additionalDirectories,
@@ -788,7 +816,8 @@ async function launchSession(options) {
     maxBudgetUsd: options.maxBudgetUsd,
     permissionMode: options.permissionMode ?? "acceptEdits",
     settingSources: ["user", "project"],
-    persistSession: false
+    persistSession: false,
+    ...apiKey ? { env: { ...process.env, ANTHROPIC_API_KEY: apiKey } } : {}
   };
   try {
     const session = query({ prompt: options.prompt, options: sdkOptions });
