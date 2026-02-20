@@ -13,6 +13,7 @@ import { getLastWaveCheckpoint } from "../utils/git.js";
 import { gitStageAndCommit } from "../utils/git.js";
 import { appendCostEntry } from "../utils/costs.js";
 import { appendLogEntry } from "../utils/log.js";
+import { createDashboard } from "../utils/progress.js";
 
 export const resumeCommand = new Command("resume")
   .description("Resume execute from the last wave checkpoint")
@@ -88,6 +89,7 @@ Check what files already exist before creating new ones.`;
 
     console.log("\n  Launching Agent Team...\n");
 
+    const dashboard = createDashboard("resume");
     const result = await launchSession({
       prompt: resumePrompt,
       cwd: targetPath,
@@ -96,22 +98,9 @@ Check what files already exist before creating new ones.`;
       maxBudgetUsd: options.budget,
       permissionMode: "acceptEdits",
       inboxDir,
-      onMessage: (message) => {
-        if (message.type === "assistant" && "message" in message) {
-          const content = message.message.content;
-          if (Array.isArray(content)) {
-            for (const block of content) {
-              if ("text" in block && typeof block.text === "string") {
-                const text = block.text.trim();
-                if (text.length > 0 && text.length < 200) {
-                  process.stdout.write(`  ${text}\n`);
-                }
-              }
-            }
-          }
-        }
-      },
+      onMessage: (msg) => dashboard.onMessage(msg),
     });
+    dashboard.cleanup();
 
     const hasOutput =
       existsSync(join(targetPath, "src")) ||

@@ -3221,6 +3221,7 @@ Check what files already exist before creating new ones.`;
   const inboxDir = join21(executeDir, "inbox");
   await mkdir9(inboxDir, { recursive: true });
   console.log("\n  Launching Agent Team...\n");
+  const dashboard = createDashboard("resume");
   const result = await launchSession({
     prompt: resumePrompt,
     cwd: targetPath,
@@ -3229,23 +3230,9 @@ Check what files already exist before creating new ones.`;
     maxBudgetUsd: options.budget,
     permissionMode: "acceptEdits",
     inboxDir,
-    onMessage: (message) => {
-      if (message.type === "assistant" && "message" in message) {
-        const content = message.message.content;
-        if (Array.isArray(content)) {
-          for (const block of content) {
-            if ("text" in block && typeof block.text === "string") {
-              const text = block.text.trim();
-              if (text.length > 0 && text.length < 200) {
-                process.stdout.write(`  ${text}
-`);
-              }
-            }
-          }
-        }
-      }
-    }
+    onMessage: (msg) => dashboard.onMessage(msg)
   });
+  dashboard.cleanup();
   const hasOutput = existsSync21(join21(targetPath, "src")) || existsSync21(join21(targetPath, "server"));
   if ((result.success || hasOutput) && hasOutput) {
     console.log(`
