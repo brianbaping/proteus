@@ -716,7 +716,7 @@ These rules are defined in the prompt schemas and enforced by the agent at gener
 
 ## CLI Command Reference
 
-### All Commands (23)
+### All Commands (24)
 
 #### Global (2)
 
@@ -734,7 +734,7 @@ These rules are defined in the prompt schemas and enforced by the agent at gener
 | `proteus use <name>` | Set active project (default for all commands) |
 | `proteus destroy <name>` | Delete target repo (with confirmation), remove from registry |
 
-#### Pipeline Stages (5)
+#### Pipeline Stages (6)
 
 | Command | Options | Description |
 |---------|---------|-------------|
@@ -743,6 +743,7 @@ These rules are defined in the prompt schemas and enforced by the agent at gener
 | `proteus plan [name]` | `--dry-run` `--budget` | Single Lead: generate task DAG |
 | `proteus split [name]` | `--dry-run` `--budget` | Single Lead: partition into tracks |
 | `proteus execute [name]` | `--dry-run` `--budget` | Agent Team: wave-based parallel execution |
+| `proteus run [name]` | `--from` `--to` `--budget` `--brief` `--brief-file` | Run full pipeline or a range of stages without stopping |
 
 #### Execution Control (4)
 

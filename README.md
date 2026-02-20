@@ -88,6 +88,15 @@ proteus status
   ○ execute
 ```
 
+Or run the entire pipeline in one command:
+
+```bash
+proteus run                                    # full pipeline, no stopping
+proteus run --brief "Use Go with gRPC"         # with design requirements
+proteus run --from design --to split           # batch specific stages
+proteus run --budget 5.00                      # per-stage budget cap
+```
+
 ---
 
 ## Commands
@@ -224,6 +233,19 @@ proteus execute --budget 15.00
 ```
 
 Output: Production source code in the target repository, plus `.proteus/05-execute/session.json`.
+
+#### `proteus run [name]`
+
+Run the full pipeline or a range of stages without stopping between them. Auto-detects the next incomplete stage if `--from` is not specified.
+
+```bash
+proteus run                                    # full pipeline
+proteus run --from inspect --to design         # batch specific stages
+proteus run --brief "Use microservices in Go"  # with design requirements
+proteus run --budget 5.00                      # per-stage budget cap
+```
+
+Stops immediately if any stage fails. The `--brief` and `--brief-file` options are forwarded to the design stage.
 
 ### Execution Control
 
@@ -575,10 +597,10 @@ Tests cover the config layer, all prompt generators, utility modules (costs, inb
 ```
 src/
 ├── index.ts                    # CLI entry point (Commander)
-├── commands/                   # 23 command handlers
+├── commands/                   # 24 command handlers
 │   ├── setup.ts, config.ts
 │   ├── new.ts, list.ts, use.ts, destroy.ts
-│   ├── inspect.ts, design.ts, plan.ts, split.ts, execute.ts
+│   ├── inspect.ts, design.ts, plan.ts, split.ts, execute.ts, run.ts
 │   ├── inform.ts, resume.ts, abort.ts, watch.ts
 │   ├── status.ts, validate.ts, review.ts, diff.ts
 │   └── compare.ts, costs.ts, explain.ts, log.ts
