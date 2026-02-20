@@ -1077,6 +1077,23 @@ function extractAgentName(input) {
   }
   return "agent";
 }
+var NOISE_PATTERNS = [
+  /^using\s+\w+/i,
+  /^TaskOutput/i,
+  /^TaskCreate/i,
+  /^TaskUpdate/i,
+  /^TaskList/i,
+  /^TaskGet/i,
+  /^SendMessage/i,
+  /^I('ll| will) (use|call|invoke|run|check|now)/i,
+  /^Let me (use|call|invoke|run|check)/i,
+  /^Now (let me|I('ll| will))/i,
+  /^Calling /i,
+  /^Invoking /i
+];
+function isInternalNoise(text) {
+  return NOISE_PATTERNS.some((p) => p.test(text));
+}
 function describeToolUse(toolName, input) {
   const obj = input && typeof input === "object" ? input : null;
   switch (toolName) {
@@ -1175,7 +1192,7 @@ var AgentDashboard = class {
         }
         if (block.type === "text" && "text" in block && typeof block.text === "string") {
           const text = block.text.trim();
-          if (text.length > 0 && text.length < 200) {
+          if (text.length > 0 && text.length < 200 && !isInternalNoise(text)) {
             this.printLine(agent, text);
           }
         }
