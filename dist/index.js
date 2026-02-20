@@ -1027,22 +1027,203 @@ async function printDesignTeamSummary(targetPath) {
   }
 }
 
-// src/utils/progress.ts
-function logProgress(message) {
-  if (message.type === "assistant" && "message" in message) {
-    const content = message.message.content;
-    if (Array.isArray(content)) {
+// src/utils/ansi.ts
+var AGENT_COLORS = [
+  "\x1B[36m",
+  // cyan (lead)
+  "\x1B[33m",
+  // yellow
+  "\x1B[35m",
+  // magenta
+  "\x1B[32m",
+  // green
+  "\x1B[34m",
+  // blue
+  "\x1B[91m",
+  // bright red
+  "\x1B[93m",
+  // bright yellow
+  "\x1B[95m"
+  // bright magenta
+];
+var RESET = "\x1B[0m";
+var DIM = "\x1B[2m";
+var SHOW_CURSOR = "\x1B[?25h";
+
+// src/utils/dashboard.ts
+function extractAgentName(input) {
+  if (input && typeof input === "object") {
+    const obj = input;
+    if (typeof obj.name === "string" && obj.name.length > 0) {
+      return obj.name.length > 20 ? obj.name.slice(0, 20) : obj.name;
+    }
+    if (typeof obj.description === "string" && obj.description.length > 0) {
+      return obj.description.length > 20 ? obj.description.slice(0, 17) + "..." : obj.description;
+    }
+  }
+  return "agent";
+}
+var AgentDashboard = class {
+  constructor(stageName) {
+    this.stageName = stageName;
+    this.isTTY = process.stdout.isTTY ?? false;
+    this.leadAgent = {
+      id: "lead",
+      name: "Lead",
+      color: AGENT_COLORS[0],
+      status: "idle",
+      currentTool: null,
+      lastProgressPrint: 0,
+      spawnedAt: Date.now()
+    };
+  }
+  leadAgent;
+  agents = /* @__PURE__ */ new Map();
+  nextColorIndex = 1;
+  maxNameLen = 4;
+  // "Lead"
+  isTTY;
+  agentCount = 0;
+  onMessage(message) {
+    if (message.type === "system" && "subtype" in message && message.subtype === "init") {
+      this.printLine(this.leadAgent, `Session started (${this.stageName})`);
+      return;
+    }
+    if (message.type === "assistant" && "message" in message) {
+      const agent = this.resolveAgent(message.parent_tool_use_id);
+      const content = message.message.content;
+      if (!Array.isArray(content)) return;
       for (const block of content) {
-        if ("text" in block && typeof block.text === "string") {
+        if (!block || typeof block !== "object" || !("type" in block)) continue;
+        if (block.type === "tool_use" && "name" in block && block.name === "Task") {
+          const name = extractAgentName(
+            "input" in block ? block.input : void 0
+          );
+          const id = "id" in block ? String(block.id) : `task-${this.agentCount}`;
+          const newAgent = this.registerAgent(id, name);
+          this.printLine(agent, `Spawning teammate: ${newAgent.name}`);
+          this.printLine(newAgent, "Started");
+          continue;
+        }
+        if (block.type === "tool_use" && "name" in block) {
+          agent.currentTool = String(block.name);
+          agent.status = "working";
+          continue;
+        }
+        if (block.type === "text" && "text" in block && typeof block.text === "string") {
           const text = block.text.trim();
           if (text.length > 0 && text.length < 200) {
-            process.stdout.write(`  ${text}
-`);
+            this.printLine(agent, text);
           }
         }
       }
+      return;
+    }
+    if (message.type === "tool_progress") {
+      const agent = this.resolveAgent(message.parent_tool_use_id);
+      agent.currentTool = message.tool_name;
+      agent.status = "working";
+      const now = Date.now();
+      const elapsed = message.elapsed_time_seconds;
+      if (elapsed >= 3 && now - agent.lastProgressPrint >= 5e3) {
+        agent.lastProgressPrint = now;
+        this.printLine(
+          agent,
+          `\u23F3 ${message.tool_name} (${Math.round(elapsed)}s)`
+        );
+      }
+      return;
+    }
+    if (message.type === "user" && "tool_use_result" in message && message.tool_use_result != null) {
+      if (message.parent_tool_use_id) {
+        const agent = this.agents.get(message.parent_tool_use_id);
+        if (agent && agent.status !== "done") {
+          agent.status = "done";
+          agent.currentTool = null;
+          this.printLine(agent, "Done \u2713");
+        }
+      }
+      return;
+    }
+    if (message.type === "result") {
+      this.printSummary();
     }
   }
+  cleanup() {
+    if (this.isTTY) {
+      process.stdout.write(SHOW_CURSOR);
+    }
+  }
+  registerAgent(toolUseId, name) {
+    this.agentCount++;
+    const displayName = this.hasName(name) ? `${name}-${this.agentCount}` : name;
+    if (displayName.length > this.maxNameLen) {
+      this.maxNameLen = Math.min(displayName.length, 20);
+    }
+    const agent = {
+      id: toolUseId,
+      name: displayName,
+      color: AGENT_COLORS[this.nextColorIndex % AGENT_COLORS.length],
+      status: "spawning",
+      currentTool: null,
+      lastProgressPrint: 0,
+      spawnedAt: Date.now()
+    };
+    this.nextColorIndex++;
+    this.agents.set(toolUseId, agent);
+    return agent;
+  }
+  hasName(name) {
+    if (this.leadAgent.name === name) return true;
+    for (const a of this.agents.values()) {
+      if (a.name === name) return true;
+    }
+    return false;
+  }
+  resolveAgent(parentToolUseId) {
+    if (!parentToolUseId) return this.leadAgent;
+    return this.agents.get(parentToolUseId) ?? this.leadAgent;
+  }
+  printLine(agent, text) {
+    const truncated = text.length > 70 ? text.slice(0, 67) + "..." : text;
+    if (this.isTTY) {
+      const prefix = `${agent.color}  \u25CF ${agent.name.padEnd(this.maxNameLen)}${RESET}`;
+      process.stdout.write(`${prefix} ${truncated}
+`);
+    } else {
+      process.stdout.write(`  [${agent.name}] ${truncated}
+`);
+    }
+  }
+  printSummary() {
+    if (this.agents.size === 0) return;
+    const teammates = [...this.agents.values()];
+    process.stdout.write(
+      `
+  ${this.isTTY ? DIM : ""}Agent Team (${teammates.length} teammate${teammates.length === 1 ? "" : "s"}):${this.isTTY ? RESET : ""}
+`
+    );
+    for (const a of teammates) {
+      const elapsed = Math.round((Date.now() - a.spawnedAt) / 1e3);
+      const elapsedStr = elapsed >= 60 ? `${Math.floor(elapsed / 60)}m ${elapsed % 60}s` : `${elapsed}s`;
+      if (this.isTTY) {
+        process.stdout.write(
+          `${a.color}    \u2022 ${a.name.padEnd(24)} ${a.status.padEnd(8)}${RESET} (${elapsedStr})
+`
+        );
+      } else {
+        process.stdout.write(
+          `    - ${a.name.padEnd(24)} ${a.status.padEnd(8)} (${elapsedStr})
+`
+        );
+      }
+    }
+  }
+};
+
+// src/utils/progress.ts
+function createDashboard(stageName) {
+  return new AgentDashboard(stageName);
 }
 
 // src/commands/inspect.ts
@@ -1092,6 +1273,7 @@ async function runInspect(name, options) {
   await mkdir4(partialsDir, { recursive: true });
   const leadPrompt = generateInspectLeadPrompt(sourcePath, targetPath);
   console.log("\n  Launching Agent Team...\n");
+  const dashboard = createDashboard("inspect");
   const result = await launchSession({
     prompt: leadPrompt,
     cwd: targetPath,
@@ -1099,8 +1281,9 @@ async function runInspect(name, options) {
     model,
     maxBudgetUsd: options.budget,
     permissionMode: "acceptEdits",
-    onMessage: logProgress
+    onMessage: (msg) => dashboard.onMessage(msg)
   });
+  dashboard.cleanup();
   const featuresPath = join9(inspectDir, "features.json");
   const featuresExist = existsSync9(featuresPath);
   if ((result.success || featuresExist) && featuresExist) {
@@ -1423,6 +1606,7 @@ async function runDesign(name, options) {
   await mkdir5(join10(designDir, "partials"), { recursive: true });
   const leadPrompt = generateDesignLeadPrompt(sourcePath, targetPath, brief);
   console.log("\n  Launching Agent Team...\n");
+  const dashboard = createDashboard("design");
   const result = await launchSession({
     prompt: leadPrompt,
     cwd: targetPath,
@@ -1430,8 +1614,9 @@ async function runDesign(name, options) {
     model,
     maxBudgetUsd: options.budget,
     permissionMode: "acceptEdits",
-    onMessage: logProgress
+    onMessage: (msg) => dashboard.onMessage(msg)
   });
+  dashboard.cleanup();
   const hasOutput = existsSync10(join10(designDir, "design.md")) || existsSync10(join10(designDir, "design-meta.json"));
   if ((result.success || hasOutput) && hasOutput) {
     const label = result.success ? "Design complete" : "Design recovered";
@@ -1686,6 +1871,7 @@ async function runPlan(name, options) {
   await mkdir6(planDir, { recursive: true });
   const leadPrompt = generatePlanLeadPrompt(sourcePath, targetPath);
   console.log("\n  Launching session...\n");
+  const dashboard = createDashboard("plan");
   const result = await launchSession({
     prompt: leadPrompt,
     cwd: targetPath,
@@ -1693,8 +1879,9 @@ async function runPlan(name, options) {
     model,
     maxBudgetUsd: options.budget,
     permissionMode: "acceptEdits",
-    onMessage: logProgress
+    onMessage: (msg) => dashboard.onMessage(msg)
   });
+  dashboard.cleanup();
   const planJsonPath = join11(planDir, "plan.json");
   const planJsonExists = existsSync11(planJsonPath);
   let taskCount = 0;
@@ -1931,14 +2118,16 @@ async function runSplit(name, options) {
   await mkdir7(tracksDir, { recursive: true });
   const leadPrompt = generateSplitLeadPrompt(targetPath);
   console.log("\n  Launching session...\n");
+  const dashboard = createDashboard("split");
   const result = await launchSession({
     prompt: leadPrompt,
     cwd: targetPath,
     model,
     maxBudgetUsd: options.budget,
     permissionMode: "acceptEdits",
-    onMessage: logProgress
+    onMessage: (msg) => dashboard.onMessage(msg)
   });
+  dashboard.cleanup();
   const manifestPath = join12(tracksDir, "manifest.json");
   const manifestExists = existsSync12(manifestPath);
   let tracks = [];
@@ -2222,6 +2411,7 @@ async function runExecute(name, options) {
 `);
   const leadPrompt = generateExecuteLeadPrompt(sourcePath, targetPath, ctx);
   console.log("  Launching Agent Team...\n");
+  const dashboard = createDashboard("execute");
   const result = await launchSession({
     prompt: leadPrompt,
     cwd: targetPath,
@@ -2230,8 +2420,9 @@ async function runExecute(name, options) {
     maxBudgetUsd: options.budget,
     permissionMode: "acceptEdits",
     inboxDir,
-    onMessage: logProgress
+    onMessage: (msg) => dashboard.onMessage(msg)
   });
+  dashboard.cleanup();
   const hasOutput = existsSync14(join14(targetPath, "src")) || existsSync14(join14(targetPath, "server"));
   if ((result.success || hasOutput) && hasOutput) {
     const label = result.success ? "Execution complete" : "Execution recovered";

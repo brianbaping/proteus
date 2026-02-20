@@ -10,7 +10,7 @@ import { gitStageAndCommit } from "../utils/git.js";
 import { appendCostEntry } from "../utils/costs.js";
 import { appendLogEntry } from "../utils/log.js";
 import { checkStaleness } from "../utils/stages.js";
-import { logProgress } from "../utils/progress.js";
+import { createDashboard } from "../utils/progress.js";
 
 export async function runPlan(
   name: string | undefined,
@@ -74,6 +74,7 @@ export async function runPlan(
   const leadPrompt = generatePlanLeadPrompt(sourcePath, targetPath);
   console.log("\n  Launching session...\n");
 
+  const dashboard = createDashboard("plan");
   const result = await launchSession({
     prompt: leadPrompt,
     cwd: targetPath,
@@ -81,8 +82,9 @@ export async function runPlan(
     model,
     maxBudgetUsd: options.budget,
     permissionMode: "acceptEdits",
-    onMessage: logProgress,
+    onMessage: (msg) => dashboard.onMessage(msg),
   });
+  dashboard.cleanup();
 
   const planJsonPath = join(planDir, "plan.json");
   const planJsonExists = existsSync(planJsonPath);

@@ -10,7 +10,7 @@ import { gitStageAndCommit } from "../utils/git.js";
 import { appendCostEntry } from "../utils/costs.js";
 import { appendLogEntry } from "../utils/log.js";
 import { checkStaleness } from "../utils/stages.js";
-import { logProgress } from "../utils/progress.js";
+import { createDashboard } from "../utils/progress.js";
 
 interface TrackManifest {
   tracks: Array<{ id: string; discipline: string; taskCount: number }>;
@@ -74,14 +74,16 @@ export async function runSplit(
   const leadPrompt = generateSplitLeadPrompt(targetPath);
   console.log("\n  Launching session...\n");
 
+  const dashboard = createDashboard("split");
   const result = await launchSession({
     prompt: leadPrompt,
     cwd: targetPath,
     model,
     maxBudgetUsd: options.budget,
     permissionMode: "acceptEdits",
-    onMessage: logProgress,
+    onMessage: (msg) => dashboard.onMessage(msg),
   });
+  dashboard.cleanup();
 
   const manifestPath = join(tracksDir, "manifest.json");
   const manifestExists = existsSync(manifestPath);

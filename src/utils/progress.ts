@@ -1,8 +1,17 @@
 import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
+import { AgentDashboard } from "./dashboard.js";
 
 /**
- * Log meaningful progress updates from assistant messages.
- * Used as the onMessage handler for launchSession.
+ * Create a real-time agent dashboard for a pipeline stage.
+ * Shows color-coded, per-agent activity as the session runs.
+ */
+export function createDashboard(stageName: string): AgentDashboard {
+  return new AgentDashboard(stageName);
+}
+
+/**
+ * Simple progress logger (no agent tracking, no colors).
+ * Kept for backward compatibility.
  */
 export function logProgress(message: SDKMessage): void {
   if (message.type === "assistant" && "message" in message) {

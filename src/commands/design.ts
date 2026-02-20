@@ -11,7 +11,7 @@ import { appendCostEntry } from "../utils/costs.js";
 import { appendLogEntry } from "../utils/log.js";
 import { checkStaleness } from "../utils/stages.js";
 import { printDesignTeamSummary } from "../utils/team-summary.js";
-import { logProgress } from "../utils/progress.js";
+import { createDashboard } from "../utils/progress.js";
 
 export async function runDesign(
   name: string | undefined,
@@ -91,6 +91,7 @@ export async function runDesign(
   const leadPrompt = generateDesignLeadPrompt(sourcePath, targetPath, brief);
   console.log("\n  Launching Agent Team...\n");
 
+  const dashboard = createDashboard("design");
   const result = await launchSession({
     prompt: leadPrompt,
     cwd: targetPath,
@@ -98,8 +99,9 @@ export async function runDesign(
     model,
     maxBudgetUsd: options.budget,
     permissionMode: "acceptEdits",
-    onMessage: logProgress,
+    onMessage: (msg) => dashboard.onMessage(msg),
   });
+  dashboard.cleanup();
 
   const hasOutput = existsSync(join(designDir, "design.md")) || existsSync(join(designDir, "design-meta.json"));
 

@@ -10,7 +10,7 @@ import { gitStageAndCommit } from "../utils/git.js";
 import { appendCostEntry } from "../utils/costs.js";
 import { appendLogEntry } from "../utils/log.js";
 import { checkStaleness } from "../utils/stages.js";
-import { logProgress } from "../utils/progress.js";
+import { createDashboard } from "../utils/progress.js";
 
 export async function runExecute(
   name: string | undefined,
@@ -92,6 +92,7 @@ export async function runExecute(
   const leadPrompt = generateExecuteLeadPrompt(sourcePath, targetPath, ctx);
   console.log("  Launching Agent Team...\n");
 
+  const dashboard = createDashboard("execute");
   const result = await launchSession({
     prompt: leadPrompt,
     cwd: targetPath,
@@ -100,8 +101,9 @@ export async function runExecute(
     maxBudgetUsd: options.budget,
     permissionMode: "acceptEdits",
     inboxDir,
-    onMessage: logProgress,
+    onMessage: (msg) => dashboard.onMessage(msg),
   });
+  dashboard.cleanup();
 
   const hasOutput = existsSync(join(targetPath, "src")) || existsSync(join(targetPath, "server"));
 

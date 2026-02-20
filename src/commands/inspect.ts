@@ -11,7 +11,7 @@ import { gitStageAndCommit } from "../utils/git.js";
 import { appendCostEntry } from "../utils/costs.js";
 import { appendLogEntry } from "../utils/log.js";
 import { printInspectTeamSummary } from "../utils/team-summary.js";
-import { logProgress } from "../utils/progress.js";
+import { createDashboard } from "../utils/progress.js";
 
 /**
  * Run the inspect stage. Returns true on success, false on failure.
@@ -74,6 +74,7 @@ export async function runInspect(
 
   console.log("\n  Launching Agent Team...\n");
 
+  const dashboard = createDashboard("inspect");
   const result = await launchSession({
     prompt: leadPrompt,
     cwd: targetPath,
@@ -81,8 +82,9 @@ export async function runInspect(
     model,
     maxBudgetUsd: options.budget,
     permissionMode: "acceptEdits",
-    onMessage: logProgress,
+    onMessage: (msg) => dashboard.onMessage(msg),
   });
+  dashboard.cleanup();
 
   const featuresPath = join(inspectDir, "features.json");
   const featuresExist = existsSync(featuresPath);
