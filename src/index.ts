@@ -13,6 +13,7 @@ import { designCommand } from "./commands/design.js";
 import { planCommand } from "./commands/plan.js";
 import { splitCommand } from "./commands/split.js";
 import { executeCommand } from "./commands/execute.js";
+import { runCommand } from "./commands/run.js";
 import { informCommand } from "./commands/inform.js";
 import { logCommand } from "./commands/log.js";
 import { costsCommand } from "./commands/costs.js";
@@ -50,6 +51,7 @@ program.addCommand(designCommand);
 program.addCommand(planCommand);
 program.addCommand(splitCommand);
 program.addCommand(executeCommand);
+program.addCommand(runCommand);
 
 // Execution control
 program.addCommand(informCommand);
