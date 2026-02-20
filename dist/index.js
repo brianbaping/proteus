@@ -1063,6 +1063,50 @@ function extractAgentName(input) {
   }
   return "agent";
 }
+function describeToolUse(toolName, input) {
+  const obj = input && typeof input === "object" ? input : null;
+  switch (toolName) {
+    case "Read":
+      return obj?.file_path ? `Reading ${shortPath(String(obj.file_path))}` : "Reading file";
+    case "Edit":
+      return obj?.file_path ? `Editing ${shortPath(String(obj.file_path))}` : "Editing file";
+    case "Write":
+      return obj?.file_path ? `Writing ${shortPath(String(obj.file_path))}` : "Writing file";
+    case "Bash":
+      if (obj?.command) {
+        const cmd = String(obj.command).split("\n")[0];
+        return `Running: ${cmd.length > 50 ? cmd.slice(0, 47) + "..." : cmd}`;
+      }
+      return "Running command";
+    case "Grep":
+      return obj?.pattern ? `Searching for "${shortStr(String(obj.pattern), 30)}"` : "Searching";
+    case "Glob":
+      return obj?.pattern ? `Finding ${shortStr(String(obj.pattern), 40)}` : "Finding files";
+    case "NotebookEdit":
+      return obj?.notebook_path ? `Editing notebook ${shortPath(String(obj.notebook_path))}` : null;
+    case "Task":
+      return null;
+    // handled separately as agent spawning
+    case "TaskCreate":
+    case "TaskUpdate":
+    case "TaskList":
+    case "TaskGet":
+      return null;
+    // internal coordination, too noisy
+    case "SendMessage":
+      return obj?.recipient ? `Messaging ${shortStr(String(obj.recipient), 20)}` : null;
+    default:
+      return `Using ${toolName}`;
+  }
+}
+function shortPath(filePath) {
+  const parts = filePath.split("/");
+  if (parts.length <= 3) return filePath;
+  return ".../" + parts.slice(-3).join("/");
+}
+function shortStr(s, maxLen) {
+  return s.length > maxLen ? s.slice(0, maxLen - 3) + "..." : s;
+}
 var AgentDashboard = class {
   constructor(stageName) {
     this.stageName = stageName;
@@ -1106,8 +1150,13 @@ var AgentDashboard = class {
           continue;
         }
         if (block.type === "tool_use" && "name" in block) {
-          agent.currentTool = String(block.name);
+          const toolName = String(block.name);
+          agent.currentTool = toolName;
           agent.status = "working";
+          const desc = describeToolUse(toolName, "input" in block ? block.input : void 0);
+          if (desc) {
+            this.printLine(agent, desc);
+          }
           continue;
         }
         if (block.type === "text" && "text" in block && typeof block.text === "string") {
