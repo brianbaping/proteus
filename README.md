@@ -49,8 +49,14 @@ Agent Teams is enabled automatically by `proteus-forge setup`.
 ## Installation
 
 ```bash
-npm install -g proteus-forge
+git clone https://github.com/brianbaping/proteus.git
+cd proteus
+npm install
+npm run build
+npm link
 ```
+
+This builds the CLI and makes `proteus-forge` available globally.
 
 ## Quick Start
 
@@ -543,14 +549,7 @@ proteus-forge execute --budget 10.00
 
 ## Development
 
-### Build
-
-```bash
-npm install
-npm run build    # lint → typecheck → test → bundle
-```
-
-The build script runs all quality gates in sequence. A lint error, type error, or test failure blocks the bundle.
+The build script runs all quality gates in sequence — a lint error, type error, or test failure blocks the bundle.
 
 ### Scripts
 
