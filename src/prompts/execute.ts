@@ -193,7 +193,9 @@ Tasks that you (the Lead) already completed in Step 2 should be created as alrea
 
 After all tasks are complete:
 1. Verify key files exist (package.json, tsconfig.json, main entry points)
-2. Write a brief session summary to ${targetPath}/.proteus-forge/05-execute/session.json
+2. Write a session summary to TWO files:
+   - **${targetPath}/.proteus-forge/05-execute/session.json** — Machine-readable metadata
+   - **${targetPath}/.proteus-forge/05-execute/execute.md** — Human-readable summary
 
 The session.json schema:
 \`\`\`json
@@ -211,6 +213,16 @@ The session.json schema:
   }
 }
 \`\`\`
+
+The execute.md should be a human-readable narrative covering:
+- **What Was Built**: Overview of the production application
+- **Architecture**: Services, components, and how they connect
+- **Per-Track Summary**: What each teammate built, key files created
+- **Testing**: What tests were written and coverage approach
+- **Known Gaps**: Anything not completed or deferred
+- **How to Run**: Commands to install, build, and start the application
+
+This document is intended for human review — write it in clear prose, not JSON.
 
 ## Important
 

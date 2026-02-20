@@ -120,7 +120,10 @@ export async function runPlan(
       cost: result.cost.estimatedCost,
     });
 
-    console.log(`\n  Review: proteus-forge review plan\n`);
+    console.log(`\n  Output: ${join(planDir, "plan.md")}`);
+    console.log(`          ${planJsonPath}`);
+    console.log(`  Review: proteus-forge review plan`);
+    console.log(`  Next:   proteus-forge split\n`);
     return true;
   }
 

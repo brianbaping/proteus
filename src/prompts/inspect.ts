@@ -138,7 +138,10 @@ During synthesis:
 - Identify external integrations
 - Write a summary of the overall POC
 
-Write the final output to: ${targetPath}/.proteus-forge/01-inspect/features.json
+Write the final output to TWO files:
+
+1. **${targetPath}/.proteus-forge/01-inspect/features.json** — Machine-readable metadata
+2. **${targetPath}/.proteus-forge/01-inspect/inspect.md** — Human-readable summary
 
 The features.json schema:
 \`\`\`json
@@ -174,6 +177,17 @@ The features.json schema:
   "summary": "<1-2 sentence summary of the POC>"
 }
 \`\`\`
+
+The inspect.md should be a human-readable narrative covering:
+- **Overview**: What the POC is and what it does (1-2 paragraphs)
+- **Tech Stack**: Languages, frameworks, databases, and key libraries
+- **Features Found**: Grouped by domain, with brief descriptions
+- **Data Model**: Entities and relationships
+- **Integrations**: External services and their status
+- **Known Issues**: Risks, gaps, and technical debt
+- **Summary Statistics**: Feature count, file count, test coverage level
+
+This document is intended for human review — write it in clear prose, not JSON.
 
 ## Important
 

@@ -55,6 +55,7 @@ export async function runSplit(
   const model = tierConfig?.model;
 
   console.log(`\n[${project.name}] Splitting into tracks...\n`);
+  console.log(`  Source: ${project.entry.source}`);
   console.log(`  Target: ${targetPath}`);
   if (model) console.log(`  Model: ${model} (${planTier} tier)`);
   console.log(`  Mode: single Lead session (no teammates)`);
@@ -119,7 +120,10 @@ export async function runSplit(
       cost: result.cost.estimatedCost,
     });
 
-    console.log(`\n  Next: proteus-forge execute\n`);
+    console.log(`\n  Output: ${join(tracksDir, "split.md")}`);
+    console.log(`          ${manifestPath}`);
+    console.log(`  Review: proteus-forge review split`);
+    console.log(`  Next:   proteus-forge execute\n`);
     return true;
   }
 

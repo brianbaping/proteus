@@ -110,7 +110,10 @@ export async function runInspect(
       cost: result.cost.estimatedCost,
     });
 
-    console.log(`\n  Output: ${featuresPath}\n`);
+    console.log(`\n  Output: ${join(inspectDir, "inspect.md")}`);
+    console.log(`          ${featuresPath}`);
+    console.log(`  Review: proteus-forge review inspect`);
+    console.log(`  Next:   proteus-forge design\n`);
     return true;
   }
 

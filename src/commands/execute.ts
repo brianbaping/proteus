@@ -132,7 +132,11 @@ export async function runExecute(
       teammates: nonSharedTracks.length,
     });
 
-    console.log(`\n  Production code: ${targetPath}/\n`);
+    console.log(`\n  Output: ${join(executeDir, "execute.md")}`);
+    console.log(`          ${join(executeDir, "session.json")}`);
+    console.log(`          ${targetPath}/`);
+    console.log(`  Review: proteus-forge review execute`);
+    console.log(`  Compare: proteus-forge compare\n`);
     return true;
   }
 

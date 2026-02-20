@@ -116,6 +116,14 @@ Create the directory ${targetPath}/.proteus-forge/04-tracks/ and write:
 }
 \`\`\`
 
+**split.md** — Human-readable overview at ${targetPath}/.proteus-forge/04-tracks/split.md:
+- **Track Summary**: One section per track with its purpose, task count, and key responsibilities
+- **File Ownership**: Which track owns which directories/files
+- **Dependencies**: How tracks depend on each other (which must complete first)
+- **Shared Track**: What the Lead handles directly vs what teammates build
+
+This document is intended for human review — write it in clear prose, not JSON.
+
 ## Important
 
 - Every task from plan.json must appear in exactly one track.

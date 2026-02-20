@@ -126,7 +126,10 @@ export async function runDesign(
       cost: result.cost.estimatedCost,
     });
 
-    console.log(`\n  Review: proteus-forge review design\n`);
+    console.log(`\n  Output: ${join(designDir, "design.md")}`);
+    console.log(`          ${join(designDir, "design-meta.json")}`);
+    console.log(`  Review: proteus-forge review design`);
+    console.log(`  Next:   proteus-forge plan\n`);
     return true;
   }
 

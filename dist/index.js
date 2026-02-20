@@ -748,7 +748,10 @@ During synthesis:
 - Identify external integrations
 - Write a summary of the overall POC
 
-Write the final output to: ${targetPath}/.proteus-forge/01-inspect/features.json
+Write the final output to TWO files:
+
+1. **${targetPath}/.proteus-forge/01-inspect/features.json** \u2014 Machine-readable metadata
+2. **${targetPath}/.proteus-forge/01-inspect/inspect.md** \u2014 Human-readable summary
 
 The features.json schema:
 \`\`\`json
@@ -784,6 +787,17 @@ The features.json schema:
   "summary": "<1-2 sentence summary of the POC>"
 }
 \`\`\`
+
+The inspect.md should be a human-readable narrative covering:
+- **Overview**: What the POC is and what it does (1-2 paragraphs)
+- **Tech Stack**: Languages, frameworks, databases, and key libraries
+- **Features Found**: Grouped by domain, with brief descriptions
+- **Data Model**: Entities and relationships
+- **Integrations**: External services and their status
+- **Known Issues**: Risks, gaps, and technical debt
+- **Summary Statistics**: Feature count, file count, test coverage level
+
+This document is intended for human review \u2014 write it in clear prose, not JSON.
 
 ## Important
 
@@ -1358,7 +1372,10 @@ async function runInspect(name, options) {
       cost: result.cost.estimatedCost
     });
     console.log(`
-  Output: ${featuresPath}
+  Output: ${join9(inspectDir, "inspect.md")}`);
+    console.log(`          ${featuresPath}`);
+    console.log(`  Review: proteus-forge review inspect`);
+    console.log(`  Next:   proteus-forge design
 `);
     return true;
   }
@@ -1690,7 +1707,10 @@ async function runDesign(name, options) {
       cost: result.cost.estimatedCost
     });
     console.log(`
-  Review: proteus-forge review design
+  Output: ${join10(designDir, "design.md")}`);
+    console.log(`          ${join10(designDir, "design-meta.json")}`);
+    console.log(`  Review: proteus-forge review design`);
+    console.log(`  Next:   proteus-forge plan
 `);
     return true;
   }
@@ -1965,7 +1985,10 @@ async function runPlan(name, options) {
       cost: result.cost.estimatedCost
     });
     console.log(`
-  Review: proteus-forge review plan
+  Output: ${join11(planDir, "plan.md")}`);
+    console.log(`          ${planJsonPath}`);
+    console.log(`  Review: proteus-forge review plan`);
+    console.log(`  Next:   proteus-forge split
 `);
     return true;
   }
@@ -2108,6 +2131,14 @@ Create the directory ${targetPath}/.proteus-forge/04-tracks/ and write:
 }
 \`\`\`
 
+**split.md** \u2014 Human-readable overview at ${targetPath}/.proteus-forge/04-tracks/split.md:
+- **Track Summary**: One section per track with its purpose, task count, and key responsibilities
+- **File Ownership**: Which track owns which directories/files
+- **Dependencies**: How tracks depend on each other (which must complete first)
+- **Shared Track**: What the Lead handles directly vs what teammates build
+
+This document is intended for human review \u2014 write it in clear prose, not JSON.
+
 ## Important
 
 - Every task from plan.json must appear in exactly one track.
@@ -2151,6 +2182,7 @@ async function runSplit(name, options) {
   console.log(`
 [${project.name}] Splitting into tracks...
 `);
+  console.log(`  Source: ${project.entry.source}`);
   console.log(`  Target: ${targetPath}`);
   if (model) console.log(`  Model: ${model} (${planTier} tier)`);
   console.log(`  Mode: single Lead session (no teammates)`);
@@ -2212,7 +2244,10 @@ async function runSplit(name, options) {
       cost: result.cost.estimatedCost
     });
     console.log(`
-  Next: proteus-forge execute
+  Output: ${join12(tracksDir, "split.md")}`);
+    console.log(`          ${manifestPath}`);
+    console.log(`  Review: proteus-forge review split`);
+    console.log(`  Next:   proteus-forge execute
 `);
     return true;
   }
@@ -2358,7 +2393,9 @@ Tasks that you (the Lead) already completed in Step 2 should be created as alrea
 
 After all tasks are complete:
 1. Verify key files exist (package.json, tsconfig.json, main entry points)
-2. Write a brief session summary to ${targetPath}/.proteus-forge/05-execute/session.json
+2. Write a session summary to TWO files:
+   - **${targetPath}/.proteus-forge/05-execute/session.json** \u2014 Machine-readable metadata
+   - **${targetPath}/.proteus-forge/05-execute/execute.md** \u2014 Human-readable summary
 
 The session.json schema:
 \`\`\`json
@@ -2376,6 +2413,16 @@ The session.json schema:
   }
 }
 \`\`\`
+
+The execute.md should be a human-readable narrative covering:
+- **What Was Built**: Overview of the production application
+- **Architecture**: Services, components, and how they connect
+- **Per-Track Summary**: What each teammate built, key files created
+- **Testing**: What tests were written and coverage approach
+- **Known Gaps**: Anything not completed or deferred
+- **How to Run**: Commands to install, build, and start the application
+
+This document is intended for human review \u2014 write it in clear prose, not JSON.
 
 ## Important
 
@@ -2500,7 +2547,11 @@ async function runExecute(name, options) {
       teammates: nonSharedTracks.length
     });
     console.log(`
-  Production code: ${targetPath}/
+  Output: ${join14(executeDir, "execute.md")}`);
+    console.log(`          ${join14(executeDir, "session.json")}`);
+    console.log(`          ${targetPath}/`);
+    console.log(`  Review: proteus-forge review execute`);
+    console.log(`  Compare: proteus-forge compare
 `);
     return true;
   }
@@ -2741,11 +2792,11 @@ import { existsSync as existsSync16 } from "fs";
 import { join as join16 } from "path";
 import { spawn } from "child_process";
 var STAGE_REVIEW_FILES = {
-  inspect: "01-inspect/features.json",
+  inspect: "01-inspect/inspect.md",
   design: "02-design/design.md",
   plan: "03-plan/plan.md",
-  split: "04-tracks/manifest.json",
-  execute: "05-execute/session.json"
+  split: "04-tracks/split.md",
+  execute: "05-execute/execute.md"
 };
 var reviewCommand = new Command17("review").description("Open a stage artifact in $EDITOR for review").argument("<stage>", "Stage to review (inspect, design, plan, split, execute)").argument("[name]", "Project name (uses active project if omitted)").action(async (stage, name) => {
   if (!STAGE_REVIEW_FILES[stage]) {

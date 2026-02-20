@@ -5,11 +5,11 @@ import { spawn } from "node:child_process";
 import { resolveProject } from "../utils/resolve-project.js";
 
 const STAGE_REVIEW_FILES: Record<string, string> = {
-  inspect: "01-inspect/features.json",
+  inspect: "01-inspect/inspect.md",
   design: "02-design/design.md",
   plan: "03-plan/plan.md",
-  split: "04-tracks/manifest.json",
-  execute: "05-execute/session.json",
+  split: "04-tracks/split.md",
+  execute: "05-execute/execute.md",
 };
 
 export const reviewCommand = new Command("review")
