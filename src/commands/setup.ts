@@ -43,7 +43,14 @@ export const setupCommand = new Command("setup")
       console.log("    \u2713 Found OPENAI_API_KEY in environment");
     } else {
       console.log("    \u26a0 No API key found in environment.");
-      console.log("      Set ANTHROPIC_API_KEY or configure providers via `proteus-forge config`.");
+      console.log("");
+      console.log("      Proteus Forge uses the Anthropic Agent SDK, which requires an API key");
+      console.log("      in your shell environment (separate from Claude Code's internal auth).");
+      console.log("");
+      console.log("      1. Get your key at: https://console.anthropic.com/settings/keys");
+      console.log('      2. Add to your shell profile (~/.bashrc or ~/.zshrc):');
+      console.log('         export ANTHROPIC_API_KEY="sk-ant-..."');
+      console.log("      3. Reload your shell: source ~/.bashrc");
     }
 
     // Write global config
