@@ -148,18 +148,19 @@ describe("AgentDashboard", () => {
     expect(output).toContain("Analyzing repository");
   });
 
-  it("suppresses text blocks >= 200 characters", () => {
+  it("truncates text blocks >= 200 characters", () => {
     dashboard.onMessage({
       type: "assistant",
       parent_tool_use_id: null,
       message: {
-        content: [{ type: "text", text: "x".repeat(200) }],
+        content: [{ type: "text", text: "x".repeat(300) }],
       },
       uuid: "u8",
       session_id: "s1",
     } as never);
 
-    expect(writeSpy).not.toHaveBeenCalled();
+    const output = writeSpy.mock.calls.map((c: unknown[]) => c[0]).join("");
+    expect(output).toContain("...");
   });
 
   it("shows tool progress after 3 seconds", () => {

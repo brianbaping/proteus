@@ -1094,6 +1094,18 @@ var NOISE_PATTERNS = [
 function isInternalNoise(text) {
   return NOISE_PATTERNS.some((p) => p.test(text));
 }
+function summarizeText(text) {
+  const sentenceMatch = text.match(/^(.+?[.!?])\s/);
+  if (sentenceMatch && sentenceMatch[1].length <= 180) {
+    return sentenceMatch[1];
+  }
+  const firstLine = text.split("\n")[0].trim();
+  if (firstLine.length > 0 && firstLine.length <= 180) {
+    return firstLine;
+  }
+  const base = firstLine.length > 0 ? firstLine : text;
+  return base.slice(0, 177) + "...";
+}
 function describeToolUse(toolName, input) {
   const obj = input && typeof input === "object" ? input : null;
   switch (toolName) {
@@ -1192,8 +1204,11 @@ var AgentDashboard = class {
         }
         if (block.type === "text" && "text" in block && typeof block.text === "string") {
           const text = block.text.trim();
-          if (text.length > 0 && text.length < 200 && !isInternalNoise(text)) {
-            this.printLine(agent, text);
+          if (text.length > 0 && !isInternalNoise(text)) {
+            const preview = text.length <= 200 ? text : summarizeText(text);
+            if (preview) {
+              this.printLine(agent, preview);
+            }
           }
         }
       }

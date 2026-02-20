@@ -45,6 +45,24 @@ function isInternalNoise(text: string): boolean {
   return NOISE_PATTERNS.some((p) => p.test(text));
 }
 
+function summarizeText(text: string): string | null {
+  // Try first sentence
+  const sentenceMatch = text.match(/^(.+?[.!?])\s/);
+  if (sentenceMatch && sentenceMatch[1].length <= 180) {
+    return sentenceMatch[1];
+  }
+
+  // Try first line
+  const firstLine = text.split("\n")[0].trim();
+  if (firstLine.length > 0 && firstLine.length <= 180) {
+    return firstLine;
+  }
+
+  // Truncate first line or full text
+  const base = firstLine.length > 0 ? firstLine : text;
+  return base.slice(0, 177) + "...";
+}
+
 function describeToolUse(toolName: string, input: unknown): string | null {
   const obj = input && typeof input === "object" ? (input as Record<string, unknown>) : null;
 
@@ -171,8 +189,11 @@ export class AgentDashboard {
           typeof block.text === "string"
         ) {
           const text = block.text.trim();
-          if (text.length > 0 && text.length < 200 && !isInternalNoise(text)) {
-            this.printLine(agent, text);
+          if (text.length > 0 && !isInternalNoise(text)) {
+            const preview = text.length <= 200 ? text : summarizeText(text);
+            if (preview) {
+              this.printLine(agent, preview);
+            }
           }
         }
       }
