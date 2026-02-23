@@ -75,3 +75,17 @@ export async function getProject(
   const registry = await readRegistry();
   return registry.projects[name] ?? null;
 }
+
+export async function updateProject(
+  name: string,
+  updates: Partial<ProjectEntry>
+): Promise<void> {
+  const registry = await readRegistry();
+  if (!registry.projects[name]) {
+    throw new Error(
+      `Project "${name}" not found. Run \`proteus-forge list\` to see available projects.`
+    );
+  }
+  registry.projects[name] = { ...registry.projects[name], ...updates };
+  await writeRegistry(registry);
+}

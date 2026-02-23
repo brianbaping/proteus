@@ -7,6 +7,9 @@ import {
   getStageStatuses,
   getCurrentStage,
   checkStaleness,
+  getStageDir,
+  getStagesAfter,
+  isValidStage,
 } from "../../utils/stages.js";
 
 describe("stages", () => {
@@ -92,6 +95,55 @@ describe("stages", () => {
       await writeFile(join(tempDir, ".proteus-forge", "05-execute", "session.json"), "{}");
 
       expect(getCurrentStage(tempDir)).toBe("done");
+    });
+  });
+
+  describe("getStageDir", () => {
+    it("returns the directory name for each stage", () => {
+      expect(getStageDir("inspect")).toBe("01-inspect");
+      expect(getStageDir("design")).toBe("02-design");
+      expect(getStageDir("plan")).toBe("03-plan");
+      expect(getStageDir("split")).toBe("04-tracks");
+      expect(getStageDir("execute")).toBe("05-execute");
+    });
+  });
+
+  describe("getStagesAfter", () => {
+    it("returns all stages after inspect", () => {
+      expect(getStagesAfter("inspect")).toEqual([
+        "design",
+        "plan",
+        "split",
+        "execute",
+      ]);
+    });
+
+    it("returns stages after plan", () => {
+      expect(getStagesAfter("plan")).toEqual(["split", "execute"]);
+    });
+
+    it("returns empty array for execute (last stage)", () => {
+      expect(getStagesAfter("execute")).toEqual([]);
+    });
+
+    it("returns only execute after split", () => {
+      expect(getStagesAfter("split")).toEqual(["execute"]);
+    });
+  });
+
+  describe("isValidStage", () => {
+    it("returns true for valid stage names", () => {
+      expect(isValidStage("inspect")).toBe(true);
+      expect(isValidStage("design")).toBe(true);
+      expect(isValidStage("plan")).toBe(true);
+      expect(isValidStage("split")).toBe(true);
+      expect(isValidStage("execute")).toBe(true);
+    });
+
+    it("returns false for invalid stage names", () => {
+      expect(isValidStage("invalid")).toBe(false);
+      expect(isValidStage("")).toBe(false);
+      expect(isValidStage("build")).toBe(false);
     });
   });
 

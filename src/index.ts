@@ -1,11 +1,14 @@
 #!/usr/bin/env node
 
-import { Command } from "commander";
+import { Command, Help } from "commander";
 import { setupCommand } from "./commands/setup.js";
 import { newCommand } from "./commands/new.js";
 import { listCommand } from "./commands/list.js";
 import { useCommand } from "./commands/use.js";
 import { destroyCommand } from "./commands/destroy.js";
+import { revertCommand } from "./commands/revert.js";
+import { resetCommand } from "./commands/reset.js";
+import { retargetCommand } from "./commands/retarget.js";
 import { statusCommand } from "./commands/status.js";
 import { configCommand } from "./commands/config.js";
 import { inspectCommand } from "./commands/inspect.js";
@@ -35,38 +38,50 @@ program
   )
   .version("1.0.0");
 
-// Global
+// Primary workflow (in order of use)
+const PRIMARY_COMMAND_COUNT = 8;
 program.addCommand(setupCommand);
-program.addCommand(configCommand);
-
-// Project management
 program.addCommand(newCommand);
-program.addCommand(listCommand);
 program.addCommand(useCommand);
-program.addCommand(destroyCommand);
-
-// Pipeline stages
 program.addCommand(inspectCommand);
 program.addCommand(designCommand);
 program.addCommand(planCommand);
 program.addCommand(splitCommand);
 program.addCommand(executeCommand);
-program.addCommand(runCommand);
 
-// Execution control
-program.addCommand(informCommand);
-program.addCommand(resumeCommand);
+// Remaining commands (alphabetical)
 program.addCommand(abortCommand);
-program.addCommand(watchCommand);
-
-// Analysis & review
+program.addCommand(compareCommand);
+program.addCommand(configCommand);
+program.addCommand(costsCommand);
+program.addCommand(destroyCommand);
+program.addCommand(diffCommand);
+program.addCommand(explainCommand);
+program.addCommand(informCommand);
+program.addCommand(listCommand);
+program.addCommand(logCommand);
+program.addCommand(resetCommand);
+program.addCommand(resumeCommand);
+program.addCommand(retargetCommand);
+program.addCommand(revertCommand);
+program.addCommand(reviewCommand);
+program.addCommand(runCommand);
 program.addCommand(statusCommand);
 program.addCommand(validateCommand);
-program.addCommand(reviewCommand);
-program.addCommand(diffCommand);
-program.addCommand(compareCommand);
-program.addCommand(costsCommand);
-program.addCommand(explainCommand);
-program.addCommand(logCommand);
+program.addCommand(watchCommand);
+
+// Insert a blank line between primary and remaining commands in help output
+program.configureHelp({
+  formatHelp(cmd, helper) {
+    const output = Help.prototype.formatHelp.call(this, cmd, helper);
+    if (cmd.parent) return output;
+    const lines = output.split("\n");
+    const idx = lines.findIndex((l) => l.trimEnd() === "Commands:");
+    if (idx >= 0) {
+      lines.splice(idx + 1 + PRIMARY_COMMAND_COUNT, 0, "");
+    }
+    return lines.join("\n");
+  },
+});
 
 program.parse();

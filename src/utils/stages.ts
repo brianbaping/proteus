@@ -10,6 +10,14 @@ const STAGE_ARTIFACTS: Record<StageName, string> = {
   execute: "05-execute/session.json",
 };
 
+const STAGE_DIRS: Record<StageName, string> = {
+  inspect: "01-inspect",
+  design: "02-design",
+  plan: "03-plan",
+  split: "04-tracks",
+  execute: "05-execute",
+};
+
 const STAGE_ORDER: StageName[] = [
   "inspect",
   "design",
@@ -17,6 +25,20 @@ const STAGE_ORDER: StageName[] = [
   "split",
   "execute",
 ];
+
+export function getStageDir(stage: StageName): string {
+  return STAGE_DIRS[stage];
+}
+
+export function getStagesAfter(stage: StageName): StageName[] {
+  const idx = STAGE_ORDER.indexOf(stage);
+  if (idx === -1 || idx === STAGE_ORDER.length - 1) return [];
+  return STAGE_ORDER.slice(idx + 1);
+}
+
+export function isValidStage(name: string): name is StageName {
+  return STAGE_ORDER.includes(name as StageName);
+}
 
 export function getStageOrder(): StageName[] {
   return STAGE_ORDER;

@@ -1,17 +1,7 @@
 import { Command } from "commander";
 import { rm } from "node:fs/promises";
-import { createInterface } from "node:readline";
 import { getProject, unregisterProject } from "../config/registry.js";
-
-async function confirm(message: string): Promise<boolean> {
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
-  return new Promise((resolve) => {
-    rl.question(`${message} (y/N): `, (answer) => {
-      rl.close();
-      resolve(answer.toLowerCase() === "y");
-    });
-  });
-}
+import { confirm } from "../utils/confirm.js";
 
 export const destroyCommand = new Command("destroy")
   .description("Remove a Proteus Forge project")

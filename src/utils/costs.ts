@@ -31,3 +31,21 @@ export async function appendCostEntry(
   );
   await writeFile(getCostsPath(targetPath), JSON.stringify(costs, null, 2) + "\n");
 }
+
+export async function removeCostEntries(
+  targetPath: string,
+  stages: string[]
+): Promise<void> {
+  const costsPath = getCostsPath(targetPath);
+  if (!existsSync(costsPath)) return;
+
+  const costs = await readCosts(targetPath);
+  for (const stage of stages) {
+    delete costs.stages[stage];
+  }
+  costs.totalCost = Object.values(costs.stages).reduce(
+    (sum, c) => sum + c.estimatedCost,
+    0
+  );
+  await writeFile(costsPath, JSON.stringify(costs, null, 2) + "\n");
+}

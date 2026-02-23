@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { readCosts, appendCostEntry } from "../../utils/costs.js";
+import { readCosts, appendCostEntry, removeCostEntries } from "../../utils/costs.js";
 import type { StageCost } from "../../config/types.js";
 
 describe("costs", () => {
@@ -66,6 +66,111 @@ describe("costs", () => {
     const costs = await readCosts(tempDir);
     expect(Object.keys(costs.stages)).toHaveLength(2);
     expect(costs.totalCost).toBeCloseTo(1.70);
+  });
+
+  describe("removeCostEntries", () => {
+    it("removes a single stage cost entry", async () => {
+      await appendCostEntry(tempDir, "inspect", {
+        timestamp: "2026-02-19T10:00:00Z",
+        teammates: 4,
+        tier: "standard",
+        duration: "2m",
+        inputTokens: 100000,
+        outputTokens: 40000,
+        estimatedCost: 0.50,
+      });
+      await appendCostEntry(tempDir, "design", {
+        timestamp: "2026-02-19T10:05:00Z",
+        teammates: 3,
+        tier: "advanced",
+        duration: "3m",
+        inputTokens: 200000,
+        outputTokens: 80000,
+        estimatedCost: 1.20,
+      });
+
+      await removeCostEntries(tempDir, ["design"]);
+      const costs = await readCosts(tempDir);
+      expect(costs.stages.design).toBeUndefined();
+      expect(costs.stages.inspect).toBeDefined();
+      expect(costs.totalCost).toBeCloseTo(0.50);
+    });
+
+    it("removes multiple stage cost entries", async () => {
+      await appendCostEntry(tempDir, "inspect", {
+        timestamp: "2026-02-19T10:00:00Z",
+        teammates: 4,
+        tier: "standard",
+        duration: "2m",
+        inputTokens: 100000,
+        outputTokens: 40000,
+        estimatedCost: 0.50,
+      });
+      await appendCostEntry(tempDir, "design", {
+        timestamp: "2026-02-19T10:05:00Z",
+        teammates: 3,
+        tier: "advanced",
+        duration: "3m",
+        inputTokens: 200000,
+        outputTokens: 80000,
+        estimatedCost: 1.20,
+      });
+      await appendCostEntry(tempDir, "plan", {
+        timestamp: "2026-02-19T10:10:00Z",
+        teammates: 1,
+        tier: "standard",
+        duration: "1m",
+        inputTokens: 50000,
+        outputTokens: 20000,
+        estimatedCost: 0.30,
+      });
+
+      await removeCostEntries(tempDir, ["design", "plan"]);
+      const costs = await readCosts(tempDir);
+      expect(costs.stages.design).toBeUndefined();
+      expect(costs.stages.plan).toBeUndefined();
+      expect(costs.stages.inspect).toBeDefined();
+      expect(costs.totalCost).toBeCloseTo(0.50);
+    });
+
+    it("recalculates totalCost to zero when all entries removed", async () => {
+      await appendCostEntry(tempDir, "inspect", {
+        timestamp: "2026-02-19T10:00:00Z",
+        teammates: 4,
+        tier: "standard",
+        duration: "2m",
+        inputTokens: 100000,
+        outputTokens: 40000,
+        estimatedCost: 0.50,
+      });
+
+      await removeCostEntries(tempDir, ["inspect"]);
+      const costs = await readCosts(tempDir);
+      expect(Object.keys(costs.stages)).toHaveLength(0);
+      expect(costs.totalCost).toBe(0);
+    });
+
+    it("is a no-op for missing entries", async () => {
+      await appendCostEntry(tempDir, "inspect", {
+        timestamp: "2026-02-19T10:00:00Z",
+        teammates: 4,
+        tier: "standard",
+        duration: "2m",
+        inputTokens: 100000,
+        outputTokens: 40000,
+        estimatedCost: 0.50,
+      });
+
+      await removeCostEntries(tempDir, ["design"]);
+      const costs = await readCosts(tempDir);
+      expect(costs.stages.inspect).toBeDefined();
+      expect(costs.totalCost).toBeCloseTo(0.50);
+    });
+
+    it("is a no-op when costs file does not exist", async () => {
+      // Should not throw
+      await removeCostEntries(tempDir, ["inspect"]);
+    });
   });
 
   it("overwrites cost for the same stage on re-run", async () => {
