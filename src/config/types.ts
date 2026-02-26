@@ -60,6 +60,7 @@ export interface ProjectConfig {
 // Pipeline stage names
 export type StageName =
   | "inspect"
+  | "style"
   | "design"
   | "plan"
   | "split"

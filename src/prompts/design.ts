@@ -41,7 +41,7 @@ You are working in the target directory:
 
 ## Instructions
 
-### Step 1: Read Inspection Findings
+### Step 1: Read Inspection Findings and Style Guide
 
 Read ${targetPath}/.proteus-forge/01-inspect/features.json thoroughly. Understand:
 - What features the POC implements
@@ -49,6 +49,8 @@ Read ${targetPath}/.proteus-forge/01-inspect/features.json thoroughly. Understan
 - What integrations exist
 - What known issues were identified
 - The data model
+
+Also read ${targetPath}/.proteus-forge/02-style/style-guide.json to understand the POC's visual identity — styling technology, color palette, typography, layout patterns, and component patterns. This style guide must inform your frontend architecture decisions.
 
 ### Step 2: Scope Design Domains
 
@@ -59,7 +61,7 @@ Based on the features and issues found, determine what design domains are needed
 - **Security architecture** — auth redesign, secrets management, CORS, input validation
 - **Infrastructure** — containerization, CI/CD, deployment, observability
 
-Write your scoping decisions to: ${targetPath}/.proteus-forge/02-design/scope.json
+Write your scoping decisions to: ${targetPath}/.proteus-forge/03-design/scope.json
 
 The scope.json schema:
 \`\`\`json
@@ -88,7 +90,7 @@ Each specialist's spawn prompt should tell them:
 1. They are designing the production architecture for a specific domain
 2. To read the features.json for context on what the POC does and its issues
 3. The source code is at ${sourcePath} if they need to reference implementation details
-4. To write their partial design to ${targetPath}/.proteus-forge/02-design/partials/<domain-id>.md (narrative) and ${targetPath}/.proteus-forge/02-design/partials/<domain-id>.json (machine-readable)
+4. To write their partial design to ${targetPath}/.proteus-forge/03-design/partials/<domain-id>.md (narrative) and ${targetPath}/.proteus-forge/03-design/partials/<domain-id>.json (machine-readable)
 5. To message other specialists about cross-domain concerns (API contracts, shared types, data boundaries)
 
 The partial JSON schema for each specialist:
@@ -138,7 +140,7 @@ Create a task on the shared task list for each design specialist. Then create a 
 
 After all specialist tasks complete, claim the synthesize task. Read all partial designs and produce two unified outputs:
 
-**${targetPath}/.proteus-forge/02-design/design.md** — Human-readable architecture document:
+**${targetPath}/.proteus-forge/03-design/design.md** — Human-readable architecture document:
 \`\`\`markdown
 # Architecture Design — <project name>
 
@@ -163,6 +165,9 @@ After all specialist tasks complete, claim the synthesize task. Read all partial
 ## Frontend Architecture
 [component structure, state management, API client, routing]
 
+### Styling Strategy
+[Specify the production styling approach — preserve the POC's approach or migrate to a recommended alternative. Reference the extracted color palette, typography scale, spacing values, and design tokens from 02-style/style-guide.json. Explain how the style guide will be implemented in production code.]
+
 ## Infrastructure
 [containerization, CI/CD, deployment strategy, observability, health checks]
 
@@ -170,7 +175,7 @@ After all specialist tasks complete, claim the synthesize task. Read all partial
 [specific callouts from POC that need rework, in priority order]
 \`\`\`
 
-**${targetPath}/.proteus-forge/02-design/design-meta.json** — Machine-readable metadata:
+**${targetPath}/.proteus-forge/03-design/design-meta.json** — Machine-readable metadata:
 \`\`\`json
 {
   "forgeVersion": "1.0.0",
@@ -205,7 +210,7 @@ Ensure every feature from features.json is mapped to at least one service in fea
 
 - Read features.json FIRST before doing anything else.
 - The source at ${sourcePath} is READ-ONLY reference material.
-- Create the directories ${targetPath}/.proteus-forge/02-design/partials/ before specialists start.
+- Create the directories ${targetPath}/.proteus-forge/03-design/partials/ before specialists start.
 - Design for production quality — address the known issues from inspection.
 - Keep the architecture pragmatic — don't over-engineer for a POC-to-production transformation.
 `;

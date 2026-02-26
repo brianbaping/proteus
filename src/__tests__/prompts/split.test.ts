@@ -16,17 +16,17 @@ describe("split prompt", () => {
 
   it("references plan.json as input", () => {
     const prompt = generateSplitLeadPrompt(targetPath);
-    expect(prompt).toContain("03-plan/plan.json");
+    expect(prompt).toContain("04-plan/plan.json");
   });
 
   it("references design-meta.json as input", () => {
     const prompt = generateSplitLeadPrompt(targetPath);
-    expect(prompt).toContain("02-design/design-meta.json");
+    expect(prompt).toContain("03-design/design-meta.json");
   });
 
   it("includes output path for manifest.json", () => {
     const prompt = generateSplitLeadPrompt(targetPath);
-    expect(prompt).toContain("04-tracks/");
+    expect(prompt).toContain("05-tracks/");
     expect(prompt).toContain("manifest.json");
   });
 

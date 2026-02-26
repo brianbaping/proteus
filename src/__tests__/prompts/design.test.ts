@@ -27,10 +27,10 @@ describe("design prompt", () => {
 
   it("includes output paths for design artifacts", () => {
     const prompt = generateDesignLeadPrompt(sourcePath, targetPath);
-    expect(prompt).toContain("02-design/design.md");
-    expect(prompt).toContain("02-design/design-meta.json");
-    expect(prompt).toContain("02-design/scope.json");
-    expect(prompt).toContain("02-design/partials/");
+    expect(prompt).toContain("03-design/design.md");
+    expect(prompt).toContain("03-design/design-meta.json");
+    expect(prompt).toContain("03-design/scope.json");
+    expect(prompt).toContain("03-design/partials/");
   });
 
   it("includes design-meta.json schema structure", () => {

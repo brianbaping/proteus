@@ -46,13 +46,13 @@ describe("revert command", () => {
 
   it("removes directories after the specified stage", async () => {
     const forgeDir = join(tempDir, ".proteus-forge");
-    await mkdir(join(forgeDir, "02-design"), { recursive: true });
-    await mkdir(join(forgeDir, "03-plan"), { recursive: true });
-    await mkdir(join(forgeDir, "04-tracks"), { recursive: true });
+    await mkdir(join(forgeDir, "03-design"), { recursive: true });
+    await mkdir(join(forgeDir, "04-plan"), { recursive: true });
+    await mkdir(join(forgeDir, "05-tracks"), { recursive: true });
 
-    await writeFile(join(forgeDir, "02-design", "design.md"), "# Design");
-    await writeFile(join(forgeDir, "03-plan", "plan.json"), "{}");
-    await writeFile(join(forgeDir, "04-tracks", "manifest.json"), "{}");
+    await writeFile(join(forgeDir, "03-design", "design.md"), "# Design");
+    await writeFile(join(forgeDir, "04-plan", "plan.json"), "{}");
+    await writeFile(join(forgeDir, "05-tracks", "manifest.json"), "{}");
 
     // Dynamically import to apply mocks
     const { revertCommand } = await import("../../commands/revert.js");
@@ -60,16 +60,16 @@ describe("revert command", () => {
       from: "user",
     });
 
-    expect(existsSync(join(forgeDir, "02-design"))).toBe(false);
-    expect(existsSync(join(forgeDir, "03-plan"))).toBe(false);
-    expect(existsSync(join(forgeDir, "04-tracks"))).toBe(false);
+    expect(existsSync(join(forgeDir, "03-design"))).toBe(false);
+    expect(existsSync(join(forgeDir, "04-plan"))).toBe(false);
+    expect(existsSync(join(forgeDir, "05-tracks"))).toBe(false);
   });
 
   it("skips directories that do not exist", async () => {
     const forgeDir = join(tempDir, ".proteus-forge");
     // Only create plan, not design or tracks
-    await mkdir(join(forgeDir, "03-plan"), { recursive: true });
-    await writeFile(join(forgeDir, "03-plan", "plan.json"), "{}");
+    await mkdir(join(forgeDir, "04-plan"), { recursive: true });
+    await writeFile(join(forgeDir, "04-plan", "plan.json"), "{}");
 
     const { revertCommand } = await import("../../commands/revert.js");
     await revertCommand.parseAsync(["inspect", "test-project"], {
@@ -77,13 +77,13 @@ describe("revert command", () => {
     });
 
     // plan should be removed, others were already gone
-    expect(existsSync(join(forgeDir, "03-plan"))).toBe(false);
+    expect(existsSync(join(forgeDir, "04-plan"))).toBe(false);
   });
 
   it("cleans cost entries for removed stages", async () => {
     const forgeDir = join(tempDir, ".proteus-forge");
-    await mkdir(join(forgeDir, "03-plan"), { recursive: true });
-    await writeFile(join(forgeDir, "03-plan", "plan.json"), "{}");
+    await mkdir(join(forgeDir, "04-plan"), { recursive: true });
+    await writeFile(join(forgeDir, "04-plan", "plan.json"), "{}");
 
     // Create costs file with entries for multiple stages
     await writeFile(
@@ -112,8 +112,8 @@ describe("revert command", () => {
 
   it("appends log entry", async () => {
     const forgeDir = join(tempDir, ".proteus-forge");
-    await mkdir(join(forgeDir, "02-design"), { recursive: true });
-    await writeFile(join(forgeDir, "02-design", "design.md"), "#");
+    await mkdir(join(forgeDir, "03-design"), { recursive: true });
+    await writeFile(join(forgeDir, "03-design", "design.md"), "#");
 
     const { revertCommand } = await import("../../commands/revert.js");
     await revertCommand.parseAsync(["inspect", "test-project"], {
@@ -158,8 +158,8 @@ describe("revert command", () => {
     vi.mocked(confirm).mockResolvedValue(false);
 
     const forgeDir = join(tempDir, ".proteus-forge");
-    await mkdir(join(forgeDir, "02-design"), { recursive: true });
-    await writeFile(join(forgeDir, "02-design", "design.md"), "#");
+    await mkdir(join(forgeDir, "03-design"), { recursive: true });
+    await writeFile(join(forgeDir, "03-design", "design.md"), "#");
 
     const { revertCommand } = await import("../../commands/revert.js");
     await revertCommand.parseAsync(["inspect", "test-project"], {
@@ -167,6 +167,6 @@ describe("revert command", () => {
     });
 
     // Directory should still exist
-    expect(existsSync(join(forgeDir, "02-design"))).toBe(true);
+    expect(existsSync(join(forgeDir, "03-design"))).toBe(true);
   });
 });

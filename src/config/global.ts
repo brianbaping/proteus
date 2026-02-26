@@ -40,6 +40,7 @@ export function getDefaultGlobalConfig(): GlobalConfig {
       "build-team": "fast",
       "inspect-specialist": "standard",
       synthesizer: "standard",
+      "style-lead": "standard",
       "design-specialist": "advanced",
       "plan-generator": "standard",
       "execute-agent": "advanced",

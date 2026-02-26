@@ -46,8 +46,8 @@ export interface ExecuteContext {
 export async function loadExecuteContext(
   targetPath: string
 ): Promise<ExecuteContext> {
-  const tracksDir = join(targetPath, ".proteus-forge", "04-tracks");
-  const planPath = join(targetPath, ".proteus-forge", "03-plan", "plan.json");
+  const tracksDir = join(targetPath, ".proteus-forge", "05-tracks");
+  const planPath = join(targetPath, ".proteus-forge", "04-plan", "plan.json");
 
   // Read manifest
   const manifest = JSON.parse(
@@ -136,9 +136,9 @@ ${Object.entries(sharedTrack.context?.fileOwnershipMap ?? {})
 Source POC (read-only reference): ${sourcePath}
 Target repo (build here): ${targetPath}
 
-Architecture design: ${targetPath}/.proteus-forge/02-design/design.md
-Plan: ${targetPath}/.proteus-forge/03-plan/plan.json
-Tracks: ${targetPath}/.proteus-forge/04-tracks/
+Architecture design: ${targetPath}/.proteus-forge/03-design/design.md
+Plan: ${targetPath}/.proteus-forge/04-plan/plan.json
+Tracks: ${targetPath}/.proteus-forge/05-tracks/
 
 ## All Tasks (${ctx.tasks.length} tasks across ${ctx.waveCount} waves)
 
@@ -149,9 +149,10 @@ ${taskSummary}
 ### Step 1: Read Context
 
 Read these files to understand the full picture:
-1. ${targetPath}/.proteus-forge/02-design/design.md — the architecture
-2. ${targetPath}/.proteus-forge/03-plan/plan.json — every task with acceptance criteria
-3. Each track file in ${targetPath}/.proteus-forge/04-tracks/ — per-discipline context
+1. ${targetPath}/.proteus-forge/03-design/design.md — the architecture
+2. ${targetPath}/.proteus-forge/04-plan/plan.json — every task with acceptance criteria
+3. Each track file in ${targetPath}/.proteus-forge/05-tracks/ — per-discipline context
+4. ${targetPath}/.proteus-forge/02-style/style-guide.json — visual identity (colors, typography, spacing, layout patterns)
 
 Also have the source POC at ${sourcePath} available as reference for understanding the original implementation intent. Do NOT copy POC code — reimplement according to the design.
 
@@ -175,6 +176,7 @@ Each teammate's spawn prompt should include:
 5. That the source POC at ${sourcePath} is read-only reference (do not copy code)
 6. Testing expectations: if testingExpectation is "unit", write unit tests alongside code
 7. To mark tasks complete on the shared task list when done
+8. For frontend engineers: the style guide at ${targetPath}/.proteus-forge/02-style/style-guide.json is **visual acceptance criteria** — the production UI must preserve the visual identity documented there. Use the exact color palette, typography scale, spacing values, and layout patterns. Do not invent new styles.
 
 ### Step 4: Create Tasks on Shared Task List
 
@@ -194,8 +196,8 @@ Tasks that you (the Lead) already completed in Step 2 should be created as alrea
 After all tasks are complete:
 1. Verify key files exist (package.json, tsconfig.json, main entry points)
 2. Write a session summary to TWO files:
-   - **${targetPath}/.proteus-forge/05-execute/session.json** — Machine-readable metadata
-   - **${targetPath}/.proteus-forge/05-execute/execute.md** — Human-readable summary
+   - **${targetPath}/.proteus-forge/06-execute/session.json** — Machine-readable metadata
+   - **${targetPath}/.proteus-forge/06-execute/execute.md** — Human-readable summary
 
 The session.json schema:
 \`\`\`json
@@ -229,7 +231,7 @@ This document is intended for human review — write it in clear prose, not JSON
 - The source at ${sourcePath} is READ-ONLY. Never modify it. Reimplement, don't copy.
 - Each teammate owns specific files — enforce ownership boundaries.
 - Teammates should write unit tests for tasks with testingExpectation "unit".
-- Create ${targetPath}/.proteus-forge/05-execute/ directory before writing session.json.
+- Create ${targetPath}/.proteus-forge/06-execute/ directory before writing session.json.
 - If you complete shared tasks first, ensure the scaffolding is committed/written before spawning teammates so they can build on it.
 `;
 }

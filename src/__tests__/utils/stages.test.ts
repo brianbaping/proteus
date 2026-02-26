@@ -27,14 +27,14 @@ describe("stages", () => {
   describe("getStageOrder", () => {
     it("returns stages in correct order", () => {
       const order = getStageOrder();
-      expect(order).toEqual(["inspect", "design", "plan", "split", "execute"]);
+      expect(order).toEqual(["inspect", "style", "design", "plan", "split", "execute"]);
     });
   });
 
   describe("getStageStatuses", () => {
     it("marks all stages as incomplete when no artifacts exist", () => {
       const statuses = getStageStatuses(tempDir);
-      expect(statuses).toHaveLength(5);
+      expect(statuses).toHaveLength(6);
       for (const status of statuses) {
         expect(status.complete).toBe(false);
       }
@@ -54,9 +54,9 @@ describe("stages", () => {
     });
 
     it("marks design as complete when design.md exists", async () => {
-      await mkdir(join(tempDir, ".proteus-forge", "02-design"), { recursive: true });
+      await mkdir(join(tempDir, ".proteus-forge", "03-design"), { recursive: true });
       await writeFile(
-        join(tempDir, ".proteus-forge", "02-design", "design.md"),
+        join(tempDir, ".proteus-forge", "03-design", "design.md"),
         "# Design"
       );
 
@@ -71,28 +71,30 @@ describe("stages", () => {
       expect(getCurrentStage(tempDir)).toBe("new");
     });
 
-    it("returns 'design' when inspect is complete", async () => {
+    it("returns 'style' when inspect is complete", async () => {
       await mkdir(join(tempDir, ".proteus-forge", "01-inspect"), { recursive: true });
       await writeFile(
         join(tempDir, ".proteus-forge", "01-inspect", "features.json"),
         "{}"
       );
 
-      expect(getCurrentStage(tempDir)).toBe("design");
+      expect(getCurrentStage(tempDir)).toBe("style");
     });
 
     it("returns 'done' when all stages are complete", async () => {
       await mkdir(join(tempDir, ".proteus-forge", "01-inspect"), { recursive: true });
-      await mkdir(join(tempDir, ".proteus-forge", "02-design"), { recursive: true });
-      await mkdir(join(tempDir, ".proteus-forge", "03-plan"), { recursive: true });
-      await mkdir(join(tempDir, ".proteus-forge", "04-tracks"), { recursive: true });
-      await mkdir(join(tempDir, ".proteus-forge", "05-execute"), { recursive: true });
+      await mkdir(join(tempDir, ".proteus-forge", "02-style"), { recursive: true });
+      await mkdir(join(tempDir, ".proteus-forge", "03-design"), { recursive: true });
+      await mkdir(join(tempDir, ".proteus-forge", "04-plan"), { recursive: true });
+      await mkdir(join(tempDir, ".proteus-forge", "05-tracks"), { recursive: true });
+      await mkdir(join(tempDir, ".proteus-forge", "06-execute"), { recursive: true });
 
       await writeFile(join(tempDir, ".proteus-forge", "01-inspect", "features.json"), "{}");
-      await writeFile(join(tempDir, ".proteus-forge", "02-design", "design.md"), "#");
-      await writeFile(join(tempDir, ".proteus-forge", "03-plan", "plan.json"), "{}");
-      await writeFile(join(tempDir, ".proteus-forge", "04-tracks", "manifest.json"), "{}");
-      await writeFile(join(tempDir, ".proteus-forge", "05-execute", "session.json"), "{}");
+      await writeFile(join(tempDir, ".proteus-forge", "02-style", "style-guide.json"), "{}");
+      await writeFile(join(tempDir, ".proteus-forge", "03-design", "design.md"), "#");
+      await writeFile(join(tempDir, ".proteus-forge", "04-plan", "plan.json"), "{}");
+      await writeFile(join(tempDir, ".proteus-forge", "05-tracks", "manifest.json"), "{}");
+      await writeFile(join(tempDir, ".proteus-forge", "06-execute", "session.json"), "{}");
 
       expect(getCurrentStage(tempDir)).toBe("done");
     });
@@ -101,16 +103,18 @@ describe("stages", () => {
   describe("getStageDir", () => {
     it("returns the directory name for each stage", () => {
       expect(getStageDir("inspect")).toBe("01-inspect");
-      expect(getStageDir("design")).toBe("02-design");
-      expect(getStageDir("plan")).toBe("03-plan");
-      expect(getStageDir("split")).toBe("04-tracks");
-      expect(getStageDir("execute")).toBe("05-execute");
+      expect(getStageDir("style")).toBe("02-style");
+      expect(getStageDir("design")).toBe("03-design");
+      expect(getStageDir("plan")).toBe("04-plan");
+      expect(getStageDir("split")).toBe("05-tracks");
+      expect(getStageDir("execute")).toBe("06-execute");
     });
   });
 
   describe("getStagesAfter", () => {
     it("returns all stages after inspect", () => {
       expect(getStagesAfter("inspect")).toEqual([
+        "style",
         "design",
         "plan",
         "split",
@@ -134,6 +138,7 @@ describe("stages", () => {
   describe("isValidStage", () => {
     it("returns true for valid stage names", () => {
       expect(isValidStage("inspect")).toBe(true);
+      expect(isValidStage("style")).toBe(true);
       expect(isValidStage("design")).toBe(true);
       expect(isValidStage("plan")).toBe(true);
       expect(isValidStage("split")).toBe(true);
@@ -155,20 +160,20 @@ describe("stages", () => {
 
     it("detects when upstream was modified after downstream", async () => {
       await mkdir(join(tempDir, ".proteus-forge", "01-inspect"), { recursive: true });
-      await mkdir(join(tempDir, ".proteus-forge", "02-design"), { recursive: true });
+      await mkdir(join(tempDir, ".proteus-forge", "02-style"), { recursive: true });
 
-      // Create design first (older)
-      await writeFile(join(tempDir, ".proteus-forge", "02-design", "design.md"), "#");
+      // Create style first (older)
+      await writeFile(join(tempDir, ".proteus-forge", "02-style", "style-guide.json"), "{}");
 
       // Wait a bit so timestamps differ
       await new Promise((r) => setTimeout(r, 50));
 
-      // Then modify inspect (newer) — simulates editing features after design was done
+      // Then modify inspect (newer) — simulates editing features after style was done
       await writeFile(join(tempDir, ".proteus-forge", "01-inspect", "features.json"), "{}");
 
       const warnings = checkStaleness(tempDir);
       expect(warnings.length).toBeGreaterThanOrEqual(1);
-      expect(warnings[0].stage).toBe("design");
+      expect(warnings[0].stage).toBe("style");
     });
   });
 });

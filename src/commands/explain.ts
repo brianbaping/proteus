@@ -25,11 +25,12 @@ export const explainCommand = new Command("explain")
     const contextFiles: string[] = [];
     const artifactPaths = [
       "01-inspect/features.json",
-      "02-design/design.md",
-      "02-design/design-meta.json",
-      "03-plan/plan.md",
-      "03-plan/plan.json",
-      "04-tracks/manifest.json",
+      "02-style/style-guide.json",
+      "03-design/design.md",
+      "03-design/design-meta.json",
+      "04-plan/plan.md",
+      "04-plan/plan.json",
+      "05-tracks/manifest.json",
     ];
 
     for (const p of artifactPaths) {

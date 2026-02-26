@@ -197,9 +197,9 @@ async function* createInboxStream(
   signal: AbortSignal,
   pollIntervalMs: number = 3000
 ): AsyncGenerator<SDKUserMessage> {
-  // Derive the target path from inboxDir (strip .proteus-forge/05-execute/inbox)
+  // Derive the target path from inboxDir (strip .proteus-forge/06-execute/inbox)
   const targetPath = inboxDir.replace(
-    /\/.proteus-forge\/05-execute\/inbox\/?$/,
+    /\/.proteus-forge\/06-execute\/inbox\/?$/,
     ""
   );
 

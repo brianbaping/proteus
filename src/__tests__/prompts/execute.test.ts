@@ -47,9 +47,9 @@ function makeTestContext(): ExecuteContext {
 
   return {
     tracks: [
-      { id: "track-shared", discipline: "shared", taskCount: 1, file: "04-tracks/shared.json" },
-      { id: "track-backend", discipline: "backend", taskCount: 2, file: "04-tracks/backend.json" },
-      { id: "track-frontend", discipline: "frontend", taskCount: 1, file: "04-tracks/frontend.json" },
+      { id: "track-shared", discipline: "shared", taskCount: 1, file: "05-tracks/shared.json" },
+      { id: "track-backend", discipline: "backend", taskCount: 2, file: "05-tracks/backend.json" },
+      { id: "track-frontend", discipline: "frontend", taskCount: 1, file: "05-tracks/frontend.json" },
     ],
     trackDetails,
     tasks: [
@@ -163,12 +163,12 @@ describe("execute prompt", () => {
 
   it("references design.md for architecture context", () => {
     const prompt = generateExecuteLeadPrompt(sourcePath, targetPath, ctx);
-    expect(prompt).toContain("02-design/design.md");
+    expect(prompt).toContain("03-design/design.md");
   });
 
   it("references plan.json for task details", () => {
     const prompt = generateExecuteLeadPrompt(sourcePath, targetPath, ctx);
-    expect(prompt).toContain("03-plan/plan.json");
+    expect(prompt).toContain("04-plan/plan.json");
   });
 
   it("instructs not to copy POC code", () => {
@@ -185,7 +185,7 @@ describe("execute prompt", () => {
 
   it("includes session.json output schema", () => {
     const prompt = generateExecuteLeadPrompt(sourcePath, targetPath, ctx);
-    expect(prompt).toContain("05-execute/session.json");
+    expect(prompt).toContain("06-execute/session.json");
     expect(prompt).toContain("totalTasks");
   });
 

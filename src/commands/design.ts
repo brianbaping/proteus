@@ -85,7 +85,7 @@ export async function runDesign(
     return true;
   }
 
-  const designDir = join(targetPath, ".proteus-forge", "02-design");
+  const designDir = join(targetPath, ".proteus-forge", "03-design");
   await mkdir(join(designDir, "partials"), { recursive: true });
 
   const leadPrompt = generateDesignLeadPrompt(sourcePath, targetPath, brief);

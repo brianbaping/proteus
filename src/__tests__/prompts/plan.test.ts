@@ -18,12 +18,12 @@ describe("plan prompt", () => {
 
   it("references design.md as primary input", () => {
     const prompt = generatePlanLeadPrompt(sourcePath, targetPath);
-    expect(prompt).toContain("02-design/design.md");
+    expect(prompt).toContain("03-design/design.md");
   });
 
   it("references design-meta.json as secondary input", () => {
     const prompt = generatePlanLeadPrompt(sourcePath, targetPath);
-    expect(prompt).toContain("02-design/design-meta.json");
+    expect(prompt).toContain("03-design/design-meta.json");
   });
 
   it("references features.json for coverage checking", () => {
@@ -33,8 +33,8 @@ describe("plan prompt", () => {
 
   it("includes output paths for plan artifacts", () => {
     const prompt = generatePlanLeadPrompt(sourcePath, targetPath);
-    expect(prompt).toContain("03-plan/plan.json");
-    expect(prompt).toContain("03-plan/plan.md");
+    expect(prompt).toContain("04-plan/plan.json");
+    expect(prompt).toContain("04-plan/plan.md");
   });
 
   it("includes the task schema with required fields", () => {

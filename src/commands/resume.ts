@@ -33,7 +33,7 @@ export const resumeCommand = new Command("resume")
     const targetPath = entry.target;
 
     // Check prerequisite
-    const manifestPath = join(targetPath, ".proteus-forge", "04-tracks", "manifest.json");
+    const manifestPath = join(targetPath, ".proteus-forge", "05-tracks", "manifest.json");
     if (!existsSync(manifestPath)) {
       console.error("Split stage not complete. Run the full pipeline first.");
       process.exit(1);
@@ -83,7 +83,7 @@ The code from those waves already exists in the target directory.
 DO NOT re-do work from waves 1-${lastWave}. Start from wave ${lastWave + 1}.
 Check what files already exist before creating new ones.`;
 
-    const executeDir = join(targetPath, ".proteus-forge", "05-execute");
+    const executeDir = join(targetPath, ".proteus-forge", "06-execute");
     const inboxDir = join(executeDir, "inbox");
     await mkdir(inboxDir, { recursive: true });
 

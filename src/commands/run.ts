@@ -7,6 +7,7 @@ import type { StageName } from "../config/types.js";
 
 // Import all stage runners
 import { runInspect } from "./inspect.js";
+import { runStyle } from "./style.js";
 import { runDesign } from "./design.js";
 import { runPlan } from "./plan.js";
 import { runSplit } from "./split.js";
@@ -19,6 +20,7 @@ type StageRunner = (
 
 const STAGE_RUNNERS: Record<StageName, StageRunner> = {
   inspect: (name, opts) => runInspect(name, { budget: opts.budget }),
+  style: (name, opts) => runStyle(name, { budget: opts.budget }),
   design: (name, opts) => runDesign(name, { budget: opts.budget, brief: opts.brief, briefFile: opts.briefFile }),
   plan: (name, opts) => runPlan(name, { budget: opts.budget }),
   split: (name, opts) => runSplit(name, { budget: opts.budget }),

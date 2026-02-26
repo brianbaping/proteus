@@ -30,7 +30,7 @@ export async function runSplit(
 
   const targetPath = project.entry.target;
 
-  const planJsonPath = join(targetPath, ".proteus-forge", "03-plan", "plan.json");
+  const planJsonPath = join(targetPath, ".proteus-forge", "04-plan", "plan.json");
   if (!existsSync(planJsonPath)) {
     console.error("Plan stage not complete. Run `proteus-forge plan` first.");
     return false;
@@ -69,7 +69,7 @@ export async function runSplit(
     return true;
   }
 
-  const tracksDir = join(targetPath, ".proteus-forge", "04-tracks");
+  const tracksDir = join(targetPath, ".proteus-forge", "05-tracks");
   await mkdir(tracksDir, { recursive: true });
 
   const leadPrompt = generateSplitLeadPrompt(targetPath);

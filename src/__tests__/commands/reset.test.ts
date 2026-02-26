@@ -46,15 +46,15 @@ describe("reset command", () => {
 
   it("removes the single stage directory", async () => {
     const forgeDir = join(tempDir, ".proteus-forge");
-    await mkdir(join(forgeDir, "02-design"), { recursive: true });
-    await writeFile(join(forgeDir, "02-design", "design.md"), "# Design");
+    await mkdir(join(forgeDir, "03-design"), { recursive: true });
+    await writeFile(join(forgeDir, "03-design", "design.md"), "# Design");
 
     const { resetCommand } = await import("../../commands/reset.js");
     await resetCommand.parseAsync(["design", "test-project"], {
       from: "user",
     });
 
-    expect(existsSync(join(forgeDir, "02-design"))).toBe(false);
+    expect(existsSync(join(forgeDir, "03-design"))).toBe(false);
   });
 
   it("does nothing when directory does not exist", async () => {
@@ -74,11 +74,11 @@ describe("reset command", () => {
   it("warns about downstream stages with artifacts", async () => {
     const forgeDir = join(tempDir, ".proteus-forge");
     await mkdir(join(forgeDir, "01-inspect"), { recursive: true });
-    await mkdir(join(forgeDir, "02-design"), { recursive: true });
-    await mkdir(join(forgeDir, "03-plan"), { recursive: true });
+    await mkdir(join(forgeDir, "03-design"), { recursive: true });
+    await mkdir(join(forgeDir, "04-plan"), { recursive: true });
     await writeFile(join(forgeDir, "01-inspect", "features.json"), "{}");
-    await writeFile(join(forgeDir, "02-design", "design.md"), "#");
-    await writeFile(join(forgeDir, "03-plan", "plan.json"), "{}");
+    await writeFile(join(forgeDir, "03-design", "design.md"), "#");
+    await writeFile(join(forgeDir, "04-plan", "plan.json"), "{}");
 
     const consoleSpy = vi.spyOn(console, "log");
 
@@ -97,8 +97,8 @@ describe("reset command", () => {
 
   it("cleans cost entry for the reset stage", async () => {
     const forgeDir = join(tempDir, ".proteus-forge");
-    await mkdir(join(forgeDir, "02-design"), { recursive: true });
-    await writeFile(join(forgeDir, "02-design", "design.md"), "#");
+    await mkdir(join(forgeDir, "03-design"), { recursive: true });
+    await writeFile(join(forgeDir, "03-design", "design.md"), "#");
 
     await writeFile(
       join(forgeDir, "costs.json"),
@@ -124,8 +124,8 @@ describe("reset command", () => {
 
   it("appends log entry", async () => {
     const forgeDir = join(tempDir, ".proteus-forge");
-    await mkdir(join(forgeDir, "03-plan"), { recursive: true });
-    await writeFile(join(forgeDir, "03-plan", "plan.json"), "{}");
+    await mkdir(join(forgeDir, "04-plan"), { recursive: true });
+    await writeFile(join(forgeDir, "04-plan", "plan.json"), "{}");
 
     const { resetCommand } = await import("../../commands/reset.js");
     await resetCommand.parseAsync(["plan", "test-project"], {
@@ -142,14 +142,14 @@ describe("reset command", () => {
     vi.mocked(confirm).mockResolvedValue(false);
 
     const forgeDir = join(tempDir, ".proteus-forge");
-    await mkdir(join(forgeDir, "02-design"), { recursive: true });
-    await writeFile(join(forgeDir, "02-design", "design.md"), "#");
+    await mkdir(join(forgeDir, "03-design"), { recursive: true });
+    await writeFile(join(forgeDir, "03-design", "design.md"), "#");
 
     const { resetCommand } = await import("../../commands/reset.js");
     await resetCommand.parseAsync(["design", "test-project"], {
       from: "user",
     });
 
-    expect(existsSync(join(forgeDir, "02-design"))).toBe(true);
+    expect(existsSync(join(forgeDir, "03-design"))).toBe(true);
   });
 });

@@ -4,22 +4,25 @@ import type { StageName, StageStatus } from "../config/types.js";
 
 const STAGE_ARTIFACTS: Record<StageName, string> = {
   inspect: "01-inspect/features.json",
-  design: "02-design/design.md",
-  plan: "03-plan/plan.json",
-  split: "04-tracks/manifest.json",
-  execute: "05-execute/session.json",
+  style: "02-style/style-guide.json",
+  design: "03-design/design.md",
+  plan: "04-plan/plan.json",
+  split: "05-tracks/manifest.json",
+  execute: "06-execute/session.json",
 };
 
 const STAGE_DIRS: Record<StageName, string> = {
   inspect: "01-inspect",
-  design: "02-design",
-  plan: "03-plan",
-  split: "04-tracks",
-  execute: "05-execute",
+  style: "02-style",
+  design: "03-design",
+  plan: "04-plan",
+  split: "05-tracks",
+  execute: "06-execute",
 };
 
 const STAGE_ORDER: StageName[] = [
   "inspect",
+  "style",
   "design",
   "plan",
   "split",

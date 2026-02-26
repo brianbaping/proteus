@@ -28,7 +28,7 @@ export async function runExecute(
   const sourcePath = entry.source;
   const targetPath = entry.target;
 
-  const manifestPath = join(targetPath, ".proteus-forge", "04-tracks", "manifest.json");
+  const manifestPath = join(targetPath, ".proteus-forge", "05-tracks", "manifest.json");
   if (!existsSync(manifestPath)) {
     console.error("Split stage not complete. Run `proteus-forge split` first.");
     return false;
@@ -84,7 +84,7 @@ export async function runExecute(
     return true;
   }
 
-  const executeDir = join(targetPath, ".proteus-forge", "05-execute");
+  const executeDir = join(targetPath, ".proteus-forge", "06-execute");
   const inboxDir = join(executeDir, "inbox");
   await mkdir(inboxDir, { recursive: true });
   console.log(`\n  Inbox active — send messages with: proteus-forge inform <agent> "<message>"\n`);

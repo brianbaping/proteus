@@ -12,6 +12,7 @@ import { retargetCommand } from "./commands/retarget.js";
 import { statusCommand } from "./commands/status.js";
 import { configCommand } from "./commands/config.js";
 import { inspectCommand } from "./commands/inspect.js";
+import { styleCommand } from "./commands/style.js";
 import { designCommand } from "./commands/design.js";
 import { planCommand } from "./commands/plan.js";
 import { splitCommand } from "./commands/split.js";
@@ -39,11 +40,12 @@ program
   .version("1.0.0");
 
 // Primary workflow (in order of use)
-const PRIMARY_COMMAND_COUNT = 8;
+const PRIMARY_COMMAND_COUNT = 9;
 program.addCommand(setupCommand);
 program.addCommand(newCommand);
 program.addCommand(useCommand);
 program.addCommand(inspectCommand);
+program.addCommand(styleCommand);
 program.addCommand(designCommand);
 program.addCommand(planCommand);
 program.addCommand(splitCommand);

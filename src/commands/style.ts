@@ -4,20 +4,19 @@ import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { resolveProject } from "../utils/resolve-project.js";
 import { readGlobalConfig } from "../config/global.js";
-import { readProjectConfig } from "../config/project.js";
-import { generateInspectLeadPrompt } from "../prompts/inspect.js";
+import { generateStyleLeadPrompt } from "../prompts/style.js";
 import { launchSession } from "../session/launcher.js";
 import { gitStageAndCommit } from "../utils/git.js";
 import { appendCostEntry } from "../utils/costs.js";
 import { appendLogEntry } from "../utils/log.js";
-import { printInspectTeamSummary } from "../utils/team-summary.js";
+import { checkStaleness } from "../utils/stages.js";
 import { createDashboard } from "../utils/progress.js";
 
 /**
- * Run the inspect stage. Returns true on success, false on failure.
+ * Run the style stage. Returns true on success, false on failure.
  * Exported for use by `proteus-forge run`.
  */
-export async function runInspect(
+export async function runStyle(
   name: string | undefined,
   options: { dryRun?: boolean; budget?: number }
 ): Promise<boolean> {
@@ -33,48 +32,52 @@ export async function runInspect(
   const sourcePath = entry.source;
   const targetPath = entry.target;
 
-  if (!existsSync(sourcePath)) {
-    console.error(`Source path not found: ${sourcePath}`);
+  const featuresPath = join(targetPath, ".proteus-forge", "01-inspect", "features.json");
+  if (!existsSync(featuresPath)) {
+    console.error("Inspect stage not complete. Run `proteus-forge inspect` first.");
     return false;
   }
 
-  const globalConfig = await readGlobalConfig();
-  const _projectConfig = await readProjectConfig(targetPath);
+  const warnings = checkStaleness(targetPath);
+  for (const w of warnings) {
+    if (w.stage === "style") {
+      console.log(`  \u26a0 ${w.staleReason}. Consider re-running upstream stages first.\n`);
+    }
+  }
 
+  const globalConfig = await readGlobalConfig();
   if (!globalConfig) {
     console.error("Global config not found. Run `proteus-forge setup` first.");
     return false;
   }
 
-  const scoutRole = globalConfig.roles.scout;
-  const scoutTier = typeof scoutRole === "string" ? scoutRole : undefined;
-  const tierConfig = scoutTier ? globalConfig.tiers[scoutTier] : undefined;
+  const styleRole = globalConfig.roles["style-lead"];
+  const styleTier = typeof styleRole === "string" ? styleRole : undefined;
+  const tierConfig = styleTier ? globalConfig.tiers[styleTier] : undefined;
   const model = tierConfig?.model;
 
-  console.log(`\n[${project.name}] Inspecting source...\n`);
+  console.log(`\n[${project.name}] Extracting style guide...\n`);
   console.log(`  Source: ${sourcePath}`);
   console.log(`  Target: ${targetPath}`);
-  if (model) console.log(`  Model: ${model} (${scoutTier} tier)`);
+  if (model) console.log(`  Model: ${model} (${styleTier} tier)`);
+  console.log(`  Mode: single Lead session (no teammates)`);
 
   if (options.dryRun) {
-    console.log("\n  [Dry run] Would launch Agent Team:");
-    console.log("    Lead: scout (analyzes source, identifies domains)");
-    console.log("    Teammates: one per discovered domain (spawned dynamically)");
-    console.log("    Tasks: one per domain + synthesis");
-    console.log(`\n  Estimated cost: depends on source repo size`);
+    console.log("\n  [Dry run] Would launch single Lead session:");
+    console.log("    Reads: features.json, source CSS/style files");
+    console.log("    Produces: style-guide.json + style.md");
+    console.log(`\n  Estimated cost: ~$0.05-0.20`);
     console.log("  Run without --dry-run to proceed.\n");
     return true;
   }
 
-  const inspectDir = join(targetPath, ".proteus-forge", "01-inspect");
-  const partialsDir = join(inspectDir, "partials");
-  await mkdir(partialsDir, { recursive: true });
+  const styleDir = join(targetPath, ".proteus-forge", "02-style");
+  await mkdir(styleDir, { recursive: true });
 
-  const leadPrompt = generateInspectLeadPrompt(sourcePath, targetPath);
+  const leadPrompt = generateStyleLeadPrompt(sourcePath, targetPath);
+  console.log("\n  Launching session...\n");
 
-  console.log("\n  Launching Agent Team...\n");
-
-  const dashboard = createDashboard("inspect");
+  const dashboard = createDashboard("style");
   const result = await launchSession({
     prompt: leadPrompt,
     cwd: targetPath,
@@ -86,44 +89,43 @@ export async function runInspect(
   });
   dashboard.cleanup();
 
-  const featuresPath = join(inspectDir, "features.json");
-  const featuresExist = existsSync(featuresPath);
+  const styleGuidePath = join(styleDir, "style-guide.json");
+  const styleGuideExists = existsSync(styleGuidePath);
 
-  if ((result.success || featuresExist) && featuresExist) {
-    const label = result.success ? "Inspection complete" : "Inspection recovered";
+  if ((result.success || styleGuideExists) && styleGuideExists) {
+    const label = result.success ? "Style extraction complete" : "Style extraction recovered";
     console.log(`\n[${project.name}] ${label}.\n`);
-    await printInspectTeamSummary(targetPath);
-    console.log(`\n  Cost: $${result.cost.estimatedCost.toFixed(2)}`);
+    console.log(`  Cost: $${result.cost.estimatedCost.toFixed(2)}`);
     console.log(`  Duration: ${result.cost.duration}`);
 
     try {
-      const msg = result.success ? "proteus-forge: inspect complete" : "proteus-forge: inspect complete (recovered)";
+      const msg = result.success ? "proteus-forge: style complete" : "proteus-forge: style complete (recovered)";
       await gitStageAndCommit(targetPath, msg);
       console.log(`  Committed: "${msg}"`);
     } catch { /* empty */ }
 
-    await appendCostEntry(targetPath, "inspect", result.cost);
+    await appendCostEntry(targetPath, "style", result.cost);
     await appendLogEntry(targetPath, {
-      action: "inspect",
+      action: "style",
       status: result.success ? "success" : "recovered",
       duration: result.cost.duration,
       cost: result.cost.estimatedCost,
     });
 
-    console.log(`\n  Output: ${join(inspectDir, "inspect.md")}`);
-    console.log(`          ${featuresPath}`);
-    console.log(`  Review: proteus-forge review inspect`);
-    console.log(`  Next:   proteus-forge style\n`);
+    console.log(`\n  Output: ${join(styleDir, "style.md")}`);
+    console.log(`          ${styleGuidePath}`);
+    console.log(`  Review: proteus-forge review style`);
+    console.log(`  Next:   proteus-forge design\n`);
     return true;
   }
 
-  console.error(`\n[${project.name}] Inspection failed.\n`);
+  console.error(`\n[${project.name}] Style extraction failed.\n`);
   if (result.errors?.length) {
     for (const err of result.errors) console.error(`  Error: ${err}`);
   }
 
   await appendLogEntry(targetPath, {
-    action: "inspect",
+    action: "style",
     status: "failed",
     duration: result.cost.duration,
     cost: result.cost.estimatedCost,
@@ -133,12 +135,12 @@ export async function runInspect(
   return false;
 }
 
-export const inspectCommand = new Command("inspect")
-  .description("Analyze the source POC and produce a feature inventory")
+export const styleCommand = new Command("style")
+  .description("Extract the visual identity and style guide from the source POC")
   .argument("[name]", "Project name (uses active project if omitted)")
   .option("--dry-run", "Preview what would happen without launching agents")
   .option("--budget <amount>", "Maximum budget in USD for this stage", parseFloat)
   .action(async (name: string | undefined, options: { dryRun?: boolean; budget?: number }) => {
-    const success = await runInspect(name, options);
+    const success = await runStyle(name, options);
     if (!success) process.exit(1);
   });
