@@ -6,20 +6,8 @@ import type {
   Options,
 } from "@anthropic-ai/claude-agent-sdk";
 import type { StageCost } from "../config/types.js";
-import { readGlobalConfig } from "../config/global.js";
 import { consumeInboxMessages } from "../utils/inbox.js";
-
-/**
- * Resolve the Anthropic API key from config or environment.
- * Config values starting with "$" are treated as env var references.
- */
-async function resolveApiKey(): Promise<string | undefined> {
-  const config = await readGlobalConfig();
-  const apiKey = config?.providers?.anthropic?.apiKey;
-  if (!apiKey) return process.env.ANTHROPIC_API_KEY;
-  if (apiKey.startsWith("$")) return process.env[apiKey.slice(1)];
-  return apiKey;
-}
+import { resolveApiKey } from "../utils/api-key.js";
 
 export interface LaunchOptions {
   prompt: string;

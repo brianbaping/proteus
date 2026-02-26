@@ -4,6 +4,13 @@ import {
   writeGlobalConfig,
   getDefaultGlobalConfig,
 } from "../config/global.js";
+import { BOLD, RESET, DIM } from "../utils/ansi.js";
+import { resolveApiKey } from "../utils/api-key.js";
+import {
+  fetchAvailableModels,
+  extractModelFamily,
+  isModelAlias,
+} from "../utils/models-api.js";
 
 function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
   const keys = path.split(".");
@@ -71,7 +78,73 @@ const setSubcommand = new Command("set")
     console.log(`Set ${key} = ${typeof parsed === "object" ? JSON.stringify(parsed) : parsed}`);
   });
 
+const refreshModelsSubcommand = new Command("refresh-models")
+  .description("Fetch latest models from Anthropic API and update tier assignments")
+  .action(async () => {
+    const config = (await readGlobalConfig()) ?? getDefaultGlobalConfig();
+
+    const apiKey = await resolveApiKey();
+    if (!apiKey) {
+      console.error(
+        "No API key configured. Set providers.anthropic.apiKey in config or ANTHROPIC_API_KEY env var."
+      );
+      process.exit(1);
+    }
+
+    console.log("\nFetching models from Anthropic API...\n");
+
+    let models;
+    try {
+      models = await fetchAvailableModels(apiKey);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      console.error(`Failed to fetch models: ${msg}`);
+      process.exit(1);
+    }
+
+    // Filter to alias-style models only (no date suffixes)
+    const aliases = models.filter((m) => isModelAlias(m.id));
+
+    let anyUpdated = false;
+
+    for (const [tierName, tierConfig] of Object.entries(config.tiers)) {
+      const currentFamily = extractModelFamily(tierConfig.model);
+      if (!currentFamily) {
+        console.log(
+          `  ${tierName.padEnd(12)} ${tierConfig.model} ${DIM}(unknown family, skipped)${RESET}`
+        );
+        continue;
+      }
+
+      // Find the newest alias in the same family (first match — API returns newest first)
+      const newest = aliases.find(
+        (m) => extractModelFamily(m.id) === currentFamily
+      );
+
+      if (!newest || newest.id === tierConfig.model) {
+        console.log(
+          `  ${tierName.padEnd(12)} ${tierConfig.model} ${DIM}(current)${RESET}`
+        );
+        continue;
+      }
+
+      console.log(
+        `  ${tierName.padEnd(12)} ${tierConfig.model} → ${BOLD}${newest.id}${RESET} ${DIM}(updated)${RESET}`
+      );
+      tierConfig.model = newest.id;
+      anyUpdated = true;
+    }
+
+    if (anyUpdated) {
+      await writeGlobalConfig(config);
+      console.log(`\n${BOLD}Config updated.${RESET}\n`);
+    } else {
+      console.log("\nAll tiers are up to date.\n");
+    }
+  });
+
 export const configCommand = new Command("config")
   .description("Get or set Proteus Forge configuration values")
   .addCommand(getSubcommand)
-  .addCommand(setSubcommand);
+  .addCommand(setSubcommand)
+  .addCommand(refreshModelsSubcommand);

@@ -890,6 +890,86 @@ var statusCommand = new Command9("status").description("Show pipeline status for
 
 // src/commands/config.ts
 import { Command as Command10 } from "commander";
+
+// src/utils/ansi.ts
+var AGENT_COLORS = [
+  "\x1B[36m",
+  // cyan (lead)
+  "\x1B[33m",
+  // yellow
+  "\x1B[35m",
+  // magenta
+  "\x1B[32m",
+  // green
+  "\x1B[34m",
+  // blue
+  "\x1B[91m",
+  // bright red
+  "\x1B[93m",
+  // bright yellow
+  "\x1B[95m"
+  // bright magenta
+];
+var RESET = "\x1B[0m";
+var BOLD = "\x1B[1m";
+var DIM = "\x1B[2m";
+var SHOW_CURSOR = "\x1B[?25h";
+
+// src/utils/api-key.ts
+async function resolveApiKey() {
+  const config = await readGlobalConfig();
+  const apiKey = config?.providers?.anthropic?.apiKey;
+  if (!apiKey) return process.env.ANTHROPIC_API_KEY;
+  if (apiKey.startsWith("$")) return process.env[apiKey.slice(1)];
+  return apiKey;
+}
+
+// src/utils/models-api.ts
+async function fetchAvailableModels(apiKey) {
+  const models = [];
+  let afterId;
+  while (true) {
+    const url = new URL("https://api.anthropic.com/v1/models");
+    url.searchParams.set("limit", "1000");
+    if (afterId) {
+      url.searchParams.set("after_id", afterId);
+    }
+    const response = await fetch(url.toString(), {
+      headers: {
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01"
+      }
+    });
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error("Authentication failed: invalid API key");
+      }
+      throw new Error(
+        `Anthropic API error: ${response.status} ${response.statusText}`
+      );
+    }
+    const body = await response.json();
+    for (const m of body.data) {
+      models.push({
+        id: m.id,
+        displayName: m.display_name,
+        createdAt: m.created_at
+      });
+    }
+    if (!body.has_more || !body.last_id) break;
+    afterId = body.last_id;
+  }
+  return models;
+}
+function extractModelFamily(modelId) {
+  const match = modelId.match(/^claude-(\w+)-\d/);
+  return match?.[1];
+}
+function isModelAlias(modelId) {
+  return /^claude-\w+-\d+-\d+$/.test(modelId);
+}
+
+// src/commands/config.ts
 function getNestedValue(obj, path) {
   const keys = path.split(".");
   let current = obj;
@@ -938,7 +1018,59 @@ var setSubcommand = new Command10("set").description("Set a config value").argum
   await writeGlobalConfig(config);
   console.log(`Set ${key} = ${typeof parsed === "object" ? JSON.stringify(parsed) : parsed}`);
 });
-var configCommand = new Command10("config").description("Get or set Proteus Forge configuration values").addCommand(getSubcommand).addCommand(setSubcommand);
+var refreshModelsSubcommand = new Command10("refresh-models").description("Fetch latest models from Anthropic API and update tier assignments").action(async () => {
+  const config = await readGlobalConfig() ?? getDefaultGlobalConfig();
+  const apiKey = await resolveApiKey();
+  if (!apiKey) {
+    console.error(
+      "No API key configured. Set providers.anthropic.apiKey in config or ANTHROPIC_API_KEY env var."
+    );
+    process.exit(1);
+  }
+  console.log("\nFetching models from Anthropic API...\n");
+  let models;
+  try {
+    models = await fetchAvailableModels(apiKey);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Unknown error";
+    console.error(`Failed to fetch models: ${msg}`);
+    process.exit(1);
+  }
+  const aliases = models.filter((m) => isModelAlias(m.id));
+  let anyUpdated = false;
+  for (const [tierName, tierConfig] of Object.entries(config.tiers)) {
+    const currentFamily = extractModelFamily(tierConfig.model);
+    if (!currentFamily) {
+      console.log(
+        `  ${tierName.padEnd(12)} ${tierConfig.model} ${DIM}(unknown family, skipped)${RESET}`
+      );
+      continue;
+    }
+    const newest = aliases.find(
+      (m) => extractModelFamily(m.id) === currentFamily
+    );
+    if (!newest || newest.id === tierConfig.model) {
+      console.log(
+        `  ${tierName.padEnd(12)} ${tierConfig.model} ${DIM}(current)${RESET}`
+      );
+      continue;
+    }
+    console.log(
+      `  ${tierName.padEnd(12)} ${tierConfig.model} \u2192 ${BOLD}${newest.id}${RESET} ${DIM}(updated)${RESET}`
+    );
+    tierConfig.model = newest.id;
+    anyUpdated = true;
+  }
+  if (anyUpdated) {
+    await writeGlobalConfig(config);
+    console.log(`
+${BOLD}Config updated.${RESET}
+`);
+  } else {
+    console.log("\nAll tiers are up to date.\n");
+  }
+});
+var configCommand = new Command10("config").description("Get or set Proteus Forge configuration values").addCommand(getSubcommand).addCommand(setSubcommand).addCommand(refreshModelsSubcommand);
 
 // src/commands/inspect.ts
 import { Command as Command12 } from "commander";
@@ -1168,13 +1300,6 @@ function resolveModel(globalConfig, roleName, overrides = {}) {
 
 // src/session/launcher.ts
 import { query } from "@anthropic-ai/claude-agent-sdk";
-async function resolveApiKey() {
-  const config = await readGlobalConfig();
-  const apiKey = config?.providers?.anthropic?.apiKey;
-  if (!apiKey) return process.env.ANTHROPIC_API_KEY;
-  if (apiKey.startsWith("$")) return process.env[apiKey.slice(1)];
-  return apiKey;
-}
 async function launchSession(options) {
   const startTime = Date.now();
   let sessionId = "";
@@ -1356,30 +1481,6 @@ async function printDesignTeamSummary(targetPath) {
   } catch {
   }
 }
-
-// src/utils/ansi.ts
-var AGENT_COLORS = [
-  "\x1B[36m",
-  // cyan (lead)
-  "\x1B[33m",
-  // yellow
-  "\x1B[35m",
-  // magenta
-  "\x1B[32m",
-  // green
-  "\x1B[34m",
-  // blue
-  "\x1B[91m",
-  // bright red
-  "\x1B[93m",
-  // bright yellow
-  "\x1B[95m"
-  // bright magenta
-];
-var RESET = "\x1B[0m";
-var BOLD = "\x1B[1m";
-var DIM = "\x1B[2m";
-var SHOW_CURSOR = "\x1B[?25h";
 
 // src/utils/dashboard.ts
 function extractAgentName(input) {
@@ -4149,7 +4250,7 @@ var watchCommand = new Command28("watch").description("Watch a running execute s
 
 // src/commands/list-models.ts
 import { Command as Command29 } from "commander";
-var listModelsCommand = new Command29("list-models").description("Show configured model tiers and role assignments").action(async () => {
+var listModelsCommand = new Command29("list-models").description("Show configured model tiers and role assignments").option("--available", "Fetch and display available models from the Anthropic API").action(async (options) => {
   const config = await readGlobalConfig();
   if (!config) {
     console.error("Global config not found. Run `proteus-forge setup` first.");
@@ -4171,6 +4272,31 @@ ${BOLD}Role Assignments${RESET}
     console.log(`  ${role.padEnd(22)} ${display}`);
   }
   console.log();
+  if (options.available) {
+    const apiKey = await resolveApiKey();
+    if (!apiKey) {
+      console.error("No API key configured. Set providers.anthropic.apiKey in config or ANTHROPIC_API_KEY env var.");
+      process.exit(1);
+    }
+    try {
+      const models = await fetchAvailableModels(apiKey);
+      console.log(`${BOLD}Available Models (from API)${RESET}
+`);
+      for (const m of models) {
+        const date = m.createdAt.split("T")[0];
+        console.log(
+          `  ${m.id.padEnd(30)} ${m.displayName.padEnd(25)} ${DIM}${date}${RESET}`
+        );
+      }
+      console.log(`
+To update tiers: ${BOLD}proteus-forge config refresh-models${RESET}
+`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      console.error(`Failed to fetch models: ${msg}`);
+      process.exit(1);
+    }
+  }
 });
 
 // src/index.ts
