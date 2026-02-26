@@ -15,7 +15,8 @@ export function generatePlanLeadPrompt(
   const styleTasks = styleGuideExists
     ? `\n- Set up design tokens / theme configuration (reference \`02-style/style-guide.json\` for exact values)
 - Migrate component styling (preserve the visual identity from the style guide)
-- Implement responsive layout patterns (use breakpoints and patterns from the style guide)`
+- Implement responsive layout patterns (use breakpoints and patterns from the style guide)
+- Reproduce screen compositions (use the \`screens\` array for component placement per route/page)`
     : "";
 
   return `You are the Lead Planner for a Proteus Forge plan stage. Your job is to read the architecture design and produce a detailed task DAG (directed acyclic graph) with execution waves for building the production application.

@@ -30,7 +30,7 @@ Design the architecture to satisfy these requirements. If a requirement conflict
 
   const styleGuideExists = hasStyleGuide(targetPath);
   const styleReadInstruction = styleGuideExists
-    ? `\n\nAlso read ${targetPath}/.proteus-forge/02-style/style-guide.json to understand the POC's visual identity — styling technology, color palette, typography, layout patterns, and component patterns. This style guide must inform your frontend architecture decisions.`
+    ? `\n\nAlso read ${targetPath}/.proteus-forge/02-style/style-guide.json to understand the POC's visual identity — styling technology, color palette, typography, layout patterns, component patterns, and screen-level compositions. This style guide must inform your frontend architecture decisions.`
     : "";
 
   const stylingStrategySection = styleGuideExists

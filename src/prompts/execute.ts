@@ -137,7 +137,7 @@ ${Object.entries(sharedTrack.context?.fileOwnershipMap ?? {})
     : "";
 
   const styleSpawnInstruction = styleGuideExists
-    ? `\n8. For frontend engineers: the style guide at ${targetPath}/.proteus-forge/02-style/style-guide.json is **visual acceptance criteria** — the production UI must preserve the visual identity documented there. Use the exact color palette, typography scale, spacing values, and layout patterns. Do not invent new styles.`
+    ? `\n8. For frontend engineers: the style guide at ${targetPath}/.proteus-forge/02-style/style-guide.json is **visual and structural acceptance criteria** — the production UI must preserve the visual identity and screen layouts documented there. Use the exact color palette, typography scale, spacing values, and layout patterns. Reproduce the screen compositions from the \`screens\` array — place components in the same regions and arrangement as the POC. Do not invent new styles or rearrange screen layouts.`
     : "";
 
   return `You are the Orchestrator for a Proteus Forge execute stage. Your job is to coordinate a team of engineers to build production code based on the plan.

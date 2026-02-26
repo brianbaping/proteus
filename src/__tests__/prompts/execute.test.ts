@@ -214,7 +214,8 @@ describe("execute prompt", () => {
       vi.mocked(hasStyleGuide).mockReturnValue(true);
       const prompt = generateExecuteLeadPrompt(sourcePath, targetPath, ctx);
       expect(prompt).toContain("02-style/style-guide.json");
-      expect(prompt).toContain("visual acceptance criteria");
+      expect(prompt).toContain("structural acceptance criteria");
+      expect(prompt).toContain("screen layouts");
     });
   });
 });

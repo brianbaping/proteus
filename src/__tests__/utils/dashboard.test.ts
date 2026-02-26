@@ -301,6 +301,42 @@ describe("AgentDashboard", () => {
     expect(writeSpy).not.toHaveBeenCalled();
   });
 
+  it("suppresses TodoWrite and other internal tool use from output", () => {
+    const internalTools = ["TodoWrite", "TodoRead", "TaskOutput", "TaskStop", "TeamCreate", "TeamDelete", "EnterPlanMode", "ExitPlanMode", "AskUserQuestion"];
+    for (const toolName of internalTools) {
+      writeSpy.mockClear();
+      dashboard.onMessage({
+        type: "assistant",
+        parent_tool_use_id: null,
+        message: {
+          content: [
+            { type: "tool_use", id: `tu-${toolName}`, name: toolName, input: {} },
+          ],
+        },
+        uuid: `u-${toolName}`,
+        session_id: "s1",
+      } as never);
+
+      const output = writeSpy.mock.calls.map((c: unknown[]) => c[0]).join("");
+      expect(output).not.toContain(toolName);
+    }
+  });
+
+  it("filters text containing TodoWrite from agent output", () => {
+    dashboard.onMessage({
+      type: "assistant",
+      parent_tool_use_id: null,
+      message: {
+        content: [{ type: "text", text: "Using TodoWrite to update the task list" }],
+      },
+      uuid: "u-noise",
+      session_id: "s1",
+    } as never);
+
+    const output = writeSpy.mock.calls.map((c: unknown[]) => c[0]).join("");
+    expect(output).not.toContain("TodoWrite");
+  });
+
   it("deduplicates agent names by appending a count", () => {
     // Spawn two agents with the same name
     dashboard.onMessage({

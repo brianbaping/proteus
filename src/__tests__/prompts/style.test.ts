@@ -71,4 +71,23 @@ describe("style prompt", () => {
     expect(prompt).toContain("Component Patterns");
     expect(prompt).toContain("Recommendations for Production");
   });
+
+  it("includes screens schema in style-guide.json", () => {
+    const prompt = generateStyleLeadPrompt(sourcePath, targetPath);
+    expect(prompt).toContain('"screens"');
+    expect(prompt).toContain('"regions"');
+    expect(prompt).toContain('"position"');
+    expect(prompt).toContain('"sourceFiles"');
+  });
+
+  it("includes screen layouts section in style.md template", () => {
+    const prompt = generateStyleLeadPrompt(sourcePath, targetPath);
+    expect(prompt).toContain("Screen Layouts");
+  });
+
+  it("instructs to walk routes/pages for screen discovery", () => {
+    const prompt = generateStyleLeadPrompt(sourcePath, targetPath);
+    expect(prompt).toContain("router/page structure");
+    expect(prompt).toContain("route");
+  });
 });

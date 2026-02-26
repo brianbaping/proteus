@@ -52,6 +52,14 @@ For POCs with a frontend, extract:
 
 **Component Patterns**: Identify recurring UI components (buttons, cards, modals, forms, navigation) and their visual variants.
 
+**Screen Layouts**: Walk each route/page in the app. For each screen (and significant modals/dialogs), document:
+- The overall layout structure (which regions exist and where)
+- What components live in each region and their arrangement
+- Relative sizing and positioning of regions
+- Source files that implement the screen
+
+To discover screens: walk the router/page structure (e.g., React Router routes, Next.js pages/app directory, Vue Router). For each screen, read the JSX/HTML to identify layout regions and component placement. Document modals/dialogs as separate screens with \`type: "modal"\` and note what triggers them. If the POC has no frontend, set \`"screens": []\`.
+
 **Design Tokens**: Check if the POC uses a formal design token system (CSS custom properties, Tailwind config, theme objects).
 
 **Dark Mode**: Check if dark mode is supported and how it's implemented.
@@ -107,6 +115,30 @@ Create the directory ${targetPath}/.proteus-forge/02-style/ and write two files:
     "tokenFilePath": "...",
     "format": "css-custom-properties|tailwind-config|theme-object|..."
   },
+  "screens": [
+    {
+      "name": "Dashboard",
+      "route": "/dashboard",
+      "type": "page|modal|drawer|panel",
+      "description": "Brief description of the screen's purpose",
+      "layout": "sidebar-main|top-nav-content|single-column|...",
+      "regions": [
+        {
+          "name": "sidebar",
+          "position": "left|right|top|bottom|center|overlay",
+          "sizing": "w-64|flex-1|...",
+          "components": [
+            {
+              "type": "nav|card-grid|form|table|header|button-group|...",
+              "description": "What this component shows and how it's arranged",
+              "details": {}
+            }
+          ]
+        }
+      ],
+      "sourceFiles": ["src/pages/Dashboard.tsx"]
+    }
+  ],
   "darkMode": {
     "supported": false,
     "strategy": "class-toggle|media-query|css-variables|none"
@@ -141,6 +173,10 @@ Create the directory ${targetPath}/.proteus-forge/02-style/ and write two files:
 
 ## Component Patterns
 [Recurring UI components, their variants, and visual characteristics]
+
+## Screen Layouts
+[For each screen/route: describe the layout regions, what components live where,
+ and how the screen is spatially composed. Include modals and drawers.]
 
 ## Design Tokens
 [Whether formal tokens exist, their format, and key token values]

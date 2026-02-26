@@ -41,7 +41,10 @@ const NOISE_PATTERNS = [
   /^Now (let me|I('ll| will))/i,
   /^Calling /i,
   /^Invoking /i,
-  /\busing\s+(the\s+)?(Task|Read|Write|Edit|Bash|Grep|Glob|SendMessage)\b/i,
+  /\busing\s+(the\s+)?(Task|Read|Write|Edit|Bash|Grep|Glob|SendMessage|TodoWrite|TodoRead|TaskOutput|TaskStop|TeamCreate|TeamDelete|AskUserQuestion|EnterPlanMode|ExitPlanMode)\b/i,
+  /TodoWrite/i,
+  /TodoRead/i,
+  /TaskOutput/i,
 ];
 
 function isInternalNoise(text: string): boolean {
@@ -94,11 +97,20 @@ function describeToolUse(toolName: string, input: unknown): string | null {
     case "TaskUpdate":
     case "TaskList":
     case "TaskGet":
+    case "TaskOutput":
+    case "TaskStop":
+    case "TodoWrite":
+    case "TodoRead":
+    case "TeamCreate":
+    case "TeamDelete":
+    case "AskUserQuestion":
+    case "EnterPlanMode":
+    case "ExitPlanMode":
       return null; // internal coordination, too noisy
     case "SendMessage":
       return obj?.recipient ? `Messaging ${shortStr(String(obj.recipient), 20)}` : null;
     default:
-      return `Using ${toolName}`;
+      return null;
   }
 }
 

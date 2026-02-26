@@ -9,7 +9,7 @@ export function generateSplitLeadPrompt(
 ): string {
   const styleGuideExists = hasStyleGuide(targetPath);
   const styleReadInstruction = styleGuideExists
-    ? `\n\nAlso read ${targetPath}/.proteus-forge/02-style/style-guide.json for the visual identity — frontend tracks should include this as context for styling tasks.`
+    ? `\n\nAlso read ${targetPath}/.proteus-forge/02-style/style-guide.json for the visual identity and screen layouts — frontend tracks should use this as context for styling tasks and component placement.`
     : "";
 
   return `You are the Lead for a Proteus Forge split stage. Your job is to read the task plan and partition tasks into discipline-specific tracks with file ownership boundaries.
