@@ -14,11 +14,11 @@ import { runExecute } from "./execute.js";
 
 type StageRunner = (
   projectName: string,
-  options: { budget?: number; brief?: string; briefFile?: string; includeStyle?: boolean; tier?: string; model?: string }
+  options: { budget?: number; brief?: string; briefFile?: string; excludeStyle?: boolean; tier?: string; model?: string }
 ) => Promise<boolean>;
 
 const STAGE_RUNNERS: Record<StageName, StageRunner> = {
-  inspect: (name, opts) => runInspect(name, { budget: opts.budget, includeStyle: opts.includeStyle, tier: opts.tier, model: opts.model }),
+  inspect: (name, opts) => runInspect(name, { budget: opts.budget, excludeStyle: opts.excludeStyle, tier: opts.tier, model: opts.model }),
   design: (name, opts) => runDesign(name, { budget: opts.budget, brief: opts.brief, briefFile: opts.briefFile, tier: opts.tier, model: opts.model }),
   plan: (name, opts) => runPlan(name, { budget: opts.budget, tier: opts.tier, model: opts.model }),
   split: (name, opts) => runSplit(name, { budget: opts.budget, tier: opts.tier, model: opts.model }),
@@ -33,7 +33,7 @@ export const runCommand = new Command("run")
   .option("--budget <amount>", "Maximum budget per stage in USD", parseFloat)
   .option("--brief <text>", "Architectural requirements for the design stage")
   .option("--brief-file <path>", "Path to architectural requirements file")
-  .option("--include-style", "Run style extraction after inspect")
+  .option("--exclude-style", "Skip style extraction after inspect")
   .option("--tier <tier>", "Override model tier for this run (fast, standard, advanced)")
   .option("--model <model>", "Override model for this run (e.g., claude-sonnet-4-6)")
   .action(
@@ -45,7 +45,7 @@ export const runCommand = new Command("run")
         budget?: number;
         brief?: string;
         briefFile?: string;
-        includeStyle?: boolean;
+        excludeStyle?: boolean;
         tier?: string;
         model?: string;
       }

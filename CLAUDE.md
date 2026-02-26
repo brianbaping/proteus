@@ -53,7 +53,7 @@ Requires Node.js >= 22.0.0.
 | Split | `split` | Single Lead | standard | `04-tracks/manifest.json` + track files |
 | Execute | `execute` | Agent Team (orchestrator + track engineers) | advanced | Production source code + `05-execute/session.json` |
 
-**Opt-in style extraction**: Use `inspect --include-style` or run `style` standalone after inspect. Produces `02-style/style-guide.json` + `style.md`. When present, downstream prompts (design, plan, split, execute) automatically incorporate the style guide. Not required for backend-only, CLI, or library projects.
+**Style extraction** runs automatically after inspect. Use `inspect --exclude-style` or `run --exclude-style` to skip it. The standalone `style` command can also run it separately. Produces `02-style/style-guide.json` + `style.md`. When present, downstream prompts (design, plan, split, execute) automatically incorporate the style guide. Use `--exclude-style` for backend-only, CLI, or library projects that don't need it.
 
 ## Key Patterns
 

@@ -21,7 +21,7 @@ import { runStyle } from "./style.js";
  */
 export async function runInspect(
   name: string | undefined,
-  options: { dryRun?: boolean; budget?: number; includeStyle?: boolean; tier?: string; model?: string }
+  options: { dryRun?: boolean; budget?: number; excludeStyle?: boolean; tier?: string; model?: string }
 ): Promise<boolean> {
   let project;
   try {
@@ -114,8 +114,8 @@ export async function runInspect(
     console.log(`  Review: proteus-forge review inspect`);
     console.log(`  Next:   proteus-forge design\n`);
 
-    if (options.includeStyle) {
-      console.log(`  Running style extraction (--include-style)...\n`);
+    if (!options.excludeStyle) {
+      console.log(`  Running style extraction...\n`);
       const styleOk = await runStyle(name, { budget: options.budget, tier: options.tier, model: options.model });
       if (!styleOk) {
         console.log(`  ⚠ Style extraction failed — continuing without style guide.\n`);
@@ -146,10 +146,10 @@ export const inspectCommand = new Command("inspect")
   .argument("[name]", "Project name (uses active project if omitted)")
   .option("--dry-run", "Preview what would happen without launching agents")
   .option("--budget <amount>", "Maximum budget in USD for this stage", parseFloat)
-  .option("--include-style", "Also run style extraction after inspect")
+  .option("--exclude-style", "Skip style extraction after inspect")
   .option("--tier <tier>", "Override model tier for this run (fast, standard, advanced)")
   .option("--model <model>", "Override model for this run (e.g., claude-sonnet-4-6)")
-  .action(async (name: string | undefined, options: { dryRun?: boolean; budget?: number; includeStyle?: boolean; tier?: string; model?: string }) => {
+  .action(async (name: string | undefined, options: { dryRun?: boolean; budget?: number; excludeStyle?: boolean; tier?: string; model?: string }) => {
     const success = await runInspect(name, options);
     if (!success) process.exit(1);
   });
