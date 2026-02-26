@@ -7,7 +7,7 @@ import {
 } from "./chunk-OXAFMJZU.js";
 
 // src/index.ts
-import { Command as Command28, Help } from "commander";
+import { Command as Command29, Help } from "commander";
 
 // src/commands/setup.ts
 import { Command } from "commander";
@@ -78,6 +78,7 @@ function getDefaultGlobalConfig() {
       "build-team": "fast",
       "inspect-specialist": "standard",
       synthesizer: "standard",
+      "style-lead": "standard",
       "design-specialist": "advanced",
       "plan-generator": "standard",
       "execute-agent": "advanced",
@@ -940,10 +941,10 @@ var setSubcommand = new Command10("set").description("Set a config value").argum
 var configCommand = new Command10("config").description("Get or set Proteus Forge configuration values").addCommand(getSubcommand).addCommand(setSubcommand);
 
 // src/commands/inspect.ts
-import { Command as Command11 } from "commander";
-import { existsSync as existsSync12 } from "fs";
-import { mkdir as mkdir4 } from "fs/promises";
-import { join as join11 } from "path";
+import { Command as Command12 } from "commander";
+import { existsSync as existsSync13 } from "fs";
+import { mkdir as mkdir5 } from "fs/promises";
+import { join as join12 } from "path";
 
 // src/prompts/inspect.ts
 function generateInspectLeadPrompt(sourcePath, targetPath) {
@@ -1610,6 +1611,277 @@ function createDashboard(stageName) {
   return new AgentDashboard(stageName);
 }
 
+// src/commands/style.ts
+import { Command as Command11 } from "commander";
+import { existsSync as existsSync12 } from "fs";
+import { mkdir as mkdir4 } from "fs/promises";
+import { join as join11 } from "path";
+
+// src/prompts/style.ts
+function generateStyleLeadPrompt(sourcePath, targetPath) {
+  return `You are the Lead for a Proteus Forge style stage. Your job is to analyze the source POC's visual identity and produce a comprehensive style guide that downstream stages will use to preserve the UI aesthetics in production.
+
+## Context
+
+The source POC is at: ${sourcePath} (read-only reference)
+You are working in: ${targetPath}
+
+The inspection findings are at:
+  ${targetPath}/.proteus-forge/01-inspect/features.json
+
+## Instructions
+
+### Step 1: Read Inspection Findings
+
+Read ${targetPath}/.proteus-forge/01-inspect/features.json to understand:
+- What frameworks and languages the POC uses
+- Whether there is a frontend/UI component
+- What styling technologies are in use (CSS, Tailwind, styled-components, etc.)
+
+### Step 2: Scan Styling Files
+
+Scan the source repository at ${sourcePath} for all styling-related files:
+- CSS/SCSS/LESS files
+- Tailwind config (tailwind.config.js/ts)
+- Theme files, design token files
+- Component library config (e.g., shadcn components.json)
+- Global style files (globals.css, app.css, index.css)
+- CSS-in-JS theme objects
+- Font imports and icon library usage
+
+If the POC has no frontend or styling files (e.g., a pure backend/CLI project), write a minimal style guide with \`"stylingTechnology": "none"\` and skip detailed extraction.
+
+### Step 3: Extract Visual Identity
+
+For POCs with a frontend, extract:
+
+**Colors**: Find the color palette \u2014 primary, secondary, accent, background, surface, text, error colors. Look in CSS custom properties, Tailwind config, theme objects, or hardcoded values.
+
+**Typography**: Identify font families (heading, body, monospace), font sizes/scale, line heights, and font weights. Check for Google Fonts imports or local font files.
+
+**Spacing**: Identify the spacing system \u2014 base unit, scale values. Look in Tailwind config, CSS custom properties, or repeated values.
+
+**Layout**: Identify layout strategy (flexbox, grid, hybrid), responsive breakpoints, and common layout patterns (sidebar-main, top-nav-content, card-grid, etc.).
+
+**Component Patterns**: Identify recurring UI components (buttons, cards, modals, forms, navigation) and their visual variants.
+
+**Design Tokens**: Check if the POC uses a formal design token system (CSS custom properties, Tailwind config, theme objects).
+
+**Dark Mode**: Check if dark mode is supported and how it's implemented.
+
+### Step 4: Write Outputs
+
+Create the directory ${targetPath}/.proteus-forge/02-style/ and write two files:
+
+**${targetPath}/.proteus-forge/02-style/style-guide.json** \u2014 Machine-readable style guide:
+\`\`\`json
+{
+  "forgeVersion": "1.0.0",
+  "stage": "style",
+  "generatedAt": "<ISO timestamp>",
+  "source": {
+    "stylingTechnology": "tailwind|css-modules|styled-components|scss|css|none",
+    "componentLibrary": "shadcn|mui|ant-design|none|...",
+    "iconSet": "lucide|heroicons|...|none"
+  },
+  "colorPalette": {
+    "primary": { "value": "#...", "usage": "..." },
+    "secondary": { "value": "#...", "usage": "..." },
+    "accent": { "value": "#...", "usage": "..." },
+    "background": { "value": "#...", "usage": "..." },
+    "surface": { "value": "#...", "usage": "..." },
+    "text": { "value": "#...", "usage": "..." },
+    "error": { "value": "#...", "usage": "..." },
+    "custom": [ { "name": "...", "value": "#...", "usage": "..." } ]
+  },
+  "typography": {
+    "fontFamilies": [ { "name": "...", "role": "heading|body|mono", "source": "google-fonts|local|system" } ],
+    "scale": [ { "name": "xs|sm|base|lg|xl|2xl|...", "size": "...", "lineHeight": "...", "weight": "..." } ]
+  },
+  "spacing": {
+    "unit": "rem|px|...",
+    "scale": [ "0.25rem", "0.5rem", "..." ]
+  },
+  "layout": {
+    "strategy": "flexbox|grid|hybrid",
+    "responsive": { "breakpoints": { "sm": "...", "md": "...", "lg": "..." } },
+    "patterns": [ { "name": "sidebar-main|top-nav-content|card-grid|...", "description": "...", "sourceFiles": [] } ]
+  },
+  "componentPatterns": [
+    {
+      "name": "button|card|modal|form|nav|...",
+      "variants": [ "primary", "secondary", "ghost" ],
+      "description": "...",
+      "sourceFiles": []
+    }
+  ],
+  "designTokens": {
+    "hasTokenFile": true,
+    "tokenFilePath": "...",
+    "format": "css-custom-properties|tailwind-config|theme-object|..."
+  },
+  "darkMode": {
+    "supported": false,
+    "strategy": "class-toggle|media-query|css-variables|none"
+  },
+  "summary": "1-2 sentence overview of the POC's visual identity"
+}
+\`\`\`
+
+**${targetPath}/.proteus-forge/02-style/style.md** \u2014 Human-readable style guide:
+\`\`\`markdown
+# Style Guide \u2014 <project name>
+
+**Generated:** <date>
+**Styling Technology:** <technology>
+
+---
+
+## Visual Overview
+[1-2 paragraph summary of the POC's visual identity and design language]
+
+## Styling Technology
+[What CSS framework/approach the POC uses, component libraries, icon sets]
+
+## Color Palette
+[Document each color with its hex value, usage context, and where it appears in the source]
+
+## Typography
+[Font families, sizes, weights, line heights \u2014 the complete type scale]
+
+## Layout System
+[Layout strategy, responsive breakpoints, common layout patterns with descriptions]
+
+## Component Patterns
+[Recurring UI components, their variants, and visual characteristics]
+
+## Design Tokens
+[Whether formal tokens exist, their format, and key token values]
+
+## Recommendations for Production
+[Suggestions for preserving or improving the visual identity in production:
+- Which styling approach to keep vs migrate
+- Any inconsistencies to resolve
+- Missing tokens or patterns to formalize]
+\`\`\`
+
+## Important
+
+- The source at ${sourcePath} is READ-ONLY. Never modify it.
+- Read features.json FIRST to understand the project context.
+- If the POC has no frontend/styling (pure backend, CLI, library), write a minimal style-guide.json with \`"stylingTechnology": "none"\` and a brief style.md noting this is a non-UI project. Do NOT fail.
+- Extract actual values (hex codes, font names, pixel/rem sizes) \u2014 not just descriptions.
+- Create the directory ${targetPath}/.proteus-forge/02-style/ before writing.
+`;
+}
+
+// src/commands/style.ts
+async function runStyle(name, options) {
+  let project;
+  try {
+    project = await resolveProject(name);
+  } catch (err) {
+    console.error(err.message);
+    return false;
+  }
+  const { entry } = project;
+  const sourcePath = entry.source;
+  const targetPath = entry.target;
+  const featuresPath = join11(targetPath, ".proteus-forge", "01-inspect", "features.json");
+  if (!existsSync12(featuresPath)) {
+    console.error("Inspect stage not complete. Run `proteus-forge inspect` first.");
+    return false;
+  }
+  const globalConfig = await readGlobalConfig();
+  if (!globalConfig) {
+    console.error("Global config not found. Run `proteus-forge setup` first.");
+    return false;
+  }
+  const styleRole = globalConfig.roles["style-lead"];
+  const styleTier = typeof styleRole === "string" ? styleRole : void 0;
+  const tierConfig = styleTier ? globalConfig.tiers[styleTier] : void 0;
+  const model = tierConfig?.model;
+  console.log(`
+[${project.name}] Extracting style guide...
+`);
+  console.log(`  Source: ${sourcePath}`);
+  console.log(`  Target: ${targetPath}`);
+  if (model) console.log(`  Model: ${model} (${styleTier} tier)`);
+  console.log(`  Mode: single Lead session (no teammates)`);
+  if (options.dryRun) {
+    console.log("\n  [Dry run] Would launch single Lead session:");
+    console.log("    Reads: features.json, source CSS/style files");
+    console.log("    Produces: style-guide.json + style.md");
+    console.log(`
+  Estimated cost: ~$0.05-0.20`);
+    console.log("  Run without --dry-run to proceed.\n");
+    return true;
+  }
+  const styleDir = join11(targetPath, ".proteus-forge", "02-style");
+  await mkdir4(styleDir, { recursive: true });
+  const leadPrompt = generateStyleLeadPrompt(sourcePath, targetPath);
+  console.log("\n  Launching session...\n");
+  const dashboard = createDashboard("style");
+  const result = await launchSession({
+    prompt: leadPrompt,
+    cwd: targetPath,
+    additionalDirectories: [sourcePath],
+    model,
+    maxBudgetUsd: options.budget,
+    permissionMode: "acceptEdits",
+    onMessage: (msg) => dashboard.onMessage(msg)
+  });
+  dashboard.cleanup();
+  const styleGuidePath = join11(styleDir, "style-guide.json");
+  const styleGuideExists = existsSync12(styleGuidePath);
+  if ((result.success || styleGuideExists) && styleGuideExists) {
+    const label = result.success ? "Style extraction complete" : "Style extraction recovered";
+    console.log(`
+[${project.name}] ${label}.
+`);
+    console.log(`  Cost: $${result.cost.estimatedCost.toFixed(2)}`);
+    console.log(`  Duration: ${result.cost.duration}`);
+    try {
+      const msg = result.success ? "proteus-forge: style complete" : "proteus-forge: style complete (recovered)";
+      await gitStageAndCommit(targetPath, msg);
+      console.log(`  Committed: "${msg}"`);
+    } catch {
+    }
+    await appendCostEntry(targetPath, "style", result.cost);
+    await appendLogEntry(targetPath, {
+      action: "style",
+      status: result.success ? "success" : "recovered",
+      duration: result.cost.duration,
+      cost: result.cost.estimatedCost
+    });
+    console.log(`
+  Output: ${join11(styleDir, "style.md")}`);
+    console.log(`          ${styleGuidePath}`);
+    console.log(`  Review: proteus-forge review style`);
+    console.log(`  Next:   proteus-forge design
+`);
+    return true;
+  }
+  console.error(`
+[${project.name}] Style extraction failed.
+`);
+  if (result.errors?.length) {
+    for (const err of result.errors) console.error(`  Error: ${err}`);
+  }
+  await appendLogEntry(targetPath, {
+    action: "style",
+    status: "failed",
+    duration: result.cost.duration,
+    cost: result.cost.estimatedCost,
+    details: result.errors?.join("; ")
+  });
+  return false;
+}
+var styleCommand = new Command11("style").description("Extract the visual identity and style guide from the source POC").argument("[name]", "Project name (uses active project if omitted)").option("--dry-run", "Preview what would happen without launching agents").option("--budget <amount>", "Maximum budget in USD for this stage", parseFloat).action(async (name, options) => {
+  const success = await runStyle(name, options);
+  if (!success) process.exit(1);
+});
+
 // src/commands/inspect.ts
 async function runInspect(name, options) {
   let project;
@@ -1622,7 +1894,7 @@ async function runInspect(name, options) {
   const { entry } = project;
   const sourcePath = entry.source;
   const targetPath = entry.target;
-  if (!existsSync12(sourcePath)) {
+  if (!existsSync13(sourcePath)) {
     console.error(`Source path not found: ${sourcePath}`);
     return false;
   }
@@ -1652,9 +1924,9 @@ async function runInspect(name, options) {
     console.log("  Run without --dry-run to proceed.\n");
     return true;
   }
-  const inspectDir = join11(targetPath, ".proteus-forge", "01-inspect");
-  const partialsDir = join11(inspectDir, "partials");
-  await mkdir4(partialsDir, { recursive: true });
+  const inspectDir = join12(targetPath, ".proteus-forge", "01-inspect");
+  const partialsDir = join12(inspectDir, "partials");
+  await mkdir5(partialsDir, { recursive: true });
   const leadPrompt = generateInspectLeadPrompt(sourcePath, targetPath);
   console.log("\n  Launching Agent Team...\n");
   const dashboard = createDashboard("inspect");
@@ -1668,8 +1940,8 @@ async function runInspect(name, options) {
     onMessage: (msg) => dashboard.onMessage(msg)
   });
   dashboard.cleanup();
-  const featuresPath = join11(inspectDir, "features.json");
-  const featuresExist = existsSync12(featuresPath);
+  const featuresPath = join12(inspectDir, "features.json");
+  const featuresExist = existsSync13(featuresPath);
   if ((result.success || featuresExist) && featuresExist) {
     const label = result.success ? "Inspection complete" : "Inspection recovered";
     console.log(`
@@ -1693,11 +1965,20 @@ async function runInspect(name, options) {
       cost: result.cost.estimatedCost
     });
     console.log(`
-  Output: ${join11(inspectDir, "inspect.md")}`);
+  Output: ${join12(inspectDir, "inspect.md")}`);
     console.log(`          ${featuresPath}`);
     console.log(`  Review: proteus-forge review inspect`);
     console.log(`  Next:   proteus-forge design
 `);
+    if (options.includeStyle) {
+      console.log(`  Running style extraction (--include-style)...
+`);
+      const styleOk = await runStyle(name, { budget: options.budget });
+      if (!styleOk) {
+        console.log(`  \u26A0 Style extraction failed \u2014 continuing without style guide.
+`);
+      }
+    }
     return true;
   }
   console.error(`
@@ -1715,16 +1996,25 @@ async function runInspect(name, options) {
   });
   return false;
 }
-var inspectCommand = new Command11("inspect").description("Analyze the source POC and produce a feature inventory").argument("[name]", "Project name (uses active project if omitted)").option("--dry-run", "Preview what would happen without launching agents").option("--budget <amount>", "Maximum budget in USD for this stage", parseFloat).action(async (name, options) => {
+var inspectCommand = new Command12("inspect").description("Analyze the source POC and produce a feature inventory").argument("[name]", "Project name (uses active project if omitted)").option("--dry-run", "Preview what would happen without launching agents").option("--budget <amount>", "Maximum budget in USD for this stage", parseFloat).option("--include-style", "Also run style extraction after inspect").action(async (name, options) => {
   const success = await runInspect(name, options);
   if (!success) process.exit(1);
 });
 
 // src/commands/design.ts
-import { Command as Command12 } from "commander";
-import { existsSync as existsSync13 } from "fs";
-import { mkdir as mkdir5, readFile as readFile7 } from "fs/promises";
-import { join as join12, resolve as resolve3 } from "path";
+import { Command as Command13 } from "commander";
+import { existsSync as existsSync15 } from "fs";
+import { mkdir as mkdir6, readFile as readFile7 } from "fs/promises";
+import { join as join14, resolve as resolve3 } from "path";
+
+// src/utils/style-context.ts
+import { existsSync as existsSync14 } from "fs";
+import { join as join13 } from "path";
+function hasStyleGuide(targetPath) {
+  return existsSync14(
+    join13(targetPath, ".proteus-forge", "02-style", "style-guide.json")
+  );
+}
 
 // src/prompts/design.ts
 function generateDesignLeadPrompt(sourcePath, targetPath, brief) {
@@ -1740,6 +2030,14 @@ Design the architecture to satisfy these requirements. If a requirement conflict
 ---
 
 ` : "";
+  const styleGuideExists = hasStyleGuide(targetPath);
+  const styleReadInstruction = styleGuideExists ? `
+
+Also read ${targetPath}/.proteus-forge/02-style/style-guide.json to understand the POC's visual identity \u2014 styling technology, color palette, typography, layout patterns, and component patterns. This style guide must inform your frontend architecture decisions.` : "";
+  const stylingStrategySection = styleGuideExists ? `
+
+### Styling Strategy
+[Specify the production styling approach \u2014 preserve the POC's approach or migrate to a recommended alternative. Reference the extracted color palette, typography scale, spacing values, and design tokens from 02-style/style-guide.json. Explain how the style guide will be implemented in production code.]` : "";
   return `You are the Lead Architect for a Proteus Forge design stage. Your job is to read the inspection findings and coordinate a team of design specialists to produce a production architecture.
 ${briefSection}
 ## Context
@@ -1755,14 +2053,14 @@ You are working in the target directory:
 
 ## Instructions
 
-### Step 1: Read Inspection Findings
+### Step 1: Read Inspection Findings${styleGuideExists ? " and Style Guide" : ""}
 
 Read ${targetPath}/.proteus-forge/01-inspect/features.json thoroughly. Understand:
 - What features the POC implements
 - What technologies it uses
 - What integrations exist
 - What known issues were identified
-- The data model
+- The data model${styleReadInstruction}
 
 ### Step 2: Scope Design Domains
 
@@ -1875,7 +2173,7 @@ After all specialist tasks complete, claim the synthesize task. Read all partial
 [auth redesign, secrets management, CORS policy, input validation, authorization]
 
 ## Frontend Architecture
-[component structure, state management, API client, routing]
+[component structure, state management, API client, routing]${stylingStrategySection}
 
 ## Infrastructure
 [containerization, CI/CD, deployment strategy, observability, health checks]
@@ -1937,8 +2235,8 @@ async function runDesign(name, options) {
   const { entry } = project;
   const sourcePath = entry.source;
   const targetPath = entry.target;
-  const featuresPath = join12(targetPath, ".proteus-forge", "01-inspect", "features.json");
-  if (!existsSync13(featuresPath)) {
+  const featuresPath = join14(targetPath, ".proteus-forge", "01-inspect", "features.json");
+  if (!existsSync15(featuresPath)) {
     console.error("Inspect stage not complete. Run `proteus-forge inspect` first.");
     return false;
   }
@@ -1967,7 +2265,7 @@ async function runDesign(name, options) {
   let brief;
   if (options.briefFile) {
     const briefPath = resolve3(options.briefFile);
-    if (!existsSync13(briefPath)) {
+    if (!existsSync15(briefPath)) {
       console.error(`Brief file not found: ${briefPath}`);
       return false;
     }
@@ -1989,8 +2287,8 @@ async function runDesign(name, options) {
     console.log("  Run without --dry-run to proceed.\n");
     return true;
   }
-  const designDir = join12(targetPath, ".proteus-forge", "02-design");
-  await mkdir5(join12(designDir, "partials"), { recursive: true });
+  const designDir = join14(targetPath, ".proteus-forge", "02-design");
+  await mkdir6(join14(designDir, "partials"), { recursive: true });
   const leadPrompt = generateDesignLeadPrompt(sourcePath, targetPath, brief);
   console.log("\n  Launching Agent Team...\n");
   const dashboard = createDashboard("design");
@@ -2004,7 +2302,7 @@ async function runDesign(name, options) {
     onMessage: (msg) => dashboard.onMessage(msg)
   });
   dashboard.cleanup();
-  const hasOutput = existsSync13(join12(designDir, "design.md")) || existsSync13(join12(designDir, "design-meta.json"));
+  const hasOutput = existsSync15(join14(designDir, "design.md")) || existsSync15(join14(designDir, "design-meta.json"));
   if ((result.success || hasOutput) && hasOutput) {
     const label = result.success ? "Design complete" : "Design recovered";
     console.log(`
@@ -2028,8 +2326,8 @@ async function runDesign(name, options) {
       cost: result.cost.estimatedCost
     });
     console.log(`
-  Output: ${join12(designDir, "design.md")}`);
-    console.log(`          ${join12(designDir, "design-meta.json")}`);
+  Output: ${join14(designDir, "design.md")}`);
+    console.log(`          ${join14(designDir, "design-meta.json")}`);
     console.log(`  Review: proteus-forge review design`);
     console.log(`  Next:   proteus-forge plan
 `);
@@ -2050,19 +2348,26 @@ async function runDesign(name, options) {
   });
   return false;
 }
-var designCommand = new Command12("design").description("Design the production architecture based on inspection findings").argument("[name]", "Project name (uses active project if omitted)").option("--dry-run", "Preview what would happen without launching agents").option("--budget <amount>", "Maximum budget in USD for this stage", parseFloat).option("--brief <text>", "Architectural requirements (e.g., 'Use microservices with Go and gRPC')").option("--brief-file <path>", "Path to a file containing architectural requirements").action(async (name, options) => {
+var designCommand = new Command13("design").description("Design the production architecture based on inspection findings").argument("[name]", "Project name (uses active project if omitted)").option("--dry-run", "Preview what would happen without launching agents").option("--budget <amount>", "Maximum budget in USD for this stage", parseFloat).option("--brief <text>", "Architectural requirements (e.g., 'Use microservices with Go and gRPC')").option("--brief-file <path>", "Path to a file containing architectural requirements").action(async (name, options) => {
   const success = await runDesign(name, options);
   if (!success) process.exit(1);
 });
 
 // src/commands/plan.ts
-import { Command as Command13 } from "commander";
-import { existsSync as existsSync14 } from "fs";
-import { mkdir as mkdir6, readFile as readFile8 } from "fs/promises";
-import { join as join13 } from "path";
+import { Command as Command14 } from "commander";
+import { existsSync as existsSync16 } from "fs";
+import { mkdir as mkdir7, readFile as readFile8 } from "fs/promises";
+import { join as join15 } from "path";
 
 // src/prompts/plan.ts
 function generatePlanLeadPrompt(sourcePath, targetPath) {
+  const styleGuideExists = hasStyleGuide(targetPath);
+  const styleInput = styleGuideExists ? `
+4. ${targetPath}/.proteus-forge/02-style/style-guide.json \u2014 visual identity, styling technology, color palette, typography` : "";
+  const styleTasks = styleGuideExists ? `
+- Set up design tokens / theme configuration (reference \`02-style/style-guide.json\` for exact values)
+- Migrate component styling (preserve the visual identity from the style guide)
+- Implement responsive layout patterns (use breakpoints and patterns from the style guide)` : "";
   return `You are the Lead Planner for a Proteus Forge plan stage. Your job is to read the architecture design and produce a detailed task DAG (directed acyclic graph) with execution waves for building the production application.
 
 ## Context
@@ -2084,7 +2389,7 @@ The architecture design is at:
 Read these files thoroughly:
 1. ${targetPath}/.proteus-forge/02-design/design.md \u2014 the architecture document (authoritative if edited by user)
 2. ${targetPath}/.proteus-forge/02-design/design-meta.json \u2014 services, stack, feature mapping
-3. ${targetPath}/.proteus-forge/01-inspect/features.json \u2014 features, known issues, data model
+3. ${targetPath}/.proteus-forge/01-inspect/features.json \u2014 features, known issues, data model${styleInput}
 
 ### Step 2: Decompose Into Tasks
 
@@ -2101,7 +2406,7 @@ For each service/module in the design, create tasks for:
 
 Also create cross-cutting tasks:
 - Project scaffolding (package.json, tsconfig, directory structure)
-- Shared types and interfaces
+- Shared types and interfaces${styleTasks}
 - Docker and CI/CD setup
 - Integration tests (after services are built)
 
@@ -2219,9 +2524,9 @@ async function runPlan(name, options) {
   const { entry } = project;
   const sourcePath = entry.source;
   const targetPath = entry.target;
-  const designMdPath = join13(targetPath, ".proteus-forge", "02-design", "design.md");
-  const designMetaPath = join13(targetPath, ".proteus-forge", "02-design", "design-meta.json");
-  if (!existsSync14(designMdPath) && !existsSync14(designMetaPath)) {
+  const designMdPath = join15(targetPath, ".proteus-forge", "02-design", "design.md");
+  const designMetaPath = join15(targetPath, ".proteus-forge", "02-design", "design-meta.json");
+  if (!existsSync16(designMdPath) && !existsSync16(designMetaPath)) {
     console.error("Design stage not complete. Run `proteus-forge design` first.");
     return false;
   }
@@ -2257,8 +2562,8 @@ async function runPlan(name, options) {
     console.log("  Run without --dry-run to proceed.\n");
     return true;
   }
-  const planDir = join13(targetPath, ".proteus-forge", "03-plan");
-  await mkdir6(planDir, { recursive: true });
+  const planDir = join15(targetPath, ".proteus-forge", "03-plan");
+  await mkdir7(planDir, { recursive: true });
   const leadPrompt = generatePlanLeadPrompt(sourcePath, targetPath);
   console.log("\n  Launching session...\n");
   const dashboard = createDashboard("plan");
@@ -2272,8 +2577,8 @@ async function runPlan(name, options) {
     onMessage: (msg) => dashboard.onMessage(msg)
   });
   dashboard.cleanup();
-  const planJsonPath = join13(planDir, "plan.json");
-  const planJsonExists = existsSync14(planJsonPath);
+  const planJsonPath = join15(planDir, "plan.json");
+  const planJsonExists = existsSync16(planJsonPath);
   let taskCount = 0;
   let waveCount = 0;
   if (planJsonExists) {
@@ -2306,7 +2611,7 @@ async function runPlan(name, options) {
       cost: result.cost.estimatedCost
     });
     console.log(`
-  Output: ${join13(planDir, "plan.md")}`);
+  Output: ${join15(planDir, "plan.md")}`);
     console.log(`          ${planJsonPath}`);
     console.log(`  Review: proteus-forge review plan`);
     console.log(`  Next:   proteus-forge split
@@ -2328,19 +2633,23 @@ async function runPlan(name, options) {
   });
   return false;
 }
-var planCommand = new Command13("plan").description("Generate a task DAG with execution waves from the design").argument("[name]", "Project name (uses active project if omitted)").option("--dry-run", "Preview what would happen without launching agents").option("--budget <amount>", "Maximum budget in USD for this stage", parseFloat).action(async (name, options) => {
+var planCommand = new Command14("plan").description("Generate a task DAG with execution waves from the design").argument("[name]", "Project name (uses active project if omitted)").option("--dry-run", "Preview what would happen without launching agents").option("--budget <amount>", "Maximum budget in USD for this stage", parseFloat).action(async (name, options) => {
   const success = await runPlan(name, options);
   if (!success) process.exit(1);
 });
 
 // src/commands/split.ts
-import { Command as Command14 } from "commander";
-import { existsSync as existsSync15 } from "fs";
-import { mkdir as mkdir7, readFile as readFile9 } from "fs/promises";
-import { join as join14 } from "path";
+import { Command as Command15 } from "commander";
+import { existsSync as existsSync17 } from "fs";
+import { mkdir as mkdir8, readFile as readFile9 } from "fs/promises";
+import { join as join16 } from "path";
 
 // src/prompts/split.ts
 function generateSplitLeadPrompt(targetPath) {
+  const styleGuideExists = hasStyleGuide(targetPath);
+  const styleReadInstruction = styleGuideExists ? `
+
+Also read ${targetPath}/.proteus-forge/02-style/style-guide.json for the visual identity \u2014 frontend tracks should include this as context for styling tasks.` : "";
   return `You are the Lead for a Proteus Forge split stage. Your job is to read the task plan and partition tasks into discipline-specific tracks with file ownership boundaries.
 
 ## Context
@@ -2360,7 +2669,7 @@ The design is at:
 
 Read ${targetPath}/.proteus-forge/03-plan/plan.json thoroughly. Understand every task's discipline, file ownership, and dependencies.
 
-Also read ${targetPath}/.proteus-forge/02-design/design-meta.json for the service definitions.
+Also read ${targetPath}/.proteus-forge/02-design/design-meta.json for the service definitions.${styleReadInstruction}
 
 ### Step 2: Group Tasks by Discipline
 
@@ -2479,8 +2788,8 @@ async function runSplit(name, options) {
     return false;
   }
   const targetPath = project.entry.target;
-  const planJsonPath = join14(targetPath, ".proteus-forge", "03-plan", "plan.json");
-  if (!existsSync15(planJsonPath)) {
+  const planJsonPath = join16(targetPath, ".proteus-forge", "03-plan", "plan.json");
+  if (!existsSync17(planJsonPath)) {
     console.error("Plan stage not complete. Run `proteus-forge plan` first.");
     return false;
   }
@@ -2516,8 +2825,8 @@ async function runSplit(name, options) {
     console.log("  Run without --dry-run to proceed.\n");
     return true;
   }
-  const tracksDir = join14(targetPath, ".proteus-forge", "04-tracks");
-  await mkdir7(tracksDir, { recursive: true });
+  const tracksDir = join16(targetPath, ".proteus-forge", "04-tracks");
+  await mkdir8(tracksDir, { recursive: true });
   const leadPrompt = generateSplitLeadPrompt(targetPath);
   console.log("\n  Launching session...\n");
   const dashboard = createDashboard("split");
@@ -2530,8 +2839,8 @@ async function runSplit(name, options) {
     onMessage: (msg) => dashboard.onMessage(msg)
   });
   dashboard.cleanup();
-  const manifestPath = join14(tracksDir, "manifest.json");
-  const manifestExists = existsSync15(manifestPath);
+  const manifestPath = join16(tracksDir, "manifest.json");
+  const manifestExists = existsSync17(manifestPath);
   let tracks = [];
   if (manifestExists) {
     try {
@@ -2565,7 +2874,7 @@ async function runSplit(name, options) {
       cost: result.cost.estimatedCost
     });
     console.log(`
-  Output: ${join14(tracksDir, "split.md")}`);
+  Output: ${join16(tracksDir, "split.md")}`);
     console.log(`          ${manifestPath}`);
     console.log(`  Review: proteus-forge review split`);
     console.log(`  Next:   proteus-forge execute
@@ -2587,32 +2896,32 @@ async function runSplit(name, options) {
   });
   return false;
 }
-var splitCommand = new Command14("split").description("Partition the plan into discipline-specific tracks").argument("[name]", "Project name (uses active project if omitted)").option("--dry-run", "Preview what would happen without launching agents").option("--budget <amount>", "Maximum budget in USD for this stage", parseFloat).action(async (name, options) => {
+var splitCommand = new Command15("split").description("Partition the plan into discipline-specific tracks").argument("[name]", "Project name (uses active project if omitted)").option("--dry-run", "Preview what would happen without launching agents").option("--budget <amount>", "Maximum budget in USD for this stage", parseFloat).action(async (name, options) => {
   const success = await runSplit(name, options);
   if (!success) process.exit(1);
 });
 
 // src/commands/execute.ts
-import { Command as Command15 } from "commander";
-import { existsSync as existsSync17 } from "fs";
-import { mkdir as mkdir8 } from "fs/promises";
-import { join as join16 } from "path";
+import { Command as Command16 } from "commander";
+import { existsSync as existsSync19 } from "fs";
+import { mkdir as mkdir9 } from "fs/promises";
+import { join as join18 } from "path";
 
 // src/prompts/execute.ts
 import { readFile as readFile10 } from "fs/promises";
-import { existsSync as existsSync16 } from "fs";
-import { join as join15 } from "path";
+import { existsSync as existsSync18 } from "fs";
+import { join as join17 } from "path";
 async function loadExecuteContext(targetPath) {
-  const tracksDir = join15(targetPath, ".proteus-forge", "04-tracks");
-  const planPath = join15(targetPath, ".proteus-forge", "03-plan", "plan.json");
+  const tracksDir = join17(targetPath, ".proteus-forge", "04-tracks");
+  const planPath = join17(targetPath, ".proteus-forge", "03-plan", "plan.json");
   const manifest = JSON.parse(
-    await readFile10(join15(tracksDir, "manifest.json"), "utf-8")
+    await readFile10(join17(tracksDir, "manifest.json"), "utf-8")
   );
   const tracks = manifest.tracks ?? [];
   const trackDetails = /* @__PURE__ */ new Map();
   for (const track of tracks) {
-    const trackPath = join15(targetPath, ".proteus-forge", track.file);
-    if (existsSync16(trackPath)) {
+    const trackPath = join17(targetPath, ".proteus-forge", track.file);
+    if (existsSync18(trackPath)) {
       const detail = JSON.parse(
         await readFile10(trackPath, "utf-8")
       );
@@ -2625,6 +2934,7 @@ async function loadExecuteContext(targetPath) {
   return { tracks, trackDetails, tasks, waveCount };
 }
 function generateExecuteLeadPrompt(sourcePath, targetPath, ctx) {
+  const styleGuideExists = hasStyleGuide(targetPath);
   const taskSummary = ctx.tasks.map(
     (t) => `  ${t.id}: "${t.title}" [${t.discipline}] depends on: [${t.dependsOn.join(", ")}]`
   ).join("\n");
@@ -2650,6 +2960,10 @@ These tasks are handled directly by you (the Lead), not by teammates.
 File ownership:
 ${Object.entries(sharedTrack.context?.fileOwnershipMap ?? {}).map(([tid, files]) => `    ${tid}: ${files.join(", ")}`).join("\n")}
 ` : "";
+  const styleContextLine = styleGuideExists ? `
+4. ${targetPath}/.proteus-forge/02-style/style-guide.json \u2014 visual identity (colors, typography, spacing, layout patterns)` : "";
+  const styleSpawnInstruction = styleGuideExists ? `
+8. For frontend engineers: the style guide at ${targetPath}/.proteus-forge/02-style/style-guide.json is **visual acceptance criteria** \u2014 the production UI must preserve the visual identity documented there. Use the exact color palette, typography scale, spacing values, and layout patterns. Do not invent new styles.` : "";
   return `You are the Orchestrator for a Proteus Forge execute stage. Your job is to coordinate a team of engineers to build production code based on the plan.
 
 ## Context
@@ -2672,7 +2986,7 @@ ${taskSummary}
 Read these files to understand the full picture:
 1. ${targetPath}/.proteus-forge/02-design/design.md \u2014 the architecture
 2. ${targetPath}/.proteus-forge/03-plan/plan.json \u2014 every task with acceptance criteria
-3. Each track file in ${targetPath}/.proteus-forge/04-tracks/ \u2014 per-discipline context
+3. Each track file in ${targetPath}/.proteus-forge/04-tracks/ \u2014 per-discipline context${styleContextLine}
 
 Also have the source POC at ${sourcePath} available as reference for understanding the original implementation intent. Do NOT copy POC code \u2014 reimplement according to the design.
 
@@ -2695,7 +3009,7 @@ Each teammate's spawn prompt should include:
 4. Their file ownership \u2014 they must NOT modify files outside their ownership
 5. That the source POC at ${sourcePath} is read-only reference (do not copy code)
 6. Testing expectations: if testingExpectation is "unit", write unit tests alongside code
-7. To mark tasks complete on the shared task list when done
+7. To mark tasks complete on the shared task list when done${styleSpawnInstruction}
 
 ### Step 4: Create Tasks on Shared Task List
 
@@ -2767,8 +3081,8 @@ async function runExecute(name, options) {
   const { entry } = project;
   const sourcePath = entry.source;
   const targetPath = entry.target;
-  const manifestPath = join16(targetPath, ".proteus-forge", "04-tracks", "manifest.json");
-  if (!existsSync17(manifestPath)) {
+  const manifestPath = join18(targetPath, ".proteus-forge", "04-tracks", "manifest.json");
+  if (!existsSync19(manifestPath)) {
     console.error("Split stage not complete. Run `proteus-forge split` first.");
     return false;
   }
@@ -2820,9 +3134,9 @@ async function runExecute(name, options) {
     console.log("  Run without --dry-run to proceed.\n");
     return true;
   }
-  const executeDir = join16(targetPath, ".proteus-forge", "05-execute");
-  const inboxDir = join16(executeDir, "inbox");
-  await mkdir8(inboxDir, { recursive: true });
+  const executeDir = join18(targetPath, ".proteus-forge", "05-execute");
+  const inboxDir = join18(executeDir, "inbox");
+  await mkdir9(inboxDir, { recursive: true });
   console.log(`
   Inbox active \u2014 send messages with: proteus-forge inform <agent> "<message>"
 `);
@@ -2840,7 +3154,7 @@ async function runExecute(name, options) {
     onMessage: (msg) => dashboard.onMessage(msg)
   });
   dashboard.cleanup();
-  const hasOutput = existsSync17(join16(targetPath, "src")) || existsSync17(join16(targetPath, "server"));
+  const hasOutput = existsSync19(join18(targetPath, "src")) || existsSync19(join18(targetPath, "server"));
   if ((result.success || hasOutput) && hasOutput) {
     const label = result.success ? "Execution complete" : "Execution recovered";
     console.log(`
@@ -2868,8 +3182,8 @@ async function runExecute(name, options) {
       teammates: nonSharedTracks.length
     });
     console.log(`
-  Output: ${join16(executeDir, "execute.md")}`);
-    console.log(`          ${join16(executeDir, "session.json")}`);
+  Output: ${join18(executeDir, "execute.md")}`);
+    console.log(`          ${join18(executeDir, "session.json")}`);
     console.log(`          ${targetPath}/`);
     console.log(`  Review: proteus-forge review execute`);
     console.log(`  Compare: proteus-forge compare
@@ -2895,21 +3209,21 @@ async function runExecute(name, options) {
   });
   return false;
 }
-var executeCommand = new Command15("execute").description("Build production code using coordinated agent teams").argument("[name]", "Project name (uses active project if omitted)").option("--dry-run", "Preview what would happen without launching agents").option("--budget <amount>", "Maximum budget in USD for this stage", parseFloat).action(async (name, options) => {
+var executeCommand = new Command16("execute").description("Build production code using coordinated agent teams").argument("[name]", "Project name (uses active project if omitted)").option("--dry-run", "Preview what would happen without launching agents").option("--budget <amount>", "Maximum budget in USD for this stage", parseFloat).action(async (name, options) => {
   const success = await runExecute(name, options);
   if (!success) process.exit(1);
 });
 
 // src/commands/run.ts
-import { Command as Command16 } from "commander";
+import { Command as Command17 } from "commander";
 var STAGE_RUNNERS = {
-  inspect: (name, opts) => runInspect(name, { budget: opts.budget }),
+  inspect: (name, opts) => runInspect(name, { budget: opts.budget, includeStyle: opts.includeStyle }),
   design: (name, opts) => runDesign(name, { budget: opts.budget, brief: opts.brief, briefFile: opts.briefFile }),
   plan: (name, opts) => runPlan(name, { budget: opts.budget }),
   split: (name, opts) => runSplit(name, { budget: opts.budget }),
   execute: (name, opts) => runExecute(name, { budget: opts.budget })
 };
-var runCommand = new Command16("run").description("Run the full pipeline or a range of stages without stopping").argument("[name]", "Project name (uses active project if omitted)").option("--from <stage>", "Start from this stage (default: next incomplete)").option("--to <stage>", "Stop after this stage (default: execute)").option("--budget <amount>", "Maximum budget per stage in USD", parseFloat).option("--brief <text>", "Architectural requirements for the design stage").option("--brief-file <path>", "Path to architectural requirements file").action(
+var runCommand = new Command17("run").description("Run the full pipeline or a range of stages without stopping").argument("[name]", "Project name (uses active project if omitted)").option("--from <stage>", "Start from this stage (default: next incomplete)").option("--to <stage>", "Stop after this stage (default: execute)").option("--budget <amount>", "Maximum budget per stage in USD", parseFloat).option("--brief <text>", "Architectural requirements for the design stage").option("--brief-file <path>", "Path to architectural requirements file").option("--include-style", "Run style extraction after inspect").action(
   async (name, options) => {
     let project;
     try {
@@ -2999,8 +3313,8 @@ ${"\u2550".repeat(60)}`);
 );
 
 // src/commands/inform.ts
-import { Command as Command17 } from "commander";
-var informCommand = new Command17("inform").description("Send a message to a running agent during execute").argument("<agent>", "Agent name (e.g., backend-engineer, frontend-engineer)").argument("<message>", "Message to relay to the agent").option("--project <name>", "Project name (uses active project if omitted)").action(
+import { Command as Command18 } from "commander";
+var informCommand = new Command18("inform").description("Send a message to a running agent during execute").argument("<agent>", "Agent name (e.g., backend-engineer, frontend-engineer)").argument("<message>", "Message to relay to the agent").option("--project <name>", "Project name (uses active project if omitted)").action(
   async (agent, message, options) => {
     let project;
     try {
@@ -3029,11 +3343,11 @@ var informCommand = new Command17("inform").description("Send a message to a run
 );
 
 // src/commands/log.ts
-import { Command as Command18 } from "commander";
-import { existsSync as existsSync18 } from "fs";
+import { Command as Command19 } from "commander";
+import { existsSync as existsSync20 } from "fs";
 import { readFile as readFile11 } from "fs/promises";
-import { join as join17 } from "path";
-var logCommand = new Command18("log").description("View the audit trail for a project").argument("[name]", "Project name (uses active project if omitted)").option("-n <count>", "Show last N entries", parseInt).action(async (name, options) => {
+import { join as join19 } from "path";
+var logCommand = new Command19("log").description("View the audit trail for a project").argument("[name]", "Project name (uses active project if omitted)").option("-n <count>", "Show last N entries", parseInt).action(async (name, options) => {
   let project;
   try {
     project = await resolveProject(name);
@@ -3041,8 +3355,8 @@ var logCommand = new Command18("log").description("View the audit trail for a pr
     console.error(err.message);
     process.exit(1);
   }
-  const logPath = join17(project.entry.target, ".proteus-forge", "log.jsonl");
-  if (!existsSync18(logPath)) {
+  const logPath = join19(project.entry.target, ".proteus-forge", "log.jsonl");
+  if (!existsSync20(logPath)) {
     console.log(`
 [${project.name}] No log entries yet.
 `);
@@ -3075,8 +3389,8 @@ var logCommand = new Command18("log").description("View the audit trail for a pr
 });
 
 // src/commands/costs.ts
-import { Command as Command19 } from "commander";
-var costsCommand = new Command19("costs").description("Show token usage and cost breakdown per stage").argument("[name]", "Project name (uses active project if omitted)").action(async (name) => {
+import { Command as Command20 } from "commander";
+var costsCommand = new Command20("costs").description("Show token usage and cost breakdown per stage").argument("[name]", "Project name (uses active project if omitted)").action(async (name) => {
   let project;
   try {
     project = await resolveProject(name);
@@ -3108,18 +3422,19 @@ var costsCommand = new Command19("costs").description("Show token usage and cost
 });
 
 // src/commands/review.ts
-import { Command as Command20 } from "commander";
-import { existsSync as existsSync19 } from "fs";
-import { join as join18 } from "path";
+import { Command as Command21 } from "commander";
+import { existsSync as existsSync21 } from "fs";
+import { join as join20 } from "path";
 import { spawn } from "child_process";
 var STAGE_REVIEW_FILES = {
   inspect: "01-inspect/inspect.md",
+  style: "02-style/style.md",
   design: "02-design/design.md",
   plan: "03-plan/plan.md",
   split: "04-tracks/split.md",
   execute: "05-execute/execute.md"
 };
-var reviewCommand = new Command20("review").description("Open a stage artifact in $EDITOR for review").argument("<stage>", "Stage to review (inspect, design, plan, split, execute)").argument("[name]", "Project name (uses active project if omitted)").action(async (stage, name) => {
+var reviewCommand = new Command21("review").description("Open a stage artifact in $EDITOR for review").argument("<stage>", "Stage to review (inspect, style, design, plan, split, execute)").argument("[name]", "Project name (uses active project if omitted)").action(async (stage, name) => {
   if (!STAGE_REVIEW_FILES[stage]) {
     console.error(
       `Unknown stage "${stage}". Valid stages: ${Object.keys(STAGE_REVIEW_FILES).join(", ")}`
@@ -3133,12 +3448,12 @@ var reviewCommand = new Command20("review").description("Open a stage artifact i
     console.error(err.message);
     process.exit(1);
   }
-  const artifactPath = join18(
+  const artifactPath = join20(
     project.entry.target,
     ".proteus-forge",
     STAGE_REVIEW_FILES[stage]
   );
-  if (!existsSync19(artifactPath)) {
+  if (!existsSync21(artifactPath)) {
     console.error(
       `${stage} artifact not found. Run \`proteus-forge ${stage}\` first.`
     );
@@ -3152,19 +3467,19 @@ var reviewCommand = new Command20("review").description("Open a stage artifact i
 });
 
 // src/commands/validate.ts
-import { Command as Command21 } from "commander";
-import { existsSync as existsSync20 } from "fs";
+import { Command as Command22 } from "commander";
+import { existsSync as existsSync22 } from "fs";
 import { readFile as readFile12 } from "fs/promises";
-import { join as join19 } from "path";
+import { join as join21 } from "path";
 async function readJson(path) {
-  if (!existsSync20(path)) return null;
+  if (!existsSync22(path)) return null;
   try {
     return JSON.parse(await readFile12(path, "utf-8"));
   } catch {
     return null;
   }
 }
-var validateCommand = new Command21("validate").description("Run cross-stage artifact validation").argument("[name]", "Project name (uses active project if omitted)").action(async (name) => {
+var validateCommand = new Command22("validate").description("Run cross-stage artifact validation").argument("[name]", "Project name (uses active project if omitted)").action(async (name) => {
   let project;
   try {
     project = await resolveProject(name);
@@ -3173,7 +3488,7 @@ var validateCommand = new Command21("validate").description("Run cross-stage art
     process.exit(1);
   }
   const targetPath = project.entry.target;
-  const forgeDir = join19(targetPath, ".proteus-forge");
+  const forgeDir = join21(targetPath, ".proteus-forge");
   const results = [];
   console.log(`
 [${project.name}] Validating artifacts...
@@ -3185,7 +3500,7 @@ var validateCommand = new Command21("validate").description("Run cross-stage art
     return;
   }
   if (completedStages.includes("inspect")) {
-    const features = await readJson(join19(forgeDir, "01-inspect", "features.json"));
+    const features = await readJson(join21(forgeDir, "01-inspect", "features.json"));
     if (features) {
       const featureArr = features.features;
       results.push({
@@ -3216,7 +3531,7 @@ var validateCommand = new Command21("validate").description("Run cross-stage art
     }
   }
   if (completedStages.includes("design")) {
-    const designMeta = await readJson(join19(forgeDir, "02-design", "design-meta.json"));
+    const designMeta = await readJson(join21(forgeDir, "02-design", "design-meta.json"));
     if (designMeta) {
       const featureMap = designMeta.featureToServiceMap;
       results.push({
@@ -3225,15 +3540,15 @@ var validateCommand = new Command21("validate").description("Run cross-stage art
         message: featureMap ? `${Object.keys(featureMap).length} features mapped` : "Missing map"
       });
     }
-    const designMd = join19(forgeDir, "02-design", "design.md");
+    const designMd = join21(forgeDir, "02-design", "design.md");
     results.push({
       rule: "design.md exists",
-      passed: existsSync20(designMd),
-      message: existsSync20(designMd) ? "Present" : "Missing"
+      passed: existsSync22(designMd),
+      message: existsSync22(designMd) ? "Present" : "Missing"
     });
   }
   if (completedStages.includes("plan")) {
-    const plan = await readJson(join19(forgeDir, "03-plan", "plan.json"));
+    const plan = await readJson(join21(forgeDir, "03-plan", "plan.json"));
     if (plan) {
       const tasks = plan.tasks;
       const waves = plan.executionWaves;
@@ -3272,7 +3587,7 @@ var validateCommand = new Command21("validate").description("Run cross-stage art
     }
   }
   if (completedStages.includes("split")) {
-    const manifest = await readJson(join19(forgeDir, "04-tracks", "manifest.json"));
+    const manifest = await readJson(join21(forgeDir, "04-tracks", "manifest.json"));
     if (manifest) {
       const tracks = manifest.tracks;
       results.push({
@@ -3303,20 +3618,21 @@ var validateCommand = new Command21("validate").description("Run cross-stage art
 });
 
 // src/commands/diff.ts
-import { Command as Command22 } from "commander";
-import { existsSync as existsSync21 } from "fs";
-import { join as join20 } from "path";
+import { Command as Command23 } from "commander";
+import { existsSync as existsSync23 } from "fs";
+import { join as join22 } from "path";
 import { execFile as execFile2 } from "child_process";
 import { promisify as promisify2 } from "util";
 var execFileAsync2 = promisify2(execFile2);
 var STAGE_ARTIFACTS2 = {
   inspect: ["01-inspect/features.json", "01-inspect/scout.json"],
+  style: ["02-style/style-guide.json", "02-style/style.md"],
   design: ["02-design/design.md", "02-design/design-meta.json"],
   plan: ["03-plan/plan.json", "03-plan/plan.md"],
   split: ["04-tracks/manifest.json"],
   execute: ["05-execute/session.json"]
 };
-var diffCommand = new Command22("diff").description("Show git changes for a stage's artifacts between runs").argument("<stage>", "Stage to diff (inspect, design, plan, split, execute)").argument("[name]", "Project name (uses active project if omitted)").action(async (stage, name) => {
+var diffCommand = new Command23("diff").description("Show git changes for a stage's artifacts between runs").argument("<stage>", "Stage to diff (inspect, style, design, plan, split, execute)").argument("[name]", "Project name (uses active project if omitted)").action(async (stage, name) => {
   if (!STAGE_ARTIFACTS2[stage]) {
     console.error(
       `Unknown stage "${stage}". Valid stages: ${Object.keys(STAGE_ARTIFACTS2).join(", ")}`
@@ -3332,9 +3648,9 @@ var diffCommand = new Command22("diff").description("Show git changes for a stag
   }
   const targetPath = project.entry.target;
   const paths = STAGE_ARTIFACTS2[stage].map(
-    (p) => join20(".proteus-forge", p)
+    (p) => join22(".proteus-forge", p)
   );
-  const existing = paths.filter((p) => existsSync21(join20(targetPath, p)));
+  const existing = paths.filter((p) => existsSync23(join22(targetPath, p)));
   if (existing.length === 0) {
     console.error(
       `No ${stage} artifacts found. Run \`proteus-forge ${stage}\` first.`
@@ -3377,17 +3693,17 @@ var diffCommand = new Command22("diff").description("Show git changes for a stag
 });
 
 // src/commands/compare.ts
-import { Command as Command23 } from "commander";
-import { existsSync as existsSync22 } from "fs";
+import { Command as Command24 } from "commander";
+import { existsSync as existsSync24 } from "fs";
 import { readdir } from "fs/promises";
-import { join as join21 } from "path";
+import { join as join23 } from "path";
 async function countFiles(dir, exclude = []) {
   let files = 0;
   let lines = 0;
   async function walk(current) {
     const entries = await readdir(current, { withFileTypes: true });
     for (const entry of entries) {
-      const fullPath = join21(current, entry.name);
+      const fullPath = join23(current, entry.name);
       const relative = fullPath.replace(dir + "/", "");
       if (exclude.some((ex) => relative.startsWith(ex) || entry.name === ex)) {
         continue;
@@ -3405,10 +3721,10 @@ async function countFiles(dir, exclude = []) {
       }
     }
   }
-  if (existsSync22(dir)) await walk(dir);
+  if (existsSync24(dir)) await walk(dir);
   return { files, lines };
 }
-var compareCommand = new Command23("compare").description("Compare the source POC against the production target").argument("[name]", "Project name (uses active project if omitted)").action(async (name) => {
+var compareCommand = new Command24("compare").description("Compare the source POC against the production target").argument("[name]", "Project name (uses active project if omitted)").action(async (name) => {
   let project;
   try {
     project = await resolveProject(name);
@@ -3442,13 +3758,13 @@ var compareCommand = new Command23("compare").description("Compare the source PO
   const lineRatio = targetStats.lines > 0 && sourceStats.lines > 0 ? (targetStats.lines / sourceStats.lines).toFixed(1) : "N/A";
   console.log(`  Growth: ${fileRatio}x files, ${lineRatio}x lines
 `);
-  if (existsSync22(targetPath)) {
+  if (existsSync24(targetPath)) {
     const entries = await readdir(targetPath, { withFileTypes: true });
     const dirs = entries.filter((e) => e.isDirectory() && !e.name.startsWith(".") && e.name !== "node_modules").map((e) => e.name);
     if (dirs.length > 0) {
       console.log(`  Production structure:`);
       for (const d of dirs) {
-        const dirStats = await countFiles(join21(targetPath, d), ["node_modules", "dist"]);
+        const dirStats = await countFiles(join23(targetPath, d), ["node_modules", "dist"]);
         console.log(`    ${d.padEnd(20)} ${dirStats.files} files`);
       }
     }
@@ -3457,10 +3773,10 @@ var compareCommand = new Command23("compare").description("Compare the source PO
 });
 
 // src/commands/explain.ts
-import { Command as Command24 } from "commander";
-import { existsSync as existsSync23 } from "fs";
-import { join as join22 } from "path";
-var explainCommand = new Command24("explain").description("Explain a design or plan decision by reading artifacts").argument("<question>", "Question to answer (e.g., 'why is auth in wave 1?')").argument("[name]", "Project name (uses active project if omitted)").action(async (question, name) => {
+import { Command as Command25 } from "commander";
+import { existsSync as existsSync25 } from "fs";
+import { join as join24 } from "path";
+var explainCommand = new Command25("explain").description("Explain a design or plan decision by reading artifacts").argument("<question>", "Question to answer (e.g., 'why is auth in wave 1?')").argument("[name]", "Project name (uses active project if omitted)").action(async (question, name) => {
   let project;
   try {
     project = await resolveProject(name);
@@ -3469,7 +3785,7 @@ var explainCommand = new Command24("explain").description("Explain a design or p
     process.exit(1);
   }
   const targetPath = project.entry.target;
-  const forgeDir = join22(targetPath, ".proteus-forge");
+  const forgeDir = join24(targetPath, ".proteus-forge");
   const contextFiles = [];
   const artifactPaths = [
     "01-inspect/features.json",
@@ -3479,8 +3795,11 @@ var explainCommand = new Command24("explain").description("Explain a design or p
     "03-plan/plan.json",
     "04-tracks/manifest.json"
   ];
+  if (hasStyleGuide(targetPath)) {
+    artifactPaths.splice(1, 0, "02-style/style-guide.json");
+  }
   for (const p of artifactPaths) {
-    if (existsSync23(join22(forgeDir, p))) {
+    if (existsSync25(join24(forgeDir, p))) {
       contextFiles.push(p);
     }
   }
@@ -3532,11 +3851,11 @@ Error: ${result.errors.join("; ")}`);
 });
 
 // src/commands/resume.ts
-import { Command as Command25 } from "commander";
-import { existsSync as existsSync24 } from "fs";
-import { mkdir as mkdir9 } from "fs/promises";
-import { join as join23 } from "path";
-var resumeCommand = new Command25("resume").description("Resume execute from the last wave checkpoint").argument("[name]", "Project name (uses active project if omitted)").option("--budget <amount>", "Maximum budget in USD", parseFloat).action(async (name, options) => {
+import { Command as Command26 } from "commander";
+import { existsSync as existsSync26 } from "fs";
+import { mkdir as mkdir10 } from "fs/promises";
+import { join as join25 } from "path";
+var resumeCommand = new Command26("resume").description("Resume execute from the last wave checkpoint").argument("[name]", "Project name (uses active project if omitted)").option("--budget <amount>", "Maximum budget in USD", parseFloat).action(async (name, options) => {
   let project;
   try {
     project = await resolveProject(name);
@@ -3547,8 +3866,8 @@ var resumeCommand = new Command25("resume").description("Resume execute from the
   const { entry } = project;
   const sourcePath = entry.source;
   const targetPath = entry.target;
-  const manifestPath = join23(targetPath, ".proteus-forge", "04-tracks", "manifest.json");
-  if (!existsSync24(manifestPath)) {
+  const manifestPath = join25(targetPath, ".proteus-forge", "04-tracks", "manifest.json");
+  if (!existsSync26(manifestPath)) {
     console.error("Split stage not complete. Run the full pipeline first.");
     process.exit(1);
   }
@@ -3589,9 +3908,9 @@ The code from those waves already exists in the target directory.
 
 DO NOT re-do work from waves 1-${lastWave}. Start from wave ${lastWave + 1}.
 Check what files already exist before creating new ones.`;
-  const executeDir = join23(targetPath, ".proteus-forge", "05-execute");
-  const inboxDir = join23(executeDir, "inbox");
-  await mkdir9(inboxDir, { recursive: true });
+  const executeDir = join25(targetPath, ".proteus-forge", "05-execute");
+  const inboxDir = join25(executeDir, "inbox");
+  await mkdir10(inboxDir, { recursive: true });
   console.log("\n  Launching Agent Team...\n");
   const dashboard = createDashboard("resume");
   const result = await launchSession({
@@ -3605,7 +3924,7 @@ Check what files already exist before creating new ones.`;
     onMessage: (msg) => dashboard.onMessage(msg)
   });
   dashboard.cleanup();
-  const hasOutput = existsSync24(join23(targetPath, "src")) || existsSync24(join23(targetPath, "server"));
+  const hasOutput = existsSync26(join25(targetPath, "src")) || existsSync26(join25(targetPath, "server"));
   if ((result.success || hasOutput) && hasOutput) {
     console.log(`
 [${project.name}] Resume complete.
@@ -3649,11 +3968,11 @@ Check what files already exist before creating new ones.`;
 });
 
 // src/commands/abort.ts
-import { Command as Command26 } from "commander";
-import { existsSync as existsSync25 } from "fs";
+import { Command as Command27 } from "commander";
+import { existsSync as existsSync27 } from "fs";
 import { unlink } from "fs/promises";
-import { join as join24 } from "path";
-var abortCommand = new Command26("abort").description("Signal a running execute session to stop").argument("[name]", "Project name (uses active project if omitted)").action(async (name) => {
+import { join as join26 } from "path";
+var abortCommand = new Command27("abort").description("Signal a running execute session to stop").argument("[name]", "Project name (uses active project if omitted)").action(async (name) => {
   let project;
   try {
     project = await resolveProject(name);
@@ -3662,8 +3981,8 @@ var abortCommand = new Command26("abort").description("Signal a running execute 
     process.exit(1);
   }
   const targetPath = project.entry.target;
-  const sentinelPath = join24(getInboxDir(targetPath), ".active");
-  if (!existsSync25(sentinelPath)) {
+  const sentinelPath = join26(getInboxDir(targetPath), ".active");
+  if (!existsSync27(sentinelPath)) {
     console.error(
       "No active execute session found. Nothing to abort."
     );
@@ -3698,11 +4017,11 @@ var abortCommand = new Command26("abort").description("Signal a running execute 
 });
 
 // src/commands/watch.ts
-import { Command as Command27 } from "commander";
-import { existsSync as existsSync26, watchFile, unwatchFile } from "fs";
+import { Command as Command28 } from "commander";
+import { existsSync as existsSync28, watchFile, unwatchFile } from "fs";
 import { readFile as readFile13 } from "fs/promises";
-import { join as join25 } from "path";
-var watchCommand = new Command27("watch").description("Watch a running execute session's progress").argument("[name]", "Project name (uses active project if omitted)").action(async (name) => {
+import { join as join27 } from "path";
+var watchCommand = new Command28("watch").description("Watch a running execute session's progress").argument("[name]", "Project name (uses active project if omitted)").action(async (name) => {
   let project;
   try {
     project = await resolveProject(name);
@@ -3711,8 +4030,8 @@ var watchCommand = new Command27("watch").description("Watch a running execute s
     process.exit(1);
   }
   const targetPath = project.entry.target;
-  const sentinelPath = join25(getInboxDir(targetPath), ".active");
-  if (!existsSync26(sentinelPath)) {
+  const sentinelPath = join27(getInboxDir(targetPath), ".active");
+  if (!existsSync28(sentinelPath)) {
     console.error(
       "No active execute session found. Run `proteus-forge execute` first."
     );
@@ -3723,9 +4042,9 @@ var watchCommand = new Command27("watch").description("Watch a running execute s
 `);
   console.log("  Monitoring .proteus-forge/log.jsonl for updates.");
   console.log("  Press Ctrl+C to stop watching.\n");
-  const logPath = join25(targetPath, ".proteus-forge", "log.jsonl");
+  const logPath = join27(targetPath, ".proteus-forge", "log.jsonl");
   let lastSize = 0;
-  if (existsSync26(logPath)) {
+  if (existsSync28(logPath)) {
     const content = await readFile13(logPath, "utf-8");
     lastSize = content.length;
     const lines = content.trim().split("\n").filter(Boolean);
@@ -3739,7 +4058,7 @@ var watchCommand = new Command27("watch").description("Watch a running execute s
     }
   }
   const checkForUpdates = async () => {
-    if (!existsSync26(logPath)) return;
+    if (!existsSync28(logPath)) return;
     const content = await readFile13(logPath, "utf-8");
     if (content.length > lastSize) {
       const newContent = content.slice(lastSize);
@@ -3756,7 +4075,7 @@ var watchCommand = new Command27("watch").description("Watch a running execute s
     }
   };
   const checkActive = () => {
-    if (!existsSync26(sentinelPath)) {
+    if (!existsSync28(sentinelPath)) {
       console.log("\n  Session ended.\n");
       process.exit(0);
     }
@@ -3774,7 +4093,7 @@ var watchCommand = new Command27("watch").description("Watch a running execute s
 });
 
 // src/index.ts
-var program = new Command28();
+var program = new Command29();
 program.name("proteus-forge").description(
   "Transform POC codebases into production-ready applications using coordinated AI agent teams"
 ).version("1.0.0");
@@ -3804,6 +4123,7 @@ program.addCommand(revertCommand);
 program.addCommand(reviewCommand);
 program.addCommand(runCommand);
 program.addCommand(statusCommand);
+program.addCommand(styleCommand);
 program.addCommand(validateCommand);
 program.addCommand(watchCommand);
 program.configureHelp({
