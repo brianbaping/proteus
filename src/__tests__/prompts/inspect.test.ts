@@ -66,4 +66,14 @@ describe("inspect prompt", () => {
     expect(prompt.toLowerCase()).toContain("spawn");
     expect(prompt.toLowerCase()).toContain("teammate");
   });
+
+  it("references TeamCreate tool explicitly", () => {
+    const prompt = generateInspectLeadPrompt(sourcePath, targetPath);
+    expect(prompt).toContain("TeamCreate");
+  });
+
+  it("prohibits sequential solo work", () => {
+    const prompt = generateInspectLeadPrompt(sourcePath, targetPath);
+    expect(prompt).toContain("DO NOT attempt to do all the analysis yourself sequentially");
+  });
 });

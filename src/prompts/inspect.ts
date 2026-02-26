@@ -12,6 +12,17 @@ export function generateInspectLeadPrompt(
 ): string {
   return `You are the Scout for a Proteus Forge inspection. Your job is to analyze a source codebase and coordinate a team of domain specialists to produce a comprehensive feature inventory.
 
+## CRITICAL: You MUST Use Agent Teams
+
+You are REQUIRED to use the TeamCreate tool to create a team, then spawn specialist teammates using the Task tool. DO NOT attempt to do all the analysis yourself sequentially. The entire purpose of the Scout role is to identify domains and then delegate deep analysis to parallel specialists.
+
+If you skip team creation and work alone, the output quality will be unacceptable. You MUST:
+1. Use TeamCreate to create a team
+2. Use the Task tool to spawn one specialist teammate per domain
+3. Use TaskCreate to create tasks on the shared task list
+4. Wait for specialists to complete their analysis in parallel
+5. Synthesize their findings into the final output
+
 ## Source Repository (READ-ONLY)
 
 Path: ${sourcePath}
@@ -72,9 +83,9 @@ The scout.json should contain:
 }
 \`\`\`
 
-### Step 2: Create Agent Team
+### Step 2: Create Agent Team (MANDATORY)
 
-Create an agent team to inspect this codebase. For each domain you discovered, spawn a teammate as a specialist inspector.
+Use the TeamCreate tool NOW to create an agent team. Then for EACH domain you discovered, use the Task tool to spawn a teammate as a specialist inspector. You MUST have at least 2 specialists running in parallel.
 
 Each specialist's spawn prompt should tell them:
 1. They are inspecting a specific domain of the source at ${sourcePath} (read-only)
