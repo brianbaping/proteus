@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { resolveProject } from "../utils/resolve-project.js";
 import { readGlobalConfig } from "../config/global.js";
 import { generateSplitLeadPrompt } from "../prompts/split.js";
+import { resolveModel } from "../utils/model-resolution.js";
 import { launchSession } from "../session/launcher.js";
 import { gitStageAndCommit } from "../utils/git.js";
 import { appendCostEntry } from "../utils/costs.js";
@@ -18,7 +19,7 @@ interface TrackManifest {
 
 export async function runSplit(
   name: string | undefined,
-  options: { dryRun?: boolean; budget?: number }
+  options: { dryRun?: boolean; budget?: number; tier?: string; model?: string }
 ): Promise<boolean> {
   let project;
   try {
@@ -49,15 +50,12 @@ export async function runSplit(
     return false;
   }
 
-  const planRole = globalConfig.roles["plan-generator"];
-  const planTier = typeof planRole === "string" ? planRole : undefined;
-  const tierConfig = planTier ? globalConfig.tiers[planTier] : undefined;
-  const model = tierConfig?.model;
+  const model = resolveModel(globalConfig, "plan-generator", { tier: options.tier, model: options.model });
 
   console.log(`\n[${project.name}] Splitting into tracks...\n`);
   console.log(`  Source: ${project.entry.source}`);
   console.log(`  Target: ${targetPath}`);
-  if (model) console.log(`  Model: ${model} (${planTier} tier)`);
+  if (model) console.log(`  Model: ${model}`);
   console.log(`  Mode: single Lead session (no teammates)`);
 
   if (options.dryRun) {
@@ -148,7 +146,9 @@ export const splitCommand = new Command("split")
   .argument("[name]", "Project name (uses active project if omitted)")
   .option("--dry-run", "Preview what would happen without launching agents")
   .option("--budget <amount>", "Maximum budget in USD for this stage", parseFloat)
-  .action(async (name: string | undefined, options: { dryRun?: boolean; budget?: number }) => {
+  .option("--tier <tier>", "Override model tier for this run (fast, standard, advanced)")
+  .option("--model <model>", "Override model for this run (e.g., claude-sonnet-4-6)")
+  .action(async (name: string | undefined, options: { dryRun?: boolean; budget?: number; tier?: string; model?: string }) => {
     const success = await runSplit(name, options);
     if (!success) process.exit(1);
   });

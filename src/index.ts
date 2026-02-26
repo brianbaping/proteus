@@ -29,6 +29,7 @@ import { explainCommand } from "./commands/explain.js";
 import { resumeCommand } from "./commands/resume.js";
 import { abortCommand } from "./commands/abort.js";
 import { watchCommand } from "./commands/watch.js";
+import { listModelsCommand } from "./commands/list-models.js";
 
 const program = new Command();
 
@@ -60,6 +61,7 @@ program.addCommand(diffCommand);
 program.addCommand(explainCommand);
 program.addCommand(informCommand);
 program.addCommand(listCommand);
+program.addCommand(listModelsCommand);
 program.addCommand(logCommand);
 program.addCommand(resetCommand);
 program.addCommand(resumeCommand);

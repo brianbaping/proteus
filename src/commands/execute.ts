@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { resolveProject } from "../utils/resolve-project.js";
 import { readGlobalConfig } from "../config/global.js";
 import { loadExecuteContext, generateExecuteLeadPrompt } from "../prompts/execute.js";
+import { resolveModel } from "../utils/model-resolution.js";
 import { launchSession } from "../session/launcher.js";
 import { gitStageAndCommit } from "../utils/git.js";
 import { appendCostEntry } from "../utils/costs.js";
@@ -14,7 +15,7 @@ import { createDashboard } from "../utils/progress.js";
 
 export async function runExecute(
   name: string | undefined,
-  options: { dryRun?: boolean; budget?: number }
+  options: { dryRun?: boolean; budget?: number; tier?: string; model?: string }
 ): Promise<boolean> {
   let project;
   try {
@@ -55,17 +56,14 @@ export async function runExecute(
     return false;
   }
 
-  const execRole = globalConfig.roles["execute-agent"];
-  const execTier = typeof execRole === "string" ? execRole : undefined;
-  const tierConfig = execTier ? globalConfig.tiers[execTier] : undefined;
-  const model = tierConfig?.model;
+  const model = resolveModel(globalConfig, "execute-agent", { tier: options.tier, model: options.model });
 
   const nonSharedTracks = ctx.tracks.filter((t) => t.discipline !== "shared");
 
   console.log(`\n[${project.name}] Executing production build...\n`);
   console.log(`  Source: ${sourcePath}`);
   console.log(`  Target: ${targetPath}`);
-  if (model) console.log(`  Model: ${model} (${execTier} tier)`);
+  if (model) console.log(`  Model: ${model}`);
   console.log(`  Tasks: ${ctx.tasks.length} across ${ctx.waveCount} waves`);
   console.log(`  Teammates: ${nonSharedTracks.length}\n`);
   for (const t of ctx.tracks) {
@@ -165,7 +163,9 @@ export const executeCommand = new Command("execute")
   .argument("[name]", "Project name (uses active project if omitted)")
   .option("--dry-run", "Preview what would happen without launching agents")
   .option("--budget <amount>", "Maximum budget in USD for this stage", parseFloat)
-  .action(async (name: string | undefined, options: { dryRun?: boolean; budget?: number }) => {
+  .option("--tier <tier>", "Override model tier for this run (fast, standard, advanced)")
+  .option("--model <model>", "Override model for this run (e.g., claude-sonnet-4-6)")
+  .action(async (name: string | undefined, options: { dryRun?: boolean; budget?: number; tier?: string; model?: string }) => {
     const success = await runExecute(name, options);
     if (!success) process.exit(1);
   });

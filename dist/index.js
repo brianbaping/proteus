@@ -7,7 +7,7 @@ import {
 } from "./chunk-OXAFMJZU.js";
 
 // src/index.ts
-import { Command as Command29, Help } from "commander";
+import { Command as Command30, Help } from "commander";
 
 // src/commands/setup.ts
 import { Command } from "commander";
@@ -1148,6 +1148,24 @@ This document is intended for human review \u2014 write it in clear prose, not J
 `;
 }
 
+// src/utils/model-resolution.ts
+function resolveModel(globalConfig, roleName, overrides = {}) {
+  if (overrides.model) return overrides.model;
+  if (overrides.tier) {
+    const tierConfig2 = globalConfig.tiers[overrides.tier];
+    if (!tierConfig2) {
+      throw new Error(
+        `Unknown tier "${overrides.tier}". Available: ${Object.keys(globalConfig.tiers).join(", ")}`
+      );
+    }
+    return tierConfig2.model;
+  }
+  const role = globalConfig.roles[roleName];
+  const tierName = typeof role === "string" ? role : void 0;
+  const tierConfig = tierName ? globalConfig.tiers[tierName] : typeof role === "object" ? role : void 0;
+  return tierConfig?.model;
+}
+
 // src/session/launcher.ts
 import { query } from "@anthropic-ai/claude-agent-sdk";
 async function resolveApiKey() {
@@ -1359,6 +1377,7 @@ var AGENT_COLORS = [
   // bright magenta
 ];
 var RESET = "\x1B[0m";
+var BOLD = "\x1B[1m";
 var DIM = "\x1B[2m";
 var SHOW_CURSOR = "\x1B[?25h";
 
@@ -1856,16 +1875,13 @@ async function runStyle(name, options) {
     console.error("Global config not found. Run `proteus-forge setup` first.");
     return false;
   }
-  const styleRole = globalConfig.roles["style-lead"];
-  const styleTier = typeof styleRole === "string" ? styleRole : void 0;
-  const tierConfig = styleTier ? globalConfig.tiers[styleTier] : void 0;
-  const model = tierConfig?.model;
+  const model = resolveModel(globalConfig, "style-lead", { tier: options.tier, model: options.model });
   console.log(`
 [${project.name}] Extracting style guide...
 `);
   console.log(`  Source: ${sourcePath}`);
   console.log(`  Target: ${targetPath}`);
-  if (model) console.log(`  Model: ${model} (${styleTier} tier)`);
+  if (model) console.log(`  Model: ${model}`);
   console.log(`  Mode: single Lead session (no teammates)`);
   if (options.dryRun) {
     console.log("\n  [Dry run] Would launch single Lead session:");
@@ -1936,7 +1952,7 @@ async function runStyle(name, options) {
   });
   return false;
 }
-var styleCommand = new Command11("style").description("Extract the visual identity and style guide from the source POC").argument("[name]", "Project name (uses active project if omitted)").option("--dry-run", "Preview what would happen without launching agents").option("--budget <amount>", "Maximum budget in USD for this stage", parseFloat).action(async (name, options) => {
+var styleCommand = new Command11("style").description("Extract the visual identity and style guide from the source POC").argument("[name]", "Project name (uses active project if omitted)").option("--dry-run", "Preview what would happen without launching agents").option("--budget <amount>", "Maximum budget in USD for this stage", parseFloat).option("--tier <tier>", "Override model tier for this run (fast, standard, advanced)").option("--model <model>", "Override model for this run (e.g., claude-sonnet-4-6)").action(async (name, options) => {
   const success = await runStyle(name, options);
   if (!success) process.exit(1);
 });
@@ -1963,16 +1979,13 @@ async function runInspect(name, options) {
     console.error("Global config not found. Run `proteus-forge setup` first.");
     return false;
   }
-  const scoutRole = globalConfig.roles.scout;
-  const scoutTier = typeof scoutRole === "string" ? scoutRole : void 0;
-  const tierConfig = scoutTier ? globalConfig.tiers[scoutTier] : void 0;
-  const model = tierConfig?.model;
+  const model = resolveModel(globalConfig, "scout", { tier: options.tier, model: options.model });
   console.log(`
 [${project.name}] Inspecting source...
 `);
   console.log(`  Source: ${sourcePath}`);
   console.log(`  Target: ${targetPath}`);
-  if (model) console.log(`  Model: ${model} (${scoutTier} tier)`);
+  if (model) console.log(`  Model: ${model}`);
   if (options.dryRun) {
     console.log("\n  [Dry run] Would launch Agent Team:");
     console.log("    Lead: scout (analyzes source, identifies domains)");
@@ -2032,7 +2045,7 @@ async function runInspect(name, options) {
     if (options.includeStyle) {
       console.log(`  Running style extraction (--include-style)...
 `);
-      const styleOk = await runStyle(name, { budget: options.budget });
+      const styleOk = await runStyle(name, { budget: options.budget, tier: options.tier, model: options.model });
       if (!styleOk) {
         console.log(`  \u26A0 Style extraction failed \u2014 continuing without style guide.
 `);
@@ -2055,7 +2068,7 @@ async function runInspect(name, options) {
   });
   return false;
 }
-var inspectCommand = new Command12("inspect").description("Analyze the source POC and produce a feature inventory").argument("[name]", "Project name (uses active project if omitted)").option("--dry-run", "Preview what would happen without launching agents").option("--budget <amount>", "Maximum budget in USD for this stage", parseFloat).option("--include-style", "Also run style extraction after inspect").action(async (name, options) => {
+var inspectCommand = new Command12("inspect").description("Analyze the source POC and produce a feature inventory").argument("[name]", "Project name (uses active project if omitted)").option("--dry-run", "Preview what would happen without launching agents").option("--budget <amount>", "Maximum budget in USD for this stage", parseFloat).option("--include-style", "Also run style extraction after inspect").option("--tier <tier>", "Override model tier for this run (fast, standard, advanced)").option("--model <model>", "Override model for this run (e.g., claude-sonnet-4-6)").action(async (name, options) => {
   const success = await runInspect(name, options);
   if (!success) process.exit(1);
 });
@@ -2311,16 +2324,13 @@ async function runDesign(name, options) {
     console.error("Global config not found. Run `proteus-forge setup` first.");
     return false;
   }
-  const designRole = globalConfig.roles["design-specialist"];
-  const designTier = typeof designRole === "string" ? designRole : void 0;
-  const tierConfig = designTier ? globalConfig.tiers[designTier] : void 0;
-  const model = tierConfig?.model;
+  const model = resolveModel(globalConfig, "design-specialist", { tier: options.tier, model: options.model });
   console.log(`
 [${project.name}] Designing production architecture...
 `);
   console.log(`  Source: ${sourcePath}`);
   console.log(`  Target: ${targetPath}`);
-  if (model) console.log(`  Model: ${model} (${designTier} tier)`);
+  if (model) console.log(`  Model: ${model}`);
   let brief;
   if (options.briefFile) {
     const briefPath = resolve3(options.briefFile);
@@ -2407,7 +2417,7 @@ async function runDesign(name, options) {
   });
   return false;
 }
-var designCommand = new Command13("design").description("Design the production architecture based on inspection findings").argument("[name]", "Project name (uses active project if omitted)").option("--dry-run", "Preview what would happen without launching agents").option("--budget <amount>", "Maximum budget in USD for this stage", parseFloat).option("--brief <text>", "Architectural requirements (e.g., 'Use microservices with Go and gRPC')").option("--brief-file <path>", "Path to a file containing architectural requirements").action(async (name, options) => {
+var designCommand = new Command13("design").description("Design the production architecture based on inspection findings").argument("[name]", "Project name (uses active project if omitted)").option("--dry-run", "Preview what would happen without launching agents").option("--budget <amount>", "Maximum budget in USD for this stage", parseFloat).option("--brief <text>", "Architectural requirements (e.g., 'Use microservices with Go and gRPC')").option("--brief-file <path>", "Path to a file containing architectural requirements").option("--tier <tier>", "Override model tier for this run (fast, standard, advanced)").option("--model <model>", "Override model for this run (e.g., claude-sonnet-4-6)").action(async (name, options) => {
   const success = await runDesign(name, options);
   if (!success) process.exit(1);
 });
@@ -2602,16 +2612,13 @@ async function runPlan(name, options) {
     console.error("Global config not found. Run `proteus-forge setup` first.");
     return false;
   }
-  const planRole = globalConfig.roles["plan-generator"];
-  const planTier = typeof planRole === "string" ? planRole : void 0;
-  const tierConfig = planTier ? globalConfig.tiers[planTier] : void 0;
-  const model = tierConfig?.model;
+  const model = resolveModel(globalConfig, "plan-generator", { tier: options.tier, model: options.model });
   console.log(`
 [${project.name}] Generating plan...
 `);
   console.log(`  Source: ${sourcePath}`);
   console.log(`  Target: ${targetPath}`);
-  if (model) console.log(`  Model: ${model} (${planTier} tier)`);
+  if (model) console.log(`  Model: ${model}`);
   console.log(`  Mode: single Lead session (no teammates)`);
   if (options.dryRun) {
     console.log("\n  [Dry run] Would launch single Lead session:");
@@ -2693,7 +2700,7 @@ async function runPlan(name, options) {
   });
   return false;
 }
-var planCommand = new Command14("plan").description("Generate a task DAG with execution waves from the design").argument("[name]", "Project name (uses active project if omitted)").option("--dry-run", "Preview what would happen without launching agents").option("--budget <amount>", "Maximum budget in USD for this stage", parseFloat).action(async (name, options) => {
+var planCommand = new Command14("plan").description("Generate a task DAG with execution waves from the design").argument("[name]", "Project name (uses active project if omitted)").option("--dry-run", "Preview what would happen without launching agents").option("--budget <amount>", "Maximum budget in USD for this stage", parseFloat).option("--tier <tier>", "Override model tier for this run (fast, standard, advanced)").option("--model <model>", "Override model for this run (e.g., claude-sonnet-4-6)").action(async (name, options) => {
   const success = await runPlan(name, options);
   if (!success) process.exit(1);
 });
@@ -2865,16 +2872,13 @@ async function runSplit(name, options) {
     console.error("Global config not found. Run `proteus-forge setup` first.");
     return false;
   }
-  const planRole = globalConfig.roles["plan-generator"];
-  const planTier = typeof planRole === "string" ? planRole : void 0;
-  const tierConfig = planTier ? globalConfig.tiers[planTier] : void 0;
-  const model = tierConfig?.model;
+  const model = resolveModel(globalConfig, "plan-generator", { tier: options.tier, model: options.model });
   console.log(`
 [${project.name}] Splitting into tracks...
 `);
   console.log(`  Source: ${project.entry.source}`);
   console.log(`  Target: ${targetPath}`);
-  if (model) console.log(`  Model: ${model} (${planTier} tier)`);
+  if (model) console.log(`  Model: ${model}`);
   console.log(`  Mode: single Lead session (no teammates)`);
   if (options.dryRun) {
     console.log("\n  [Dry run] Would launch single Lead session:");
@@ -2956,7 +2960,7 @@ async function runSplit(name, options) {
   });
   return false;
 }
-var splitCommand = new Command15("split").description("Partition the plan into discipline-specific tracks").argument("[name]", "Project name (uses active project if omitted)").option("--dry-run", "Preview what would happen without launching agents").option("--budget <amount>", "Maximum budget in USD for this stage", parseFloat).action(async (name, options) => {
+var splitCommand = new Command15("split").description("Partition the plan into discipline-specific tracks").argument("[name]", "Project name (uses active project if omitted)").option("--dry-run", "Preview what would happen without launching agents").option("--budget <amount>", "Maximum budget in USD for this stage", parseFloat).option("--tier <tier>", "Override model tier for this run (fast, standard, advanced)").option("--model <model>", "Override model for this run (e.g., claude-sonnet-4-6)").action(async (name, options) => {
   const success = await runSplit(name, options);
   if (!success) process.exit(1);
 });
@@ -3165,17 +3169,14 @@ async function runExecute(name, options) {
     console.error(`Failed to load execute context: ${err.message}`);
     return false;
   }
-  const execRole = globalConfig.roles["execute-agent"];
-  const execTier = typeof execRole === "string" ? execRole : void 0;
-  const tierConfig = execTier ? globalConfig.tiers[execTier] : void 0;
-  const model = tierConfig?.model;
+  const model = resolveModel(globalConfig, "execute-agent", { tier: options.tier, model: options.model });
   const nonSharedTracks = ctx.tracks.filter((t) => t.discipline !== "shared");
   console.log(`
 [${project.name}] Executing production build...
 `);
   console.log(`  Source: ${sourcePath}`);
   console.log(`  Target: ${targetPath}`);
-  if (model) console.log(`  Model: ${model} (${execTier} tier)`);
+  if (model) console.log(`  Model: ${model}`);
   console.log(`  Tasks: ${ctx.tasks.length} across ${ctx.waveCount} waves`);
   console.log(`  Teammates: ${nonSharedTracks.length}
 `);
@@ -3269,7 +3270,7 @@ async function runExecute(name, options) {
   });
   return false;
 }
-var executeCommand = new Command16("execute").description("Build production code using coordinated agent teams").argument("[name]", "Project name (uses active project if omitted)").option("--dry-run", "Preview what would happen without launching agents").option("--budget <amount>", "Maximum budget in USD for this stage", parseFloat).action(async (name, options) => {
+var executeCommand = new Command16("execute").description("Build production code using coordinated agent teams").argument("[name]", "Project name (uses active project if omitted)").option("--dry-run", "Preview what would happen without launching agents").option("--budget <amount>", "Maximum budget in USD for this stage", parseFloat).option("--tier <tier>", "Override model tier for this run (fast, standard, advanced)").option("--model <model>", "Override model for this run (e.g., claude-sonnet-4-6)").action(async (name, options) => {
   const success = await runExecute(name, options);
   if (!success) process.exit(1);
 });
@@ -3277,13 +3278,13 @@ var executeCommand = new Command16("execute").description("Build production code
 // src/commands/run.ts
 import { Command as Command17 } from "commander";
 var STAGE_RUNNERS = {
-  inspect: (name, opts) => runInspect(name, { budget: opts.budget, includeStyle: opts.includeStyle }),
-  design: (name, opts) => runDesign(name, { budget: opts.budget, brief: opts.brief, briefFile: opts.briefFile }),
-  plan: (name, opts) => runPlan(name, { budget: opts.budget }),
-  split: (name, opts) => runSplit(name, { budget: opts.budget }),
-  execute: (name, opts) => runExecute(name, { budget: opts.budget })
+  inspect: (name, opts) => runInspect(name, { budget: opts.budget, includeStyle: opts.includeStyle, tier: opts.tier, model: opts.model }),
+  design: (name, opts) => runDesign(name, { budget: opts.budget, brief: opts.brief, briefFile: opts.briefFile, tier: opts.tier, model: opts.model }),
+  plan: (name, opts) => runPlan(name, { budget: opts.budget, tier: opts.tier, model: opts.model }),
+  split: (name, opts) => runSplit(name, { budget: opts.budget, tier: opts.tier, model: opts.model }),
+  execute: (name, opts) => runExecute(name, { budget: opts.budget, tier: opts.tier, model: opts.model })
 };
-var runCommand = new Command17("run").description("Run the full pipeline or a range of stages without stopping").argument("[name]", "Project name (uses active project if omitted)").option("--from <stage>", "Start from this stage (default: next incomplete)").option("--to <stage>", "Stop after this stage (default: execute)").option("--budget <amount>", "Maximum budget per stage in USD", parseFloat).option("--brief <text>", "Architectural requirements for the design stage").option("--brief-file <path>", "Path to architectural requirements file").option("--include-style", "Run style extraction after inspect").action(
+var runCommand = new Command17("run").description("Run the full pipeline or a range of stages without stopping").argument("[name]", "Project name (uses active project if omitted)").option("--from <stage>", "Start from this stage (default: next incomplete)").option("--to <stage>", "Stop after this stage (default: execute)").option("--budget <amount>", "Maximum budget per stage in USD", parseFloat).option("--brief <text>", "Architectural requirements for the design stage").option("--brief-file <path>", "Path to architectural requirements file").option("--include-style", "Run style extraction after inspect").option("--tier <tier>", "Override model tier for this run (fast, standard, advanced)").option("--model <model>", "Override model for this run (e.g., claude-sonnet-4-6)").action(
   async (name, options) => {
     let project;
     try {
@@ -3836,7 +3837,7 @@ var compareCommand = new Command24("compare").description("Compare the source PO
 import { Command as Command25 } from "commander";
 import { existsSync as existsSync25 } from "fs";
 import { join as join24 } from "path";
-var explainCommand = new Command25("explain").description("Explain a design or plan decision by reading artifacts").argument("<question>", "Question to answer (e.g., 'why is auth in wave 1?')").argument("[name]", "Project name (uses active project if omitted)").action(async (question, name) => {
+var explainCommand = new Command25("explain").description("Explain a design or plan decision by reading artifacts").argument("<question>", "Question to answer (e.g., 'why is auth in wave 1?')").argument("[name]", "Project name (uses active project if omitted)").option("--tier <tier>", "Override model tier for this run (fast, standard, advanced)").option("--model <model>", "Override model for this run (e.g., claude-sonnet-4-6)").action(async (question, name, options) => {
   let project;
   try {
     project = await resolveProject(name);
@@ -3868,10 +3869,7 @@ var explainCommand = new Command25("explain").description("Explain a design or p
     process.exit(1);
   }
   const globalConfig = await readGlobalConfig();
-  const planRole = globalConfig?.roles["plan-generator"];
-  const planTier = typeof planRole === "string" ? planRole : void 0;
-  const tierConfig = planTier ? globalConfig?.tiers[planTier] : void 0;
-  const model = tierConfig?.model;
+  const model = globalConfig ? resolveModel(globalConfig, "plan-generator", { tier: options.tier, model: options.model }) : void 0;
   const prompt = `You are answering a question about a Proteus Forge project's architecture and plan.
 
 Read the following artifact files in ${targetPath}/.proteus-forge/ to understand the project:
@@ -3915,7 +3913,7 @@ import { Command as Command26 } from "commander";
 import { existsSync as existsSync26 } from "fs";
 import { mkdir as mkdir10 } from "fs/promises";
 import { join as join25 } from "path";
-var resumeCommand = new Command26("resume").description("Resume execute from the last wave checkpoint").argument("[name]", "Project name (uses active project if omitted)").option("--budget <amount>", "Maximum budget in USD", parseFloat).action(async (name, options) => {
+var resumeCommand = new Command26("resume").description("Resume execute from the last wave checkpoint").argument("[name]", "Project name (uses active project if omitted)").option("--budget <amount>", "Maximum budget in USD", parseFloat).option("--tier <tier>", "Override model tier for this run (fast, standard, advanced)").option("--model <model>", "Override model for this run (e.g., claude-sonnet-4-6)").action(async (name, options) => {
   let project;
   try {
     project = await resolveProject(name);
@@ -3947,10 +3945,7 @@ var resumeCommand = new Command26("resume").description("Resume execute from the
     console.error("Global config not found. Run `proteus-forge setup` first.");
     process.exit(1);
   }
-  const execRole = globalConfig.roles["execute-agent"];
-  const execTier = typeof execRole === "string" ? execRole : void 0;
-  const tierConfig = execTier ? globalConfig.tiers[execTier] : void 0;
-  const model = tierConfig?.model;
+  const model = resolveModel(globalConfig, "execute-agent", { tier: options.tier, model: options.model });
   let ctx;
   try {
     ctx = await loadExecuteContext(targetPath);
@@ -4152,8 +4147,34 @@ var watchCommand = new Command28("watch").description("Watch a running execute s
   });
 });
 
+// src/commands/list-models.ts
+import { Command as Command29 } from "commander";
+var listModelsCommand = new Command29("list-models").description("Show configured model tiers and role assignments").action(async () => {
+  const config = await readGlobalConfig();
+  if (!config) {
+    console.error("Global config not found. Run `proteus-forge setup` first.");
+    process.exit(1);
+  }
+  console.log(`
+${BOLD}Tiers${RESET}
+`);
+  for (const [name, tier] of Object.entries(config.tiers)) {
+    console.log(
+      `  ${name.padEnd(12)} ${tier.model} ${DIM}(${tier.provider})${RESET}`
+    );
+  }
+  console.log(`
+${BOLD}Role Assignments${RESET}
+`);
+  for (const [role, mapping] of Object.entries(config.roles)) {
+    const display = typeof mapping === "string" ? `\u2192 ${mapping} \u2192 ${config.tiers[mapping]?.model ?? "?"}` : `\u2192 ${mapping.model} ${DIM}(direct)${RESET}`;
+    console.log(`  ${role.padEnd(22)} ${display}`);
+  }
+  console.log();
+});
+
 // src/index.ts
-var program = new Command29();
+var program = new Command30();
 program.name("proteus-forge").description(
   "Transform POC codebases into production-ready applications using coordinated AI agent teams"
 ).version("1.0.0");
@@ -4175,6 +4196,7 @@ program.addCommand(diffCommand);
 program.addCommand(explainCommand);
 program.addCommand(informCommand);
 program.addCommand(listCommand);
+program.addCommand(listModelsCommand);
 program.addCommand(logCommand);
 program.addCommand(resetCommand);
 program.addCommand(resumeCommand);

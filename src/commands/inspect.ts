@@ -6,6 +6,7 @@ import { resolveProject } from "../utils/resolve-project.js";
 import { readGlobalConfig } from "../config/global.js";
 import { readProjectConfig } from "../config/project.js";
 import { generateInspectLeadPrompt } from "../prompts/inspect.js";
+import { resolveModel } from "../utils/model-resolution.js";
 import { launchSession } from "../session/launcher.js";
 import { gitStageAndCommit } from "../utils/git.js";
 import { appendCostEntry } from "../utils/costs.js";
@@ -20,7 +21,7 @@ import { runStyle } from "./style.js";
  */
 export async function runInspect(
   name: string | undefined,
-  options: { dryRun?: boolean; budget?: number; includeStyle?: boolean }
+  options: { dryRun?: boolean; budget?: number; includeStyle?: boolean; tier?: string; model?: string }
 ): Promise<boolean> {
   let project;
   try {
@@ -47,15 +48,12 @@ export async function runInspect(
     return false;
   }
 
-  const scoutRole = globalConfig.roles.scout;
-  const scoutTier = typeof scoutRole === "string" ? scoutRole : undefined;
-  const tierConfig = scoutTier ? globalConfig.tiers[scoutTier] : undefined;
-  const model = tierConfig?.model;
+  const model = resolveModel(globalConfig, "scout", { tier: options.tier, model: options.model });
 
   console.log(`\n[${project.name}] Inspecting source...\n`);
   console.log(`  Source: ${sourcePath}`);
   console.log(`  Target: ${targetPath}`);
-  if (model) console.log(`  Model: ${model} (${scoutTier} tier)`);
+  if (model) console.log(`  Model: ${model}`);
 
   if (options.dryRun) {
     console.log("\n  [Dry run] Would launch Agent Team:");
@@ -118,7 +116,7 @@ export async function runInspect(
 
     if (options.includeStyle) {
       console.log(`  Running style extraction (--include-style)...\n`);
-      const styleOk = await runStyle(name, { budget: options.budget });
+      const styleOk = await runStyle(name, { budget: options.budget, tier: options.tier, model: options.model });
       if (!styleOk) {
         console.log(`  ⚠ Style extraction failed — continuing without style guide.\n`);
       }
@@ -149,7 +147,9 @@ export const inspectCommand = new Command("inspect")
   .option("--dry-run", "Preview what would happen without launching agents")
   .option("--budget <amount>", "Maximum budget in USD for this stage", parseFloat)
   .option("--include-style", "Also run style extraction after inspect")
-  .action(async (name: string | undefined, options: { dryRun?: boolean; budget?: number; includeStyle?: boolean }) => {
+  .option("--tier <tier>", "Override model tier for this run (fast, standard, advanced)")
+  .option("--model <model>", "Override model for this run (e.g., claude-sonnet-4-6)")
+  .action(async (name: string | undefined, options: { dryRun?: boolean; budget?: number; includeStyle?: boolean; tier?: string; model?: string }) => {
     const success = await runInspect(name, options);
     if (!success) process.exit(1);
   });

@@ -5,6 +5,7 @@ import { join, resolve } from "node:path";
 import { resolveProject } from "../utils/resolve-project.js";
 import { readGlobalConfig } from "../config/global.js";
 import { generateDesignLeadPrompt } from "../prompts/design.js";
+import { resolveModel } from "../utils/model-resolution.js";
 import { launchSession } from "../session/launcher.js";
 import { gitStageAndCommit } from "../utils/git.js";
 import { appendCostEntry } from "../utils/costs.js";
@@ -15,7 +16,7 @@ import { createDashboard } from "../utils/progress.js";
 
 export async function runDesign(
   name: string | undefined,
-  options: { dryRun?: boolean; budget?: number; brief?: string; briefFile?: string }
+  options: { dryRun?: boolean; budget?: number; brief?: string; briefFile?: string; tier?: string; model?: string }
 ): Promise<boolean> {
   let project;
   try {
@@ -48,15 +49,12 @@ export async function runDesign(
     return false;
   }
 
-  const designRole = globalConfig.roles["design-specialist"];
-  const designTier = typeof designRole === "string" ? designRole : undefined;
-  const tierConfig = designTier ? globalConfig.tiers[designTier] : undefined;
-  const model = tierConfig?.model;
+  const model = resolveModel(globalConfig, "design-specialist", { tier: options.tier, model: options.model });
 
   console.log(`\n[${project.name}] Designing production architecture...\n`);
   console.log(`  Source: ${sourcePath}`);
   console.log(`  Target: ${targetPath}`);
-  if (model) console.log(`  Model: ${model} (${designTier} tier)`);
+  if (model) console.log(`  Model: ${model}`);
 
   let brief: string | undefined;
   if (options.briefFile) {
@@ -156,7 +154,9 @@ export const designCommand = new Command("design")
   .option("--budget <amount>", "Maximum budget in USD for this stage", parseFloat)
   .option("--brief <text>", "Architectural requirements (e.g., 'Use microservices with Go and gRPC')")
   .option("--brief-file <path>", "Path to a file containing architectural requirements")
-  .action(async (name: string | undefined, options: { dryRun?: boolean; budget?: number; brief?: string; briefFile?: string }) => {
+  .option("--tier <tier>", "Override model tier for this run (fast, standard, advanced)")
+  .option("--model <model>", "Override model for this run (e.g., claude-sonnet-4-6)")
+  .action(async (name: string | undefined, options: { dryRun?: boolean; budget?: number; brief?: string; briefFile?: string; tier?: string; model?: string }) => {
     const success = await runDesign(name, options);
     if (!success) process.exit(1);
   });

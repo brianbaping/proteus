@@ -4,13 +4,16 @@ import { join } from "node:path";
 import { resolveProject } from "../utils/resolve-project.js";
 import { readGlobalConfig } from "../config/global.js";
 import { launchSession } from "../session/launcher.js";
+import { resolveModel } from "../utils/model-resolution.js";
 import { hasStyleGuide } from "../utils/style-context.js";
 
 export const explainCommand = new Command("explain")
   .description("Explain a design or plan decision by reading artifacts")
   .argument("<question>", "Question to answer (e.g., 'why is auth in wave 1?')")
   .argument("[name]", "Project name (uses active project if omitted)")
-  .action(async (question: string, name?: string) => {
+  .option("--tier <tier>", "Override model tier for this run (fast, standard, advanced)")
+  .option("--model <model>", "Override model for this run (e.g., claude-sonnet-4-6)")
+  .action(async (question: string, name: string | undefined, options: { tier?: string; model?: string }) => {
     let project;
     try {
       project = await resolveProject(name);
@@ -50,10 +53,9 @@ export const explainCommand = new Command("explain")
     }
 
     const globalConfig = await readGlobalConfig();
-    const planRole = globalConfig?.roles["plan-generator"];
-    const planTier = typeof planRole === "string" ? planRole : undefined;
-    const tierConfig = planTier ? globalConfig?.tiers[planTier] : undefined;
-    const model = tierConfig?.model;
+    const model = globalConfig
+      ? resolveModel(globalConfig, "plan-generator", { tier: options.tier, model: options.model })
+      : undefined;
 
     const prompt = `You are answering a question about a Proteus Forge project's architecture and plan.
 

@@ -4,6 +4,7 @@ import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { resolveProject } from "../utils/resolve-project.js";
 import { readGlobalConfig } from "../config/global.js";
+import { resolveModel } from "../utils/model-resolution.js";
 import {
   loadExecuteContext,
   generateExecuteLeadPrompt,
@@ -19,7 +20,9 @@ export const resumeCommand = new Command("resume")
   .description("Resume execute from the last wave checkpoint")
   .argument("[name]", "Project name (uses active project if omitted)")
   .option("--budget <amount>", "Maximum budget in USD", parseFloat)
-  .action(async (name: string | undefined, options: { budget?: number }) => {
+  .option("--tier <tier>", "Override model tier for this run (fast, standard, advanced)")
+  .option("--model <model>", "Override model for this run (e.g., claude-sonnet-4-6)")
+  .action(async (name: string | undefined, options: { budget?: number; tier?: string; model?: string }) => {
     let project;
     try {
       project = await resolveProject(name);
@@ -58,10 +61,7 @@ export const resumeCommand = new Command("resume")
       process.exit(1);
     }
 
-    const execRole = globalConfig.roles["execute-agent"];
-    const execTier = typeof execRole === "string" ? execRole : undefined;
-    const tierConfig = execTier ? globalConfig.tiers[execTier] : undefined;
-    const model = tierConfig?.model;
+    const model = resolveModel(globalConfig, "execute-agent", { tier: options.tier, model: options.model });
 
     let ctx;
     try {
