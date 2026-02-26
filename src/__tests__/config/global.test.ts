@@ -35,6 +35,7 @@ describe("global config", () => {
         "plan-generator",
         "execute-agent",
         "qa-agent",
+        "verify-fix",
       ];
       for (const role of expectedRoles) {
         expect(config.roles[role]).toBeDefined();

@@ -45,6 +45,7 @@ export function getDefaultGlobalConfig(): GlobalConfig {
       "plan-generator": "standard",
       "execute-agent": "advanced",
       "qa-agent": "standard",
+      "verify-fix": "standard",
     },
   };
 }

@@ -13,6 +13,7 @@ import { appendLogEntry } from "../utils/log.js";
 import { checkStaleness } from "../utils/stages.js";
 import { createDashboard } from "../utils/progress.js";
 import { runVerification, printVerifyResult } from "../utils/verify.js";
+import { scaffoldClaudeCommands } from "../utils/scaffold-commands.js";
 
 export async function runExecute(
   name: string | undefined,
@@ -115,6 +116,11 @@ export async function runExecute(
     }
     console.log(`\n  Cost: $${result.cost.estimatedCost.toFixed(2)}`);
     console.log(`  Duration: ${result.cost.duration}`);
+
+    const scaffoldResult = await scaffoldClaudeCommands(targetPath);
+    if (scaffoldResult.files.length > 0) {
+      console.log(`  Scaffolded ${scaffoldResult.files.length} repair commands (.claude/commands/)`);
+    }
 
     try {
       const msg = result.success ? "proteus-forge: execute complete" : "proteus-forge: execute complete (recovered)";
