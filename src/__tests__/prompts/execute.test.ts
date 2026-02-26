@@ -204,6 +204,43 @@ describe("execute prompt", () => {
     expect(prompt.toLowerCase()).toContain("must not modify files outside");
   });
 
+  describe("CI verification instructions", () => {
+    it("requires CI verification before writing session.json", () => {
+      const prompt = generateExecuteLeadPrompt(sourcePath, targetPath, ctx);
+      expect(prompt).toContain("MANDATORY before writing session.json");
+    });
+
+    it("includes package manager detection instructions", () => {
+      const prompt = generateExecuteLeadPrompt(sourcePath, targetPath, ctx);
+      expect(prompt).toContain("Detect the package manager from lockfiles");
+    });
+
+    it("includes install, build, test, lint steps", () => {
+      const prompt = generateExecuteLeadPrompt(sourcePath, targetPath, ctx);
+      expect(prompt).toContain("<pm> install");
+      expect(prompt).toContain("<pm> run build");
+      expect(prompt).toContain("<pm> run test");
+      expect(prompt).toContain("<pm> run lint");
+    });
+
+    it("instructs to fix failures before proceeding", () => {
+      const prompt = generateExecuteLeadPrompt(sourcePath, targetPath, ctx);
+      expect(prompt).toContain("If ANY check fails");
+      expect(prompt).toContain("re-run until all checks pass");
+    });
+
+    it("includes engineer tsc check instruction", () => {
+      const prompt = generateExecuteLeadPrompt(sourcePath, targetPath, ctx);
+      expect(prompt).toContain("npx tsc --noEmit");
+    });
+
+    it("includes verification field in session.json schema", () => {
+      const prompt = generateExecuteLeadPrompt(sourcePath, targetPath, ctx);
+      expect(prompt).toContain('"verification"');
+      expect(prompt).toContain('"packageManager"');
+    });
+  });
+
   describe("conditional style guide", () => {
     it("does not include style guide references when no style guide exists", () => {
       const prompt = generateExecuteLeadPrompt(sourcePath, targetPath, ctx);

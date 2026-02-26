@@ -12,10 +12,11 @@ import { appendCostEntry } from "../utils/costs.js";
 import { appendLogEntry } from "../utils/log.js";
 import { checkStaleness } from "../utils/stages.js";
 import { createDashboard } from "../utils/progress.js";
+import { runVerification, printVerifyResult } from "../utils/verify.js";
 
 export async function runExecute(
   name: string | undefined,
-  options: { dryRun?: boolean; budget?: number; tier?: string; model?: string }
+  options: { dryRun?: boolean; budget?: number; tier?: string; model?: string; skipVerify?: boolean }
 ): Promise<boolean> {
   let project;
   try {
@@ -121,6 +122,20 @@ export async function runExecute(
       console.log(`  Committed: "${msg}"`);
     } catch { /* empty */ }
 
+    // Auto-verify if package.json exists and --skip-verify not set
+    let verifySummary: string | undefined;
+    if (!options.skipVerify && existsSync(join(targetPath, "package.json"))) {
+      console.log("\n  Running post-execute verification...");
+      const verifyResult = await runVerification(targetPath);
+      printVerifyResult(verifyResult);
+      verifySummary = verifyResult.steps
+        .map((s) => `${s.name}:${s.skipped ? "skipped" : s.passed ? "passed" : "failed"}`)
+        .join(", ");
+      if (!verifyResult.allPassed) {
+        console.log("  Run `proteus-forge verify --verbose` to see full failure output.\n");
+      }
+    }
+
     await appendCostEntry(targetPath, "execute", { ...result.cost, teammates: nonSharedTracks.length });
     await appendLogEntry(targetPath, {
       action: "execute",
@@ -128,6 +143,7 @@ export async function runExecute(
       duration: result.cost.duration,
       cost: result.cost.estimatedCost,
       teammates: nonSharedTracks.length,
+      details: verifySummary,
     });
 
     console.log(`\n  Output: ${join(executeDir, "execute.md")}`);
@@ -165,7 +181,8 @@ export const executeCommand = new Command("execute")
   .option("--budget <amount>", "Maximum budget in USD for this stage", parseFloat)
   .option("--tier <tier>", "Override model tier for this run (fast, standard, advanced)")
   .option("--model <model>", "Override model for this run (e.g., claude-sonnet-4-6)")
-  .action(async (name: string | undefined, options: { dryRun?: boolean; budget?: number; tier?: string; model?: string }) => {
+  .option("--skip-verify", "Skip post-execute verification (install/build/test/lint)")
+  .action(async (name: string | undefined, options: { dryRun?: boolean; budget?: number; tier?: string; model?: string; skipVerify?: boolean }) => {
     const success = await runExecute(name, options);
     if (!success) process.exit(1);
   });

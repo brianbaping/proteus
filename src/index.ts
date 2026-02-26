@@ -23,6 +23,7 @@ import { logCommand } from "./commands/log.js";
 import { costsCommand } from "./commands/costs.js";
 import { reviewCommand } from "./commands/review.js";
 import { validateCommand } from "./commands/validate.js";
+import { verifyCommand } from "./commands/verify.js";
 import { diffCommand } from "./commands/diff.js";
 import { compareCommand } from "./commands/compare.js";
 import { explainCommand } from "./commands/explain.js";
@@ -72,6 +73,7 @@ program.addCommand(runCommand);
 program.addCommand(statusCommand);
 program.addCommand(styleCommand);
 program.addCommand(validateCommand);
+program.addCommand(verifyCommand);
 program.addCommand(watchCommand);
 
 // Insert a blank line between primary and remaining commands in help output

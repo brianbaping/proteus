@@ -7,7 +7,7 @@ import {
 } from "./chunk-OXAFMJZU.js";
 
 // src/index.ts
-import { Command as Command30, Help } from "commander";
+import { Command as Command31, Help } from "commander";
 
 // src/commands/setup.ts
 import { Command } from "commander";
@@ -3068,9 +3068,9 @@ var splitCommand = new Command15("split").description("Partition the plan into d
 
 // src/commands/execute.ts
 import { Command as Command16 } from "commander";
-import { existsSync as existsSync19 } from "fs";
+import { existsSync as existsSync20 } from "fs";
 import { mkdir as mkdir9 } from "fs/promises";
-import { join as join18 } from "path";
+import { join as join19 } from "path";
 
 // src/prompts/execute.ts
 import { readFile as readFile10 } from "fs/promises";
@@ -3174,7 +3174,8 @@ Each teammate's spawn prompt should include:
 4. Their file ownership \u2014 they must NOT modify files outside their ownership
 5. That the source POC at ${sourcePath} is read-only reference (do not copy code)
 6. Testing expectations: if testingExpectation is "unit", write unit tests alongside code
-7. To mark tasks complete on the shared task list when done${styleSpawnInstruction}
+7. To mark tasks complete on the shared task list when done
+8. Before marking a task complete: run \`npx tsc --noEmit\` in the target repo to catch type errors, and run any unit tests for their owned files. Fix all errors before marking done${styleSpawnInstruction}
 
 ### Step 4: Create Tasks on Shared Task List
 
@@ -3193,7 +3194,13 @@ Tasks that you (the Lead) already completed in Step 2 should be created as alrea
 
 After all tasks are complete:
 1. Verify key files exist (package.json, tsconfig.json, main entry points)
-2. Write a session summary to TWO files:
+2. **Run CI verification in the target repo** (MANDATORY before writing session.json):
+   a. Detect the package manager from lockfiles (bun.lockb \u2192 pnpm-lock.yaml \u2192 yarn.lock \u2192 package-lock.json \u2192 default npm)
+   b. Run \`<pm> install\` \u2014 must install cleanly with no errors
+   c. For each script that exists in package.json, run: \`<pm> run build\`, \`<pm> run test\`, \`<pm> run lint\`
+   d. If ANY check fails: diagnose the root cause, fix the code (yourself or delegate to the appropriate engineer), then re-run until all checks pass
+   e. Only proceed to step 3 after ALL checks pass
+3. Write a session summary to TWO files:
    - **${targetPath}/.proteus-forge/05-execute/session.json** \u2014 Machine-readable metadata
    - **${targetPath}/.proteus-forge/05-execute/execute.md** \u2014 Human-readable summary
 
@@ -3210,6 +3217,13 @@ The session.json schema:
     "totalTasks": ${ctx.tasks.length},
     "completed": ${ctx.tasks.length},
     "failed": 0
+  },
+  "verification": {
+    "packageManager": "<detected pm>",
+    "install": "passed|failed|skipped",
+    "build": "passed|failed|skipped",
+    "test": "passed|failed|skipped",
+    "lint": "passed|failed|skipped"
   }
 }
 \`\`\`
@@ -3234,6 +3248,141 @@ This document is intended for human review \u2014 write it in clear prose, not J
 `;
 }
 
+// src/utils/verify.ts
+import { execFile as execFile2 } from "child_process";
+import { readFile as readFile11 } from "fs/promises";
+import { existsSync as existsSync19 } from "fs";
+import { join as join18 } from "path";
+var LOCKFILE_PRIORITY = [
+  { file: "bun.lockb", pm: "bun" },
+  { file: "bun.lock", pm: "bun" },
+  { file: "pnpm-lock.yaml", pm: "pnpm" },
+  { file: "yarn.lock", pm: "yarn" },
+  { file: "package-lock.json", pm: "npm" }
+];
+var STEP_TIMEOUTS = {
+  install: 5 * 6e4,
+  build: 3 * 6e4,
+  test: 5 * 6e4,
+  lint: 3 * 6e4
+};
+function detectPackageManager(targetPath) {
+  for (const { file, pm } of LOCKFILE_PRIORITY) {
+    if (existsSync19(join18(targetPath, file))) {
+      return pm;
+    }
+  }
+  return "npm";
+}
+async function getAvailableScripts(targetPath) {
+  const pkgPath = join18(targetPath, "package.json");
+  try {
+    const content = await readFile11(pkgPath, "utf-8");
+    const pkg = JSON.parse(content);
+    return new Set(Object.keys(pkg.scripts ?? {}));
+  } catch {
+    return /* @__PURE__ */ new Set();
+  }
+}
+function runCommand(command, args, cwd, timeoutMs) {
+  return new Promise((resolve4) => {
+    const proc = execFile2(command, args, { cwd, timeout: timeoutMs, maxBuffer: 10 * 1024 * 1024 }, (error, stdout, stderr) => {
+      const output = (stdout ?? "") + (stderr ?? "");
+      if (error) {
+        resolve4({ success: false, output: output || error.message });
+      } else {
+        resolve4({ success: true, output });
+      }
+    });
+    proc.on("error", (err) => {
+      resolve4({ success: false, output: err.message });
+    });
+  });
+}
+async function runVerification(targetPath, options) {
+  const pm = detectPackageManager(targetPath);
+  const scripts = await getAvailableScripts(targetPath);
+  const steps = [];
+  const installStep = {
+    name: "install",
+    command: pm,
+    args: ["install"],
+    passed: false,
+    skipped: options?.skipInstall ?? false,
+    durationMs: 0
+  };
+  if (!installStep.skipped) {
+    const start = Date.now();
+    const result = await runCommand(pm, ["install"], targetPath, STEP_TIMEOUTS.install);
+    installStep.durationMs = Date.now() - start;
+    installStep.passed = result.success;
+    if (!result.success) installStep.output = result.output;
+  }
+  steps.push(installStep);
+  const scriptSteps = ["build", "test", "lint"];
+  for (const stepName of scriptSteps) {
+    const hasScript = scripts.has(stepName);
+    const step = {
+      name: stepName,
+      command: pm,
+      args: ["run", stepName],
+      passed: false,
+      skipped: !hasScript,
+      durationMs: 0
+    };
+    if (hasScript) {
+      const start = Date.now();
+      const result = await runCommand(pm, ["run", stepName], targetPath, STEP_TIMEOUTS[stepName]);
+      step.durationMs = Date.now() - start;
+      step.passed = result.success;
+      if (!result.success) step.output = result.output;
+    }
+    steps.push(step);
+  }
+  const allPassed = steps.every((s) => s.skipped || s.passed);
+  return { packageManager: pm, steps, allPassed };
+}
+var GREEN = "\x1B[32m";
+var RED = "\x1B[31m";
+function printVerifyResult(result, verbose) {
+  console.log(`
+${BOLD}  Verification Results${RESET} (${result.packageManager})
+`);
+  for (const step of result.steps) {
+    if (step.skipped) {
+      console.log(`  ${DIM}\u25CB ${step.name.padEnd(10)}${RESET} ${DIM}skipped${RESET}`);
+    } else if (step.passed) {
+      console.log(`  ${GREEN}\u2713 ${step.name.padEnd(10)}${RESET} passed  ${DIM}(${formatMs(step.durationMs)})${RESET}`);
+    } else {
+      console.log(`  ${RED}\u2717 ${step.name.padEnd(10)}${RESET} failed  ${DIM}(${formatMs(step.durationMs)})${RESET}`);
+    }
+  }
+  if (verbose) {
+    const failed = result.steps.filter((s) => !s.skipped && !s.passed);
+    for (const step of failed) {
+      if (step.output) {
+        console.log(`
+  ${RED}--- ${step.name} output ---${RESET}`);
+        const lines = step.output.split("\n").slice(-30);
+        for (const line of lines) {
+          console.log(`  ${line}`);
+        }
+      }
+    }
+  }
+  console.log(
+    result.allPassed ? `
+  ${GREEN}All checks passed.${RESET}
+` : `
+  ${RED}Some checks failed.${RESET} Run \`proteus-forge verify --verbose\` for details.
+`
+  );
+}
+function formatMs(ms) {
+  if (ms < 1e3) return `${ms}ms`;
+  return `${(ms / 1e3).toFixed(1)}s`;
+}
+
 // src/commands/execute.ts
 async function runExecute(name, options) {
   let project;
@@ -3246,8 +3395,8 @@ async function runExecute(name, options) {
   const { entry } = project;
   const sourcePath = entry.source;
   const targetPath = entry.target;
-  const manifestPath = join18(targetPath, ".proteus-forge", "04-tracks", "manifest.json");
-  if (!existsSync19(manifestPath)) {
+  const manifestPath = join19(targetPath, ".proteus-forge", "04-tracks", "manifest.json");
+  if (!existsSync20(manifestPath)) {
     console.error("Split stage not complete. Run `proteus-forge split` first.");
     return false;
   }
@@ -3296,8 +3445,8 @@ async function runExecute(name, options) {
     console.log("  Run without --dry-run to proceed.\n");
     return true;
   }
-  const executeDir = join18(targetPath, ".proteus-forge", "05-execute");
-  const inboxDir = join18(executeDir, "inbox");
+  const executeDir = join19(targetPath, ".proteus-forge", "05-execute");
+  const inboxDir = join19(executeDir, "inbox");
   await mkdir9(inboxDir, { recursive: true });
   console.log(`
   Inbox active \u2014 send messages with: proteus-forge inform <agent> "<message>"
@@ -3316,7 +3465,7 @@ async function runExecute(name, options) {
     onMessage: (msg) => dashboard.onMessage(msg)
   });
   dashboard.cleanup();
-  const hasOutput = existsSync19(join18(targetPath, "src")) || existsSync19(join18(targetPath, "server"));
+  const hasOutput = existsSync20(join19(targetPath, "src")) || existsSync20(join19(targetPath, "server"));
   if ((result.success || hasOutput) && hasOutput) {
     const label = result.success ? "Execution complete" : "Execution recovered";
     console.log(`
@@ -3335,17 +3484,28 @@ async function runExecute(name, options) {
       console.log(`  Committed: "${msg}"`);
     } catch {
     }
+    let verifySummary;
+    if (!options.skipVerify && existsSync20(join19(targetPath, "package.json"))) {
+      console.log("\n  Running post-execute verification...");
+      const verifyResult = await runVerification(targetPath);
+      printVerifyResult(verifyResult);
+      verifySummary = verifyResult.steps.map((s) => `${s.name}:${s.skipped ? "skipped" : s.passed ? "passed" : "failed"}`).join(", ");
+      if (!verifyResult.allPassed) {
+        console.log("  Run `proteus-forge verify --verbose` to see full failure output.\n");
+      }
+    }
     await appendCostEntry(targetPath, "execute", { ...result.cost, teammates: nonSharedTracks.length });
     await appendLogEntry(targetPath, {
       action: "execute",
       status: result.success ? "success" : "recovered",
       duration: result.cost.duration,
       cost: result.cost.estimatedCost,
-      teammates: nonSharedTracks.length
+      teammates: nonSharedTracks.length,
+      details: verifySummary
     });
     console.log(`
-  Output: ${join18(executeDir, "execute.md")}`);
-    console.log(`          ${join18(executeDir, "session.json")}`);
+  Output: ${join19(executeDir, "execute.md")}`);
+    console.log(`          ${join19(executeDir, "session.json")}`);
     console.log(`          ${targetPath}/`);
     console.log(`  Review: proteus-forge review execute`);
     console.log(`  Compare: proteus-forge compare
@@ -3371,7 +3531,7 @@ async function runExecute(name, options) {
   });
   return false;
 }
-var executeCommand = new Command16("execute").description("Build production code using coordinated agent teams").argument("[name]", "Project name (uses active project if omitted)").option("--dry-run", "Preview what would happen without launching agents").option("--budget <amount>", "Maximum budget in USD for this stage", parseFloat).option("--tier <tier>", "Override model tier for this run (fast, standard, advanced)").option("--model <model>", "Override model for this run (e.g., claude-sonnet-4-6)").action(async (name, options) => {
+var executeCommand = new Command16("execute").description("Build production code using coordinated agent teams").argument("[name]", "Project name (uses active project if omitted)").option("--dry-run", "Preview what would happen without launching agents").option("--budget <amount>", "Maximum budget in USD for this stage", parseFloat).option("--tier <tier>", "Override model tier for this run (fast, standard, advanced)").option("--model <model>", "Override model for this run (e.g., claude-sonnet-4-6)").option("--skip-verify", "Skip post-execute verification (install/build/test/lint)").action(async (name, options) => {
   const success = await runExecute(name, options);
   if (!success) process.exit(1);
 });
@@ -3385,7 +3545,7 @@ var STAGE_RUNNERS = {
   split: (name, opts) => runSplit(name, { budget: opts.budget, tier: opts.tier, model: opts.model }),
   execute: (name, opts) => runExecute(name, { budget: opts.budget, tier: opts.tier, model: opts.model })
 };
-var runCommand = new Command17("run").description("Run the full pipeline or a range of stages without stopping").argument("[name]", "Project name (uses active project if omitted)").option("--from <stage>", "Start from this stage (default: next incomplete)").option("--to <stage>", "Stop after this stage (default: execute)").option("--budget <amount>", "Maximum budget per stage in USD", parseFloat).option("--brief <text>", "Architectural requirements for the design stage").option("--brief-file <path>", "Path to architectural requirements file").option("--include-style", "Run style extraction after inspect").option("--tier <tier>", "Override model tier for this run (fast, standard, advanced)").option("--model <model>", "Override model for this run (e.g., claude-sonnet-4-6)").action(
+var runCommand2 = new Command17("run").description("Run the full pipeline or a range of stages without stopping").argument("[name]", "Project name (uses active project if omitted)").option("--from <stage>", "Start from this stage (default: next incomplete)").option("--to <stage>", "Stop after this stage (default: execute)").option("--budget <amount>", "Maximum budget per stage in USD", parseFloat).option("--brief <text>", "Architectural requirements for the design stage").option("--brief-file <path>", "Path to architectural requirements file").option("--include-style", "Run style extraction after inspect").option("--tier <tier>", "Override model tier for this run (fast, standard, advanced)").option("--model <model>", "Override model for this run (e.g., claude-sonnet-4-6)").action(
   async (name, options) => {
     let project;
     try {
@@ -3506,9 +3666,9 @@ var informCommand = new Command18("inform").description("Send a message to a run
 
 // src/commands/log.ts
 import { Command as Command19 } from "commander";
-import { existsSync as existsSync20 } from "fs";
-import { readFile as readFile11 } from "fs/promises";
-import { join as join19 } from "path";
+import { existsSync as existsSync21 } from "fs";
+import { readFile as readFile12 } from "fs/promises";
+import { join as join20 } from "path";
 var logCommand = new Command19("log").description("View the audit trail for a project").argument("[name]", "Project name (uses active project if omitted)").option("-n <count>", "Show last N entries", parseInt).action(async (name, options) => {
   let project;
   try {
@@ -3517,14 +3677,14 @@ var logCommand = new Command19("log").description("View the audit trail for a pr
     console.error(err.message);
     process.exit(1);
   }
-  const logPath = join19(project.entry.target, ".proteus-forge", "log.jsonl");
-  if (!existsSync20(logPath)) {
+  const logPath = join20(project.entry.target, ".proteus-forge", "log.jsonl");
+  if (!existsSync21(logPath)) {
     console.log(`
 [${project.name}] No log entries yet.
 `);
     return;
   }
-  const content = await readFile11(logPath, "utf-8");
+  const content = await readFile12(logPath, "utf-8");
   let lines = content.trim().split("\n").filter(Boolean);
   if (options.n && options.n > 0) {
     lines = lines.slice(-options.n);
@@ -3585,8 +3745,8 @@ var costsCommand = new Command20("costs").description("Show token usage and cost
 
 // src/commands/review.ts
 import { Command as Command21 } from "commander";
-import { existsSync as existsSync21 } from "fs";
-import { join as join20 } from "path";
+import { existsSync as existsSync22 } from "fs";
+import { join as join21 } from "path";
 import { spawn } from "child_process";
 var STAGE_REVIEW_FILES = {
   inspect: "01-inspect/inspect.md",
@@ -3610,12 +3770,12 @@ var reviewCommand = new Command21("review").description("Open a stage artifact i
     console.error(err.message);
     process.exit(1);
   }
-  const artifactPath = join20(
+  const artifactPath = join21(
     project.entry.target,
     ".proteus-forge",
     STAGE_REVIEW_FILES[stage]
   );
-  if (!existsSync21(artifactPath)) {
+  if (!existsSync22(artifactPath)) {
     console.error(
       `${stage} artifact not found. Run \`proteus-forge ${stage}\` first.`
     );
@@ -3630,13 +3790,13 @@ var reviewCommand = new Command21("review").description("Open a stage artifact i
 
 // src/commands/validate.ts
 import { Command as Command22 } from "commander";
-import { existsSync as existsSync22 } from "fs";
-import { readFile as readFile12 } from "fs/promises";
-import { join as join21 } from "path";
+import { existsSync as existsSync23 } from "fs";
+import { readFile as readFile13 } from "fs/promises";
+import { join as join22 } from "path";
 async function readJson(path) {
-  if (!existsSync22(path)) return null;
+  if (!existsSync23(path)) return null;
   try {
-    return JSON.parse(await readFile12(path, "utf-8"));
+    return JSON.parse(await readFile13(path, "utf-8"));
   } catch {
     return null;
   }
@@ -3650,7 +3810,7 @@ var validateCommand = new Command22("validate").description("Run cross-stage art
     process.exit(1);
   }
   const targetPath = project.entry.target;
-  const forgeDir = join21(targetPath, ".proteus-forge");
+  const forgeDir = join22(targetPath, ".proteus-forge");
   const results = [];
   console.log(`
 [${project.name}] Validating artifacts...
@@ -3662,7 +3822,7 @@ var validateCommand = new Command22("validate").description("Run cross-stage art
     return;
   }
   if (completedStages.includes("inspect")) {
-    const features = await readJson(join21(forgeDir, "01-inspect", "features.json"));
+    const features = await readJson(join22(forgeDir, "01-inspect", "features.json"));
     if (features) {
       const featureArr = features.features;
       results.push({
@@ -3693,7 +3853,7 @@ var validateCommand = new Command22("validate").description("Run cross-stage art
     }
   }
   if (completedStages.includes("design")) {
-    const designMeta = await readJson(join21(forgeDir, "02-design", "design-meta.json"));
+    const designMeta = await readJson(join22(forgeDir, "02-design", "design-meta.json"));
     if (designMeta) {
       const featureMap = designMeta.featureToServiceMap;
       results.push({
@@ -3702,15 +3862,15 @@ var validateCommand = new Command22("validate").description("Run cross-stage art
         message: featureMap ? `${Object.keys(featureMap).length} features mapped` : "Missing map"
       });
     }
-    const designMd = join21(forgeDir, "02-design", "design.md");
+    const designMd = join22(forgeDir, "02-design", "design.md");
     results.push({
       rule: "design.md exists",
-      passed: existsSync22(designMd),
-      message: existsSync22(designMd) ? "Present" : "Missing"
+      passed: existsSync23(designMd),
+      message: existsSync23(designMd) ? "Present" : "Missing"
     });
   }
   if (completedStages.includes("plan")) {
-    const plan = await readJson(join21(forgeDir, "03-plan", "plan.json"));
+    const plan = await readJson(join22(forgeDir, "03-plan", "plan.json"));
     if (plan) {
       const tasks = plan.tasks;
       const waves = plan.executionWaves;
@@ -3749,7 +3909,7 @@ var validateCommand = new Command22("validate").description("Run cross-stage art
     }
   }
   if (completedStages.includes("split")) {
-    const manifest = await readJson(join21(forgeDir, "04-tracks", "manifest.json"));
+    const manifest = await readJson(join22(forgeDir, "04-tracks", "manifest.json"));
     if (manifest) {
       const tracks = manifest.tracks;
       results.push({
@@ -3779,13 +3939,57 @@ var validateCommand = new Command22("validate").description("Run cross-stage art
   if (failed > 0) process.exit(1);
 });
 
-// src/commands/diff.ts
+// src/commands/verify.ts
 import { Command as Command23 } from "commander";
-import { existsSync as existsSync23 } from "fs";
-import { join as join22 } from "path";
-import { execFile as execFile2 } from "child_process";
+import { existsSync as existsSync24 } from "fs";
+import { join as join23 } from "path";
+async function runVerify(name, options) {
+  let project;
+  try {
+    project = await resolveProject(name);
+  } catch (err) {
+    console.error(err.message);
+    return false;
+  }
+  const targetPath = project.entry.target;
+  const pkgPath = join23(targetPath, "package.json");
+  if (!existsSync24(pkgPath)) {
+    console.error(
+      `No package.json found in ${targetPath}. Verify requires a Node.js project with a package.json.`
+    );
+    return false;
+  }
+  console.log(`
+[${project.name}] Running verification...
+`);
+  console.log(`  Target: ${targetPath}`);
+  const result = await runVerification(targetPath, {
+    skipInstall: options.skipInstall,
+    verbose: options.verbose
+  });
+  printVerifyResult(result, options.verbose);
+  const stepSummary = result.steps.map((s) => `${s.name}:${s.skipped ? "skipped" : s.passed ? "passed" : "failed"}`).join(", ");
+  await appendLogEntry(targetPath, {
+    action: "verify",
+    status: result.allPassed ? "success" : "failed",
+    details: stepSummary
+  });
+  return result.allPassed;
+}
+var verifyCommand = new Command23("verify").description("Run install/build/test/lint verification on the target repo").argument("[name]", "Project name (uses active project if omitted)").option("--verbose", "Show full output from failed steps").option("--skip-install", "Skip the install step").action(
+  async (name, options) => {
+    const success = await runVerify(name, options);
+    if (!success) process.exit(1);
+  }
+);
+
+// src/commands/diff.ts
+import { Command as Command24 } from "commander";
+import { existsSync as existsSync25 } from "fs";
+import { join as join24 } from "path";
+import { execFile as execFile3 } from "child_process";
 import { promisify as promisify2 } from "util";
-var execFileAsync2 = promisify2(execFile2);
+var execFileAsync2 = promisify2(execFile3);
 var STAGE_ARTIFACTS2 = {
   inspect: ["01-inspect/features.json", "01-inspect/scout.json"],
   style: ["02-style/style-guide.json", "02-style/style.md"],
@@ -3794,7 +3998,7 @@ var STAGE_ARTIFACTS2 = {
   split: ["04-tracks/manifest.json"],
   execute: ["05-execute/session.json"]
 };
-var diffCommand = new Command23("diff").description("Show git changes for a stage's artifacts between runs").argument("<stage>", "Stage to diff (inspect, style, design, plan, split, execute)").argument("[name]", "Project name (uses active project if omitted)").action(async (stage, name) => {
+var diffCommand = new Command24("diff").description("Show git changes for a stage's artifacts between runs").argument("<stage>", "Stage to diff (inspect, style, design, plan, split, execute)").argument("[name]", "Project name (uses active project if omitted)").action(async (stage, name) => {
   if (!STAGE_ARTIFACTS2[stage]) {
     console.error(
       `Unknown stage "${stage}". Valid stages: ${Object.keys(STAGE_ARTIFACTS2).join(", ")}`
@@ -3810,9 +4014,9 @@ var diffCommand = new Command23("diff").description("Show git changes for a stag
   }
   const targetPath = project.entry.target;
   const paths = STAGE_ARTIFACTS2[stage].map(
-    (p) => join22(".proteus-forge", p)
+    (p) => join24(".proteus-forge", p)
   );
-  const existing = paths.filter((p) => existsSync23(join22(targetPath, p)));
+  const existing = paths.filter((p) => existsSync25(join24(targetPath, p)));
   if (existing.length === 0) {
     console.error(
       `No ${stage} artifacts found. Run \`proteus-forge ${stage}\` first.`
@@ -3855,17 +4059,17 @@ var diffCommand = new Command23("diff").description("Show git changes for a stag
 });
 
 // src/commands/compare.ts
-import { Command as Command24 } from "commander";
-import { existsSync as existsSync24 } from "fs";
+import { Command as Command25 } from "commander";
+import { existsSync as existsSync26 } from "fs";
 import { readdir } from "fs/promises";
-import { join as join23 } from "path";
+import { join as join25 } from "path";
 async function countFiles(dir, exclude = []) {
   let files = 0;
   let lines = 0;
   async function walk(current) {
     const entries = await readdir(current, { withFileTypes: true });
     for (const entry of entries) {
-      const fullPath = join23(current, entry.name);
+      const fullPath = join25(current, entry.name);
       const relative = fullPath.replace(dir + "/", "");
       if (exclude.some((ex) => relative.startsWith(ex) || entry.name === ex)) {
         continue;
@@ -3875,18 +4079,18 @@ async function countFiles(dir, exclude = []) {
       } else if (entry.isFile()) {
         files++;
         try {
-          const { readFile: readFile14 } = await import("fs/promises");
-          const content = await readFile14(fullPath, "utf-8");
+          const { readFile: readFile15 } = await import("fs/promises");
+          const content = await readFile15(fullPath, "utf-8");
           lines += content.split("\n").length;
         } catch {
         }
       }
     }
   }
-  if (existsSync24(dir)) await walk(dir);
+  if (existsSync26(dir)) await walk(dir);
   return { files, lines };
 }
-var compareCommand = new Command24("compare").description("Compare the source POC against the production target").argument("[name]", "Project name (uses active project if omitted)").action(async (name) => {
+var compareCommand = new Command25("compare").description("Compare the source POC against the production target").argument("[name]", "Project name (uses active project if omitted)").action(async (name) => {
   let project;
   try {
     project = await resolveProject(name);
@@ -3920,13 +4124,13 @@ var compareCommand = new Command24("compare").description("Compare the source PO
   const lineRatio = targetStats.lines > 0 && sourceStats.lines > 0 ? (targetStats.lines / sourceStats.lines).toFixed(1) : "N/A";
   console.log(`  Growth: ${fileRatio}x files, ${lineRatio}x lines
 `);
-  if (existsSync24(targetPath)) {
+  if (existsSync26(targetPath)) {
     const entries = await readdir(targetPath, { withFileTypes: true });
     const dirs = entries.filter((e) => e.isDirectory() && !e.name.startsWith(".") && e.name !== "node_modules").map((e) => e.name);
     if (dirs.length > 0) {
       console.log(`  Production structure:`);
       for (const d of dirs) {
-        const dirStats = await countFiles(join23(targetPath, d), ["node_modules", "dist"]);
+        const dirStats = await countFiles(join25(targetPath, d), ["node_modules", "dist"]);
         console.log(`    ${d.padEnd(20)} ${dirStats.files} files`);
       }
     }
@@ -3935,10 +4139,10 @@ var compareCommand = new Command24("compare").description("Compare the source PO
 });
 
 // src/commands/explain.ts
-import { Command as Command25 } from "commander";
-import { existsSync as existsSync25 } from "fs";
-import { join as join24 } from "path";
-var explainCommand = new Command25("explain").description("Explain a design or plan decision by reading artifacts").argument("<question>", "Question to answer (e.g., 'why is auth in wave 1?')").argument("[name]", "Project name (uses active project if omitted)").option("--tier <tier>", "Override model tier for this run (fast, standard, advanced)").option("--model <model>", "Override model for this run (e.g., claude-sonnet-4-6)").action(async (question, name, options) => {
+import { Command as Command26 } from "commander";
+import { existsSync as existsSync27 } from "fs";
+import { join as join26 } from "path";
+var explainCommand = new Command26("explain").description("Explain a design or plan decision by reading artifacts").argument("<question>", "Question to answer (e.g., 'why is auth in wave 1?')").argument("[name]", "Project name (uses active project if omitted)").option("--tier <tier>", "Override model tier for this run (fast, standard, advanced)").option("--model <model>", "Override model for this run (e.g., claude-sonnet-4-6)").action(async (question, name, options) => {
   let project;
   try {
     project = await resolveProject(name);
@@ -3947,7 +4151,7 @@ var explainCommand = new Command25("explain").description("Explain a design or p
     process.exit(1);
   }
   const targetPath = project.entry.target;
-  const forgeDir = join24(targetPath, ".proteus-forge");
+  const forgeDir = join26(targetPath, ".proteus-forge");
   const contextFiles = [];
   const artifactPaths = [
     "01-inspect/features.json",
@@ -3961,7 +4165,7 @@ var explainCommand = new Command25("explain").description("Explain a design or p
     artifactPaths.splice(1, 0, "02-style/style-guide.json");
   }
   for (const p of artifactPaths) {
-    if (existsSync25(join24(forgeDir, p))) {
+    if (existsSync27(join26(forgeDir, p))) {
       contextFiles.push(p);
     }
   }
@@ -4010,11 +4214,11 @@ Error: ${result.errors.join("; ")}`);
 });
 
 // src/commands/resume.ts
-import { Command as Command26 } from "commander";
-import { existsSync as existsSync26 } from "fs";
+import { Command as Command27 } from "commander";
+import { existsSync as existsSync28 } from "fs";
 import { mkdir as mkdir10 } from "fs/promises";
-import { join as join25 } from "path";
-var resumeCommand = new Command26("resume").description("Resume execute from the last wave checkpoint").argument("[name]", "Project name (uses active project if omitted)").option("--budget <amount>", "Maximum budget in USD", parseFloat).option("--tier <tier>", "Override model tier for this run (fast, standard, advanced)").option("--model <model>", "Override model for this run (e.g., claude-sonnet-4-6)").action(async (name, options) => {
+import { join as join27 } from "path";
+var resumeCommand = new Command27("resume").description("Resume execute from the last wave checkpoint").argument("[name]", "Project name (uses active project if omitted)").option("--budget <amount>", "Maximum budget in USD", parseFloat).option("--tier <tier>", "Override model tier for this run (fast, standard, advanced)").option("--model <model>", "Override model for this run (e.g., claude-sonnet-4-6)").action(async (name, options) => {
   let project;
   try {
     project = await resolveProject(name);
@@ -4025,8 +4229,8 @@ var resumeCommand = new Command26("resume").description("Resume execute from the
   const { entry } = project;
   const sourcePath = entry.source;
   const targetPath = entry.target;
-  const manifestPath = join25(targetPath, ".proteus-forge", "04-tracks", "manifest.json");
-  if (!existsSync26(manifestPath)) {
+  const manifestPath = join27(targetPath, ".proteus-forge", "04-tracks", "manifest.json");
+  if (!existsSync28(manifestPath)) {
     console.error("Split stage not complete. Run the full pipeline first.");
     process.exit(1);
   }
@@ -4064,8 +4268,8 @@ The code from those waves already exists in the target directory.
 
 DO NOT re-do work from waves 1-${lastWave}. Start from wave ${lastWave + 1}.
 Check what files already exist before creating new ones.`;
-  const executeDir = join25(targetPath, ".proteus-forge", "05-execute");
-  const inboxDir = join25(executeDir, "inbox");
+  const executeDir = join27(targetPath, ".proteus-forge", "05-execute");
+  const inboxDir = join27(executeDir, "inbox");
   await mkdir10(inboxDir, { recursive: true });
   console.log("\n  Launching Agent Team...\n");
   const dashboard = createDashboard("resume");
@@ -4080,7 +4284,7 @@ Check what files already exist before creating new ones.`;
     onMessage: (msg) => dashboard.onMessage(msg)
   });
   dashboard.cleanup();
-  const hasOutput = existsSync26(join25(targetPath, "src")) || existsSync26(join25(targetPath, "server"));
+  const hasOutput = existsSync28(join27(targetPath, "src")) || existsSync28(join27(targetPath, "server"));
   if ((result.success || hasOutput) && hasOutput) {
     console.log(`
 [${project.name}] Resume complete.
@@ -4124,11 +4328,11 @@ Check what files already exist before creating new ones.`;
 });
 
 // src/commands/abort.ts
-import { Command as Command27 } from "commander";
-import { existsSync as existsSync27 } from "fs";
+import { Command as Command28 } from "commander";
+import { existsSync as existsSync29 } from "fs";
 import { unlink } from "fs/promises";
-import { join as join26 } from "path";
-var abortCommand = new Command27("abort").description("Signal a running execute session to stop").argument("[name]", "Project name (uses active project if omitted)").action(async (name) => {
+import { join as join28 } from "path";
+var abortCommand = new Command28("abort").description("Signal a running execute session to stop").argument("[name]", "Project name (uses active project if omitted)").action(async (name) => {
   let project;
   try {
     project = await resolveProject(name);
@@ -4137,8 +4341,8 @@ var abortCommand = new Command27("abort").description("Signal a running execute 
     process.exit(1);
   }
   const targetPath = project.entry.target;
-  const sentinelPath = join26(getInboxDir(targetPath), ".active");
-  if (!existsSync27(sentinelPath)) {
+  const sentinelPath = join28(getInboxDir(targetPath), ".active");
+  if (!existsSync29(sentinelPath)) {
     console.error(
       "No active execute session found. Nothing to abort."
     );
@@ -4173,11 +4377,11 @@ var abortCommand = new Command27("abort").description("Signal a running execute 
 });
 
 // src/commands/watch.ts
-import { Command as Command28 } from "commander";
-import { existsSync as existsSync28, watchFile, unwatchFile } from "fs";
-import { readFile as readFile13 } from "fs/promises";
-import { join as join27 } from "path";
-var watchCommand = new Command28("watch").description("Watch a running execute session's progress").argument("[name]", "Project name (uses active project if omitted)").action(async (name) => {
+import { Command as Command29 } from "commander";
+import { existsSync as existsSync30, watchFile, unwatchFile } from "fs";
+import { readFile as readFile14 } from "fs/promises";
+import { join as join29 } from "path";
+var watchCommand = new Command29("watch").description("Watch a running execute session's progress").argument("[name]", "Project name (uses active project if omitted)").action(async (name) => {
   let project;
   try {
     project = await resolveProject(name);
@@ -4186,8 +4390,8 @@ var watchCommand = new Command28("watch").description("Watch a running execute s
     process.exit(1);
   }
   const targetPath = project.entry.target;
-  const sentinelPath = join27(getInboxDir(targetPath), ".active");
-  if (!existsSync28(sentinelPath)) {
+  const sentinelPath = join29(getInboxDir(targetPath), ".active");
+  if (!existsSync30(sentinelPath)) {
     console.error(
       "No active execute session found. Run `proteus-forge execute` first."
     );
@@ -4198,10 +4402,10 @@ var watchCommand = new Command28("watch").description("Watch a running execute s
 `);
   console.log("  Monitoring .proteus-forge/log.jsonl for updates.");
   console.log("  Press Ctrl+C to stop watching.\n");
-  const logPath = join27(targetPath, ".proteus-forge", "log.jsonl");
+  const logPath = join29(targetPath, ".proteus-forge", "log.jsonl");
   let lastSize = 0;
-  if (existsSync28(logPath)) {
-    const content = await readFile13(logPath, "utf-8");
+  if (existsSync30(logPath)) {
+    const content = await readFile14(logPath, "utf-8");
     lastSize = content.length;
     const lines = content.trim().split("\n").filter(Boolean);
     for (const line of lines.slice(-5)) {
@@ -4214,8 +4418,8 @@ var watchCommand = new Command28("watch").description("Watch a running execute s
     }
   }
   const checkForUpdates = async () => {
-    if (!existsSync28(logPath)) return;
-    const content = await readFile13(logPath, "utf-8");
+    if (!existsSync30(logPath)) return;
+    const content = await readFile14(logPath, "utf-8");
     if (content.length > lastSize) {
       const newContent = content.slice(lastSize);
       lastSize = content.length;
@@ -4231,7 +4435,7 @@ var watchCommand = new Command28("watch").description("Watch a running execute s
     }
   };
   const checkActive = () => {
-    if (!existsSync28(sentinelPath)) {
+    if (!existsSync30(sentinelPath)) {
       console.log("\n  Session ended.\n");
       process.exit(0);
     }
@@ -4249,8 +4453,8 @@ var watchCommand = new Command28("watch").description("Watch a running execute s
 });
 
 // src/commands/list-models.ts
-import { Command as Command29 } from "commander";
-var listModelsCommand = new Command29("list-models").description("Show configured model tiers and role assignments").option("--available", "Fetch and display available models from the Anthropic API").action(async (options) => {
+import { Command as Command30 } from "commander";
+var listModelsCommand = new Command30("list-models").description("Show configured model tiers and role assignments").option("--available", "Fetch and display available models from the Anthropic API").action(async (options) => {
   const config = await readGlobalConfig();
   if (!config) {
     console.error("Global config not found. Run `proteus-forge setup` first.");
@@ -4300,7 +4504,7 @@ To update tiers: ${BOLD}proteus-forge config refresh-models${RESET}
 });
 
 // src/index.ts
-var program = new Command30();
+var program = new Command31();
 program.name("proteus-forge").description(
   "Transform POC codebases into production-ready applications using coordinated AI agent teams"
 ).version("1.0.0");
@@ -4329,10 +4533,11 @@ program.addCommand(resumeCommand);
 program.addCommand(retargetCommand);
 program.addCommand(revertCommand);
 program.addCommand(reviewCommand);
-program.addCommand(runCommand);
+program.addCommand(runCommand2);
 program.addCommand(statusCommand);
 program.addCommand(styleCommand);
 program.addCommand(validateCommand);
+program.addCommand(verifyCommand);
 program.addCommand(watchCommand);
 program.configureHelp({
   formatHelp(cmd, helper) {

@@ -185,7 +185,8 @@ Each teammate's spawn prompt should include:
 4. Their file ownership — they must NOT modify files outside their ownership
 5. That the source POC at ${sourcePath} is read-only reference (do not copy code)
 6. Testing expectations: if testingExpectation is "unit", write unit tests alongside code
-7. To mark tasks complete on the shared task list when done${styleSpawnInstruction}
+7. To mark tasks complete on the shared task list when done
+8. Before marking a task complete: run \`npx tsc --noEmit\` in the target repo to catch type errors, and run any unit tests for their owned files. Fix all errors before marking done${styleSpawnInstruction}
 
 ### Step 4: Create Tasks on Shared Task List
 
@@ -204,7 +205,13 @@ Tasks that you (the Lead) already completed in Step 2 should be created as alrea
 
 After all tasks are complete:
 1. Verify key files exist (package.json, tsconfig.json, main entry points)
-2. Write a session summary to TWO files:
+2. **Run CI verification in the target repo** (MANDATORY before writing session.json):
+   a. Detect the package manager from lockfiles (bun.lockb → pnpm-lock.yaml → yarn.lock → package-lock.json → default npm)
+   b. Run \`<pm> install\` — must install cleanly with no errors
+   c. For each script that exists in package.json, run: \`<pm> run build\`, \`<pm> run test\`, \`<pm> run lint\`
+   d. If ANY check fails: diagnose the root cause, fix the code (yourself or delegate to the appropriate engineer), then re-run until all checks pass
+   e. Only proceed to step 3 after ALL checks pass
+3. Write a session summary to TWO files:
    - **${targetPath}/.proteus-forge/05-execute/session.json** — Machine-readable metadata
    - **${targetPath}/.proteus-forge/05-execute/execute.md** — Human-readable summary
 
@@ -221,6 +228,13 @@ The session.json schema:
     "totalTasks": ${ctx.tasks.length},
     "completed": ${ctx.tasks.length},
     "failed": 0
+  },
+  "verification": {
+    "packageManager": "<detected pm>",
+    "install": "passed|failed|skipped",
+    "build": "passed|failed|skipped",
+    "test": "passed|failed|skipped",
+    "lint": "passed|failed|skipped"
   }
 }
 \`\`\`
