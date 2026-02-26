@@ -1,6 +1,12 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+vi.mock("../../utils/style-context.js", () => ({
+  hasStyleGuide: vi.fn().mockReturnValue(false),
+}));
+
 import { generateExecuteLeadPrompt } from "../../prompts/execute.js";
 import type { ExecuteContext } from "../../prompts/execute.js";
+import { hasStyleGuide } from "../../utils/style-context.js";
 
 function makeTestContext(): ExecuteContext {
   const trackDetails = new Map();
@@ -47,9 +53,9 @@ function makeTestContext(): ExecuteContext {
 
   return {
     tracks: [
-      { id: "track-shared", discipline: "shared", taskCount: 1, file: "05-tracks/shared.json" },
-      { id: "track-backend", discipline: "backend", taskCount: 2, file: "05-tracks/backend.json" },
-      { id: "track-frontend", discipline: "frontend", taskCount: 1, file: "05-tracks/frontend.json" },
+      { id: "track-shared", discipline: "shared", taskCount: 1, file: "04-tracks/shared.json" },
+      { id: "track-backend", discipline: "backend", taskCount: 2, file: "04-tracks/backend.json" },
+      { id: "track-frontend", discipline: "frontend", taskCount: 1, file: "04-tracks/frontend.json" },
     ],
     trackDetails,
     tasks: [
@@ -104,6 +110,10 @@ describe("execute prompt", () => {
   const sourcePath = "/home/user/projects/my-poc";
   const targetPath = "/home/user/projects/my-poc-prod";
   const ctx = makeTestContext();
+
+  beforeEach(() => {
+    vi.mocked(hasStyleGuide).mockReturnValue(false);
+  });
 
   it("generates a non-empty prompt", () => {
     const prompt = generateExecuteLeadPrompt(sourcePath, targetPath, ctx);
@@ -163,12 +173,12 @@ describe("execute prompt", () => {
 
   it("references design.md for architecture context", () => {
     const prompt = generateExecuteLeadPrompt(sourcePath, targetPath, ctx);
-    expect(prompt).toContain("03-design/design.md");
+    expect(prompt).toContain("02-design/design.md");
   });
 
   it("references plan.json for task details", () => {
     const prompt = generateExecuteLeadPrompt(sourcePath, targetPath, ctx);
-    expect(prompt).toContain("04-plan/plan.json");
+    expect(prompt).toContain("03-plan/plan.json");
   });
 
   it("instructs not to copy POC code", () => {
@@ -185,12 +195,26 @@ describe("execute prompt", () => {
 
   it("includes session.json output schema", () => {
     const prompt = generateExecuteLeadPrompt(sourcePath, targetPath, ctx);
-    expect(prompt).toContain("06-execute/session.json");
+    expect(prompt).toContain("05-execute/session.json");
     expect(prompt).toContain("totalTasks");
   });
 
   it("instructs to enforce file ownership boundaries", () => {
     const prompt = generateExecuteLeadPrompt(sourcePath, targetPath, ctx);
     expect(prompt.toLowerCase()).toContain("must not modify files outside");
+  });
+
+  describe("conditional style guide", () => {
+    it("does not include style guide references when no style guide exists", () => {
+      const prompt = generateExecuteLeadPrompt(sourcePath, targetPath, ctx);
+      expect(prompt).not.toContain("02-style/style-guide.json");
+    });
+
+    it("includes style guide references when style guide exists", () => {
+      vi.mocked(hasStyleGuide).mockReturnValue(true);
+      const prompt = generateExecuteLeadPrompt(sourcePath, targetPath, ctx);
+      expect(prompt).toContain("02-style/style-guide.json");
+      expect(prompt).toContain("visual acceptance criteria");
+    });
   });
 });

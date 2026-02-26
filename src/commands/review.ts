@@ -7,15 +7,15 @@ import { resolveProject } from "../utils/resolve-project.js";
 const STAGE_REVIEW_FILES: Record<string, string> = {
   inspect: "01-inspect/inspect.md",
   style: "02-style/style.md",
-  design: "03-design/design.md",
-  plan: "04-plan/plan.md",
-  split: "05-tracks/split.md",
-  execute: "06-execute/execute.md",
+  design: "02-design/design.md",
+  plan: "03-plan/plan.md",
+  split: "04-tracks/split.md",
+  execute: "05-execute/execute.md",
 };
 
 export const reviewCommand = new Command("review")
   .description("Open a stage artifact in $EDITOR for review")
-  .argument("<stage>", "Stage to review (inspect, design, plan, split, execute)")
+  .argument("<stage>", "Stage to review (inspect, style, design, plan, split, execute)")
   .argument("[name]", "Project name (uses active project if omitted)")
   .action(async (stage: string, name?: string) => {
     if (!STAGE_REVIEW_FILES[stage]) {

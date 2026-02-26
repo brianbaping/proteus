@@ -28,8 +28,8 @@ export async function runPlan(
   const sourcePath = entry.source;
   const targetPath = entry.target;
 
-  const designMdPath = join(targetPath, ".proteus-forge", "03-design", "design.md");
-  const designMetaPath = join(targetPath, ".proteus-forge", "03-design", "design-meta.json");
+  const designMdPath = join(targetPath, ".proteus-forge", "02-design", "design.md");
+  const designMetaPath = join(targetPath, ".proteus-forge", "02-design", "design-meta.json");
   if (!existsSync(designMdPath) && !existsSync(designMetaPath)) {
     console.error("Design stage not complete. Run `proteus-forge design` first.");
     return false;
@@ -68,7 +68,7 @@ export async function runPlan(
     return true;
   }
 
-  const planDir = join(targetPath, ".proteus-forge", "04-plan");
+  const planDir = join(targetPath, ".proteus-forge", "03-plan");
   await mkdir(planDir, { recursive: true });
 
   const leadPrompt = generatePlanLeadPrompt(sourcePath, targetPath);

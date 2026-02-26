@@ -7,7 +7,6 @@ import type { StageName } from "../config/types.js";
 
 // Import all stage runners
 import { runInspect } from "./inspect.js";
-import { runStyle } from "./style.js";
 import { runDesign } from "./design.js";
 import { runPlan } from "./plan.js";
 import { runSplit } from "./split.js";
@@ -15,12 +14,11 @@ import { runExecute } from "./execute.js";
 
 type StageRunner = (
   projectName: string,
-  options: { budget?: number; brief?: string; briefFile?: string }
+  options: { budget?: number; brief?: string; briefFile?: string; includeStyle?: boolean }
 ) => Promise<boolean>;
 
 const STAGE_RUNNERS: Record<StageName, StageRunner> = {
-  inspect: (name, opts) => runInspect(name, { budget: opts.budget }),
-  style: (name, opts) => runStyle(name, { budget: opts.budget }),
+  inspect: (name, opts) => runInspect(name, { budget: opts.budget, includeStyle: opts.includeStyle }),
   design: (name, opts) => runDesign(name, { budget: opts.budget, brief: opts.brief, briefFile: opts.briefFile }),
   plan: (name, opts) => runPlan(name, { budget: opts.budget }),
   split: (name, opts) => runSplit(name, { budget: opts.budget }),
@@ -35,6 +33,7 @@ export const runCommand = new Command("run")
   .option("--budget <amount>", "Maximum budget per stage in USD", parseFloat)
   .option("--brief <text>", "Architectural requirements for the design stage")
   .option("--brief-file <path>", "Path to architectural requirements file")
+  .option("--include-style", "Run style extraction after inspect")
   .action(
     async (
       name: string | undefined,
@@ -44,6 +43,7 @@ export const runCommand = new Command("run")
         budget?: number;
         brief?: string;
         briefFile?: string;
+        includeStyle?: boolean;
       }
     ) => {
       let project;

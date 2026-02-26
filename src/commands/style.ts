@@ -9,7 +9,6 @@ import { launchSession } from "../session/launcher.js";
 import { gitStageAndCommit } from "../utils/git.js";
 import { appendCostEntry } from "../utils/costs.js";
 import { appendLogEntry } from "../utils/log.js";
-import { checkStaleness } from "../utils/stages.js";
 import { createDashboard } from "../utils/progress.js";
 
 /**
@@ -36,13 +35,6 @@ export async function runStyle(
   if (!existsSync(featuresPath)) {
     console.error("Inspect stage not complete. Run `proteus-forge inspect` first.");
     return false;
-  }
-
-  const warnings = checkStaleness(targetPath);
-  for (const w of warnings) {
-    if (w.stage === "style") {
-      console.log(`  \u26a0 ${w.staleReason}. Consider re-running upstream stages first.\n`);
-    }
   }
 
   const globalConfig = await readGlobalConfig();

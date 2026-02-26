@@ -1,9 +1,19 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+vi.mock("../../utils/style-context.js", () => ({
+  hasStyleGuide: vi.fn().mockReturnValue(false),
+}));
+
 import { generatePlanLeadPrompt } from "../../prompts/plan.js";
+import { hasStyleGuide } from "../../utils/style-context.js";
 
 describe("plan prompt", () => {
   const sourcePath = "/home/user/projects/my-poc";
   const targetPath = "/home/user/projects/my-poc-prod";
+
+  beforeEach(() => {
+    vi.mocked(hasStyleGuide).mockReturnValue(false);
+  });
 
   it("generates a non-empty prompt", () => {
     const prompt = generatePlanLeadPrompt(sourcePath, targetPath);
@@ -18,12 +28,12 @@ describe("plan prompt", () => {
 
   it("references design.md as primary input", () => {
     const prompt = generatePlanLeadPrompt(sourcePath, targetPath);
-    expect(prompt).toContain("03-design/design.md");
+    expect(prompt).toContain("02-design/design.md");
   });
 
   it("references design-meta.json as secondary input", () => {
     const prompt = generatePlanLeadPrompt(sourcePath, targetPath);
-    expect(prompt).toContain("03-design/design-meta.json");
+    expect(prompt).toContain("02-design/design-meta.json");
   });
 
   it("references features.json for coverage checking", () => {
@@ -33,8 +43,8 @@ describe("plan prompt", () => {
 
   it("includes output paths for plan artifacts", () => {
     const prompt = generatePlanLeadPrompt(sourcePath, targetPath);
-    expect(prompt).toContain("04-plan/plan.json");
-    expect(prompt).toContain("04-plan/plan.md");
+    expect(prompt).toContain("03-plan/plan.json");
+    expect(prompt).toContain("03-plan/plan.md");
   });
 
   it("includes the task schema with required fields", () => {
@@ -74,5 +84,20 @@ describe("plan prompt", () => {
     const prompt = generatePlanLeadPrompt(sourcePath, targetPath);
     expect(prompt.toLowerCase()).toContain("ownership");
     expect(prompt.toLowerCase()).toContain("overlap");
+  });
+
+  describe("conditional style guide", () => {
+    it("does not include style guide references when no style guide exists", () => {
+      const prompt = generatePlanLeadPrompt(sourcePath, targetPath);
+      expect(prompt).not.toContain("02-style/style-guide.json");
+      expect(prompt).not.toContain("design tokens");
+    });
+
+    it("includes style guide references when style guide exists", () => {
+      vi.mocked(hasStyleGuide).mockReturnValue(true);
+      const prompt = generatePlanLeadPrompt(sourcePath, targetPath);
+      expect(prompt).toContain("02-style/style-guide.json");
+      expect(prompt).toContain("design tokens");
+    });
   });
 });

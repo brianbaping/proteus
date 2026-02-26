@@ -1,3 +1,5 @@
+import { hasStyleGuide } from "../utils/style-context.js";
+
 /**
  * Generates the Lead prompt for the plan stage.
  * Single agent, no teammates — reads design artifacts and produces a task DAG.
@@ -6,6 +8,16 @@ export function generatePlanLeadPrompt(
   sourcePath: string,
   targetPath: string
 ): string {
+  const styleGuideExists = hasStyleGuide(targetPath);
+  const styleInput = styleGuideExists
+    ? `\n4. ${targetPath}/.proteus-forge/02-style/style-guide.json — visual identity, styling technology, color palette, typography`
+    : "";
+  const styleTasks = styleGuideExists
+    ? `\n- Set up design tokens / theme configuration (reference \`02-style/style-guide.json\` for exact values)
+- Migrate component styling (preserve the visual identity from the style guide)
+- Implement responsive layout patterns (use breakpoints and patterns from the style guide)`
+    : "";
+
   return `You are the Lead Planner for a Proteus Forge plan stage. Your job is to read the architecture design and produce a detailed task DAG (directed acyclic graph) with execution waves for building the production application.
 
 ## Context
@@ -17,18 +29,17 @@ The inspection findings are at:
   ${targetPath}/.proteus-forge/01-inspect/features.json
 
 The architecture design is at:
-  ${targetPath}/.proteus-forge/03-design/design.md (human-readable, may have been edited)
-  ${targetPath}/.proteus-forge/03-design/design-meta.json (machine-readable)
+  ${targetPath}/.proteus-forge/02-design/design.md (human-readable, may have been edited)
+  ${targetPath}/.proteus-forge/02-design/design-meta.json (machine-readable)
 
 ## Instructions
 
 ### Step 1: Read All Inputs
 
 Read these files thoroughly:
-1. ${targetPath}/.proteus-forge/03-design/design.md — the architecture document (authoritative if edited by user)
-2. ${targetPath}/.proteus-forge/03-design/design-meta.json — services, stack, feature mapping
-3. ${targetPath}/.proteus-forge/01-inspect/features.json — features, known issues, data model
-4. ${targetPath}/.proteus-forge/02-style/style-guide.json — visual identity, styling technology, color palette, typography
+1. ${targetPath}/.proteus-forge/02-design/design.md — the architecture document (authoritative if edited by user)
+2. ${targetPath}/.proteus-forge/02-design/design-meta.json — services, stack, feature mapping
+3. ${targetPath}/.proteus-forge/01-inspect/features.json — features, known issues, data model${styleInput}
 
 ### Step 2: Decompose Into Tasks
 
@@ -45,10 +56,7 @@ For each service/module in the design, create tasks for:
 
 Also create cross-cutting tasks:
 - Project scaffolding (package.json, tsconfig, directory structure)
-- Shared types and interfaces
-- Set up design tokens / theme configuration (reference \`02-style/style-guide.json\` for exact values)
-- Migrate component styling (preserve the visual identity from the style guide)
-- Implement responsive layout patterns (use breakpoints and patterns from the style guide)
+- Shared types and interfaces${styleTasks}
 - Docker and CI/CD setup
 - Integration tests (after services are built)
 
@@ -77,7 +85,7 @@ Rules:
 
 Create two files:
 
-**${targetPath}/.proteus-forge/04-plan/plan.json** — Machine-readable task DAG:
+**${targetPath}/.proteus-forge/03-plan/plan.json** — Machine-readable task DAG:
 \`\`\`json
 {
   "forgeVersion": "1.0.0",
@@ -112,7 +120,7 @@ Create two files:
 }
 \`\`\`
 
-**${targetPath}/.proteus-forge/04-plan/plan.md** — Human-readable narrative:
+**${targetPath}/.proteus-forge/03-plan/plan.md** — Human-readable narrative:
 \`\`\`markdown
 # Production Plan — <project name>
 
@@ -150,6 +158,6 @@ Create two files:
 - File ownership must not overlap between tasks (each file/directory owned by exactly one task).
 - Task IDs must be sequential: task-001, task-002, etc.
 - Acceptance criteria should be specific and verifiable (not vague like "works correctly").
-- Create the directory ${targetPath}/.proteus-forge/04-plan/ before writing.
+- Create the directory ${targetPath}/.proteus-forge/03-plan/ before writing.
 `;
 }

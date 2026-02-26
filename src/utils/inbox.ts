@@ -12,7 +12,7 @@ export interface InboxMessage {
  * Get the inbox directory path for the active execute session.
  */
 export function getInboxDir(targetPath: string): string {
-  return join(targetPath, ".proteus-forge", "06-execute", "inbox");
+  return join(targetPath, ".proteus-forge", "05-execute", "inbox");
 }
 
 /**

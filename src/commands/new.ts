@@ -19,7 +19,7 @@ All production code is built here by coordinated AI agent teams.
 - This repo was created by \`proteus-forge new\`
 - Pipeline artifacts are in \`.proteus-forge/\`
 - Do not manually edit files in \`.proteus-forge/\` unless you know what you're doing
-- Human-editable artifacts: \`.proteus-forge/03-design/design.md\`, \`.proteus-forge/04-plan/plan.md\`
+- Human-editable artifacts: \`.proteus-forge/02-design/design.md\`, \`.proteus-forge/03-plan/plan.md\`
 `;
 
 export const newCommand = new Command("new")

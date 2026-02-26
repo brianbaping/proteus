@@ -12,6 +12,7 @@ import { appendCostEntry } from "../utils/costs.js";
 import { appendLogEntry } from "../utils/log.js";
 import { printInspectTeamSummary } from "../utils/team-summary.js";
 import { createDashboard } from "../utils/progress.js";
+import { runStyle } from "./style.js";
 
 /**
  * Run the inspect stage. Returns true on success, false on failure.
@@ -19,7 +20,7 @@ import { createDashboard } from "../utils/progress.js";
  */
 export async function runInspect(
   name: string | undefined,
-  options: { dryRun?: boolean; budget?: number }
+  options: { dryRun?: boolean; budget?: number; includeStyle?: boolean }
 ): Promise<boolean> {
   let project;
   try {
@@ -113,7 +114,16 @@ export async function runInspect(
     console.log(`\n  Output: ${join(inspectDir, "inspect.md")}`);
     console.log(`          ${featuresPath}`);
     console.log(`  Review: proteus-forge review inspect`);
-    console.log(`  Next:   proteus-forge style\n`);
+    console.log(`  Next:   proteus-forge design\n`);
+
+    if (options.includeStyle) {
+      console.log(`  Running style extraction (--include-style)...\n`);
+      const styleOk = await runStyle(name, { budget: options.budget });
+      if (!styleOk) {
+        console.log(`  ⚠ Style extraction failed — continuing without style guide.\n`);
+      }
+    }
+
     return true;
   }
 
@@ -138,7 +148,8 @@ export const inspectCommand = new Command("inspect")
   .argument("[name]", "Project name (uses active project if omitted)")
   .option("--dry-run", "Preview what would happen without launching agents")
   .option("--budget <amount>", "Maximum budget in USD for this stage", parseFloat)
-  .action(async (name: string | undefined, options: { dryRun?: boolean; budget?: number }) => {
+  .option("--include-style", "Also run style extraction after inspect")
+  .action(async (name: string | undefined, options: { dryRun?: boolean; budget?: number; includeStyle?: boolean }) => {
     const success = await runInspect(name, options);
     if (!success) process.exit(1);
   });

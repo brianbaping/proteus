@@ -1,8 +1,18 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+vi.mock("../../utils/style-context.js", () => ({
+  hasStyleGuide: vi.fn().mockReturnValue(false),
+}));
+
 import { generateSplitLeadPrompt } from "../../prompts/split.js";
+import { hasStyleGuide } from "../../utils/style-context.js";
 
 describe("split prompt", () => {
   const targetPath = "/home/user/projects/my-poc-prod";
+
+  beforeEach(() => {
+    vi.mocked(hasStyleGuide).mockReturnValue(false);
+  });
 
   it("generates a non-empty prompt", () => {
     const prompt = generateSplitLeadPrompt(targetPath);
@@ -16,17 +26,17 @@ describe("split prompt", () => {
 
   it("references plan.json as input", () => {
     const prompt = generateSplitLeadPrompt(targetPath);
-    expect(prompt).toContain("04-plan/plan.json");
+    expect(prompt).toContain("03-plan/plan.json");
   });
 
   it("references design-meta.json as input", () => {
     const prompt = generateSplitLeadPrompt(targetPath);
-    expect(prompt).toContain("03-design/design-meta.json");
+    expect(prompt).toContain("02-design/design-meta.json");
   });
 
   it("includes output path for manifest.json", () => {
     const prompt = generateSplitLeadPrompt(targetPath);
-    expect(prompt).toContain("05-tracks/");
+    expect(prompt).toContain("04-tracks/");
     expect(prompt).toContain("manifest.json");
   });
 
@@ -65,5 +75,18 @@ describe("split prompt", () => {
     const prompt = generateSplitLeadPrompt(targetPath);
     expect(prompt).toContain("fileOwnershipMap");
     expect(prompt).toContain("sharedPatterns");
+  });
+
+  describe("conditional style guide", () => {
+    it("does not include style guide references when no style guide exists", () => {
+      const prompt = generateSplitLeadPrompt(targetPath);
+      expect(prompt).not.toContain("02-style/style-guide.json");
+    });
+
+    it("includes style guide references when style guide exists", () => {
+      vi.mocked(hasStyleGuide).mockReturnValue(true);
+      const prompt = generateSplitLeadPrompt(targetPath);
+      expect(prompt).toContain("02-style/style-guide.json");
+    });
   });
 });

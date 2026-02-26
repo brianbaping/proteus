@@ -52,7 +52,7 @@ export async function printDesignTeamSummary(
   targetPath: string
 ): Promise<void> {
   const scopePath = join(
-    targetPath, ".proteus-forge", "03-design", "scope.json"
+    targetPath, ".proteus-forge", "02-design", "scope.json"
   );
   if (!existsSync(scopePath)) return;
 

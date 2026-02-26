@@ -40,12 +40,11 @@ program
   .version("1.0.0");
 
 // Primary workflow (in order of use)
-const PRIMARY_COMMAND_COUNT = 9;
+const PRIMARY_COMMAND_COUNT = 8;
 program.addCommand(setupCommand);
 program.addCommand(newCommand);
 program.addCommand(useCommand);
 program.addCommand(inspectCommand);
-program.addCommand(styleCommand);
 program.addCommand(designCommand);
 program.addCommand(planCommand);
 program.addCommand(splitCommand);
@@ -69,6 +68,7 @@ program.addCommand(revertCommand);
 program.addCommand(reviewCommand);
 program.addCommand(runCommand);
 program.addCommand(statusCommand);
+program.addCommand(styleCommand);
 program.addCommand(validateCommand);
 program.addCommand(watchCommand);
 

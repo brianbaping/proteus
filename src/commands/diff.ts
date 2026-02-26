@@ -10,15 +10,15 @@ const execFileAsync = promisify(execFile);
 const STAGE_ARTIFACTS: Record<string, string[]> = {
   inspect: ["01-inspect/features.json", "01-inspect/scout.json"],
   style: ["02-style/style-guide.json", "02-style/style.md"],
-  design: ["03-design/design.md", "03-design/design-meta.json"],
-  plan: ["04-plan/plan.json", "04-plan/plan.md"],
-  split: ["05-tracks/manifest.json"],
-  execute: ["06-execute/session.json"],
+  design: ["02-design/design.md", "02-design/design-meta.json"],
+  plan: ["03-plan/plan.json", "03-plan/plan.md"],
+  split: ["04-tracks/manifest.json"],
+  execute: ["05-execute/session.json"],
 };
 
 export const diffCommand = new Command("diff")
   .description("Show git changes for a stage's artifacts between runs")
-  .argument("<stage>", "Stage to diff (inspect, design, plan, split, execute)")
+  .argument("<stage>", "Stage to diff (inspect, style, design, plan, split, execute)")
   .argument("[name]", "Project name (uses active project if omitted)")
   .action(async (stage: string, name?: string) => {
     if (!STAGE_ARTIFACTS[stage]) {

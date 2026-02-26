@@ -1,9 +1,19 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+vi.mock("../../utils/style-context.js", () => ({
+  hasStyleGuide: vi.fn().mockReturnValue(false),
+}));
+
 import { generateDesignLeadPrompt } from "../../prompts/design.js";
+import { hasStyleGuide } from "../../utils/style-context.js";
 
 describe("design prompt", () => {
   const sourcePath = "/home/user/projects/my-poc";
   const targetPath = "/home/user/projects/my-poc-prod";
+
+  beforeEach(() => {
+    vi.mocked(hasStyleGuide).mockReturnValue(false);
+  });
 
   it("generates a non-empty prompt", () => {
     const prompt = generateDesignLeadPrompt(sourcePath, targetPath);
@@ -27,10 +37,10 @@ describe("design prompt", () => {
 
   it("includes output paths for design artifacts", () => {
     const prompt = generateDesignLeadPrompt(sourcePath, targetPath);
-    expect(prompt).toContain("03-design/design.md");
-    expect(prompt).toContain("03-design/design-meta.json");
-    expect(prompt).toContain("03-design/scope.json");
-    expect(prompt).toContain("03-design/partials/");
+    expect(prompt).toContain("02-design/design.md");
+    expect(prompt).toContain("02-design/design-meta.json");
+    expect(prompt).toContain("02-design/scope.json");
+    expect(prompt).toContain("02-design/partials/");
   });
 
   it("includes design-meta.json schema structure", () => {
@@ -93,6 +103,22 @@ describe("design prompt", () => {
     it("does not include brief section when brief is undefined", () => {
       const prompt = generateDesignLeadPrompt(sourcePath, targetPath, undefined);
       expect(prompt).not.toContain("User Architectural Requirements");
+    });
+  });
+
+  describe("conditional style guide", () => {
+    it("does not include style guide references when no style guide exists", () => {
+      const prompt = generateDesignLeadPrompt(sourcePath, targetPath);
+      expect(prompt).not.toContain("02-style/style-guide.json");
+      expect(prompt).not.toContain("Styling Strategy");
+    });
+
+    it("includes style guide references when style guide exists", () => {
+      vi.mocked(hasStyleGuide).mockReturnValue(true);
+      const prompt = generateDesignLeadPrompt(sourcePath, targetPath);
+      expect(prompt).toContain("02-style/style-guide.json");
+      expect(prompt).toContain("Styling Strategy");
+      expect(prompt).toContain("and Style Guide");
     });
   });
 });

@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { resolveProject } from "../utils/resolve-project.js";
 import { readGlobalConfig } from "../config/global.js";
 import { launchSession } from "../session/launcher.js";
+import { hasStyleGuide } from "../utils/style-context.js";
 
 export const explainCommand = new Command("explain")
   .description("Explain a design or plan decision by reading artifacts")
@@ -25,13 +26,17 @@ export const explainCommand = new Command("explain")
     const contextFiles: string[] = [];
     const artifactPaths = [
       "01-inspect/features.json",
-      "02-style/style-guide.json",
-      "03-design/design.md",
-      "03-design/design-meta.json",
-      "04-plan/plan.md",
-      "04-plan/plan.json",
-      "05-tracks/manifest.json",
+      "02-design/design.md",
+      "02-design/design-meta.json",
+      "03-plan/plan.md",
+      "03-plan/plan.json",
+      "04-tracks/manifest.json",
     ];
+
+    // Conditionally include style guide if it exists
+    if (hasStyleGuide(targetPath)) {
+      artifactPaths.splice(1, 0, "02-style/style-guide.json");
+    }
 
     for (const p of artifactPaths) {
       if (existsSync(join(forgeDir, p))) {

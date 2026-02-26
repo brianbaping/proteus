@@ -1,3 +1,5 @@
+import { hasStyleGuide } from "../utils/style-context.js";
+
 /**
  * Generates the Lead prompt for the split stage.
  * Single agent, no teammates — reads the plan and partitions tasks into discipline tracks.
@@ -5,6 +7,11 @@
 export function generateSplitLeadPrompt(
   targetPath: string
 ): string {
+  const styleGuideExists = hasStyleGuide(targetPath);
+  const styleReadInstruction = styleGuideExists
+    ? `\n\nAlso read ${targetPath}/.proteus-forge/02-style/style-guide.json for the visual identity — frontend tracks should include this as context for styling tasks.`
+    : "";
+
   return `You are the Lead for a Proteus Forge split stage. Your job is to read the task plan and partition tasks into discipline-specific tracks with file ownership boundaries.
 
 ## Context
@@ -12,21 +19,19 @@ export function generateSplitLeadPrompt(
 You are working in: ${targetPath}
 
 The task plan is at:
-  ${targetPath}/.proteus-forge/04-plan/plan.json
-  ${targetPath}/.proteus-forge/04-plan/plan.md
+  ${targetPath}/.proteus-forge/03-plan/plan.json
+  ${targetPath}/.proteus-forge/03-plan/plan.md
 
 The design is at:
-  ${targetPath}/.proteus-forge/03-design/design-meta.json
+  ${targetPath}/.proteus-forge/02-design/design-meta.json
 
 ## Instructions
 
 ### Step 1: Read the Plan
 
-Read ${targetPath}/.proteus-forge/04-plan/plan.json thoroughly. Understand every task's discipline, file ownership, and dependencies.
+Read ${targetPath}/.proteus-forge/03-plan/plan.json thoroughly. Understand every task's discipline, file ownership, and dependencies.
 
-Also read ${targetPath}/.proteus-forge/03-design/design-meta.json for the service definitions.
-
-Also read ${targetPath}/.proteus-forge/02-style/style-guide.json for the visual identity — frontend tracks should include this as context for styling tasks.
+Also read ${targetPath}/.proteus-forge/02-design/design-meta.json for the service definitions.${styleReadInstruction}
 
 ### Step 2: Group Tasks by Discipline
 
@@ -61,7 +66,7 @@ For each track, compile context that an execution agent would need:
 
 ### Step 6: Write Outputs
 
-Create the directory ${targetPath}/.proteus-forge/05-tracks/ and write:
+Create the directory ${targetPath}/.proteus-forge/04-tracks/ and write:
 
 **manifest.json** — Track list and dependencies:
 \`\`\`json
@@ -74,7 +79,7 @@ Create the directory ${targetPath}/.proteus-forge/05-tracks/ and write:
       "id": "track-<discipline>",
       "discipline": "<discipline>",
       "taskCount": <number>,
-      "file": "05-tracks/<discipline>.json",
+      "file": "04-tracks/<discipline>.json",
       "dependsOnTracks": ["<track-IDs this track depends on>"],
       "requiredByTracks": ["<track-IDs that depend on this track>"]
     }
@@ -118,7 +123,7 @@ Create the directory ${targetPath}/.proteus-forge/05-tracks/ and write:
 }
 \`\`\`
 
-**split.md** — Human-readable overview at ${targetPath}/.proteus-forge/05-tracks/split.md:
+**split.md** — Human-readable overview at ${targetPath}/.proteus-forge/04-tracks/split.md:
 - **Track Summary**: One section per track with its purpose, task count, and key responsibilities
 - **File Ownership**: Which track owns which directories/files
 - **Dependencies**: How tracks depend on each other (which must complete first)
@@ -131,6 +136,6 @@ This document is intended for human review — write it in clear prose, not JSON
 - Every task from plan.json must appear in exactly one track.
 - No file ownership overlap between tracks (except track-shared which is exclusive).
 - Track dependency graph must be a DAG (no circular dependencies between tracks).
-- Create the directory ${targetPath}/.proteus-forge/05-tracks/ before writing.
+- Create the directory ${targetPath}/.proteus-forge/04-tracks/ before writing.
 `;
 }
