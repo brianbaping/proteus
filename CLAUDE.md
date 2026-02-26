@@ -28,14 +28,14 @@ Requires Node.js >= 22.0.0.
 
 ## Architecture
 
-- **TypeScript CLI** using Commander (27 commands). Entry point: `src/index.ts`
+- **TypeScript CLI** using Commander (28 commands). Entry point: `src/index.ts`
 - **Agent SDK integration** via `query()` in `src/session/launcher.ts`. Each stage composes a Lead prompt and launches a Claude Code session with `cwd` set to the target repo and `additionalDirectories` pointing to the source POC (read-only). Requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in `~/.claude/settings.json` (handled by `proteus-forge setup` via `claude-settings.ts`).
 - **Three-repo separation**: Proteus Forge config at `~/.proteus-forge/`, source POC (never modified), target production repo (agents write here)
 - **Provider-agnostic tiers**: `fast`/`standard`/`advanced` mapped to any provider in `~/.proteus-forge/config.json`
 
 ## Commands
 
-**Primary workflow** (in order of use): `setup`, `new`, `use`, `inspect`, `design`, `plan`, `split`, `execute`
+**Primary workflow** (in order of use): `setup`, `new`, `use`, `inspect`, `style`, `design`, `plan`, `split`, `execute`
 
 **Pipeline helpers**: `run` (full pipeline or range via `--from`/`--to`), `resume` (resume execute from last wave checkpoint), `abort` (signal running execute to stop), `watch` (tail log.jsonl live)
 
@@ -48,10 +48,11 @@ Requires Node.js >= 22.0.0.
 | Stage | Command | Agent Pattern | Model Tier | Key Output |
 |-------|---------|---------------|------------|------------|
 | Inspect | `inspect` | Agent Team (scout + specialists) | fast | `01-inspect/features.json` |
-| Design | `design` | Agent Team (architect + specialists) | advanced | `02-design/design.md` + `design-meta.json` |
-| Plan | `plan` | Single Lead | standard | `03-plan/plan.json` + `plan.md` |
-| Split | `split` | Single Lead | standard | `04-tracks/manifest.json` + track files |
-| Execute | `execute` | Agent Team (orchestrator + track engineers) | advanced | Production source code + `05-execute/session.json` |
+| Style | `style` | Single Lead | standard | `02-style/style-guide.json` + `style.md` |
+| Design | `design` | Agent Team (architect + specialists) | advanced | `03-design/design.md` + `design-meta.json` |
+| Plan | `plan` | Single Lead | standard | `04-plan/plan.json` + `plan.md` |
+| Split | `split` | Single Lead | standard | `05-tracks/manifest.json` + track files |
+| Execute | `execute` | Agent Team (orchestrator + track engineers) | advanced | Production source code + `06-execute/session.json` |
 
 ## Key Patterns
 
