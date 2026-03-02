@@ -1,0 +1,679 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<coverage generated="1772478983270" clover="3.2.0">
+  <project timestamp="1772478983270" name="All files">
+    <metrics statements="589" coveredstatements="484" conditionals="393" coveredconditionals="275" methods="101" coveredmethods="83" elements="1083" coveredelements="842" complexity="0" loc="589" ncloc="589" packages="4" files="24" classes="24"/>
+    <package name="commands">
+      <metrics statements="172" coveredstatements="148" conditionals="74" coveredconditionals="63" methods="12" coveredmethods="10"/>
+      <file name="reset.ts" path="/home/brianba/projects/sandbox/proteus/packages/cli/src/commands/reset.ts">
+        <metrics statements="33" coveredstatements="29" conditionals="8" coveredconditionals="7" methods="2" coveredmethods="2"/>
+        <line num="16" count="1" type="stmt"/>
+        <line num="21" count="6" type="cond" truecount="1" falsecount="1"/>
+        <line num="22" count="0" type="stmt"/>
+        <line num="25" count="0" type="stmt"/>
+        <line num="29" count="6" type="stmt"/>
+        <line num="30" count="6" type="stmt"/>
+        <line num="32" count="0" type="stmt"/>
+        <line num="33" count="0" type="stmt"/>
+        <line num="36" count="6" type="stmt"/>
+        <line num="37" count="6" type="stmt"/>
+        <line num="38" count="6" type="stmt"/>
+        <line num="40" count="6" type="cond" truecount="2" falsecount="0"/>
+        <line num="41" count="1" type="stmt"/>
+        <line num="42" count="1" type="stmt"/>
+        <line num="46" count="5" type="stmt"/>
+        <line num="47" count="15" type="stmt"/>
+        <line num="50" count="5" type="cond" truecount="2" falsecount="0"/>
+        <line num="51" count="1" type="stmt"/>
+        <line num="54" count="1" type="stmt"/>
+        <line num="59" count="5" type="stmt"/>
+        <line num="60" count="5" type="stmt"/>
+        <line num="61" count="5" type="stmt"/>
+        <line num="63" count="5" type="stmt"/>
+        <line num="65" count="5" type="cond" truecount="2" falsecount="0"/>
+        <line num="66" count="1" type="stmt"/>
+        <line num="67" count="1" type="stmt"/>
+        <line num="70" count="4" type="stmt"/>
+        <line num="71" count="4" type="stmt"/>
+        <line num="73" count="4" type="stmt"/>
+        <line num="75" count="4" type="stmt"/>
+        <line num="81" count="4" type="stmt"/>
+        <line num="82" count="4" type="stmt"/>
+        <line num="90" count="4" type="stmt"/>
+      </file>
+      <file name="retarget.ts" path="/home/brianba/projects/sandbox/proteus/packages/cli/src/commands/retarget.ts">
+        <metrics statements="54" coveredstatements="43" conditionals="22" coveredconditionals="17" methods="1" coveredmethods="1"/>
+        <line num="11" count="1" type="stmt"/>
+        <line num="18" count="7" type="stmt"/>
+        <line num="19" count="7" type="stmt"/>
+        <line num="21" count="0" type="stmt"/>
+        <line num="22" count="0" type="stmt"/>
+        <line num="25" count="7" type="stmt"/>
+        <line num="26" count="7" type="stmt"/>
+        <line num="28" count="7" type="cond" truecount="2" falsecount="0"/>
+        <line num="29" count="1" type="stmt"/>
+        <line num="30" count="1" type="stmt"/>
+        <line num="34" count="6" type="stmt"/>
+        <line num="35" count="6" type="stmt"/>
+        <line num="36" count="7" type="cond" truecount="4" falsecount="0"/>
+        <line num="37" count="1" type="stmt"/>
+        <line num="40" count="1" type="stmt"/>
+        <line num="44" count="5" type="cond" truecount="2" falsecount="0"/>
+        <line num="45" count="3" type="cond" truecount="1" falsecount="1"/>
+        <line num="46" count="0" type="stmt"/>
+        <line num="47" count="0" type="stmt"/>
+        <line num="49" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="50" count="1" type="stmt"/>
+        <line num="51" count="1" type="stmt"/>
+        <line num="53" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="54" count="1" type="stmt"/>
+        <line num="57" count="1" type="stmt"/>
+        <line num="60" count="1" type="stmt"/>
+        <line num="61" count="1" type="stmt"/>
+        <line num="62" count="1" type="stmt"/>
+        <line num="64" count="1" type="stmt"/>
+        <line num="65" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="66" count="0" type="stmt"/>
+        <line num="67" count="0" type="stmt"/>
+        <line num="70" count="1" type="stmt"/>
+        <line num="71" count="1" type="stmt"/>
+        <line num="72" count="1" type="stmt"/>
+        <line num="74" count="0" type="stmt"/>
+        <line num="75" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="76" count="0" type="stmt"/>
+        <line num="80" count="0" type="stmt"/>
+        <line num="82" count="0" type="stmt"/>
+        <line num="85" count="2" type="cond" truecount="1" falsecount="1"/>
+        <line num="86" count="2" type="stmt"/>
+        <line num="89" count="2" type="stmt"/>
+        <line num="90" count="2" type="stmt"/>
+        <line num="91" count="2" type="stmt"/>
+        <line num="93" count="2" type="stmt"/>
+        <line num="94" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="95" count="1" type="stmt"/>
+        <line num="96" count="1" type="stmt"/>
+        <line num="100" count="2" type="stmt"/>
+        <line num="101" count="2" type="stmt"/>
+        <line num="103" count="2" type="stmt"/>
+        <line num="104" count="2" type="stmt"/>
+        <line num="113" count="2" type="stmt"/>
+      </file>
+      <file name="revert.ts" path="/home/brianba/projects/sandbox/proteus/packages/cli/src/commands/revert.ts">
+        <metrics statements="38" coveredstatements="34" conditionals="14" coveredconditionals="13" methods="4" coveredmethods="4"/>
+        <line num="12" count="1" type="stmt"/>
+        <line num="17" count="7" type="cond" truecount="1" falsecount="1"/>
+        <line num="18" count="0" type="stmt"/>
+        <line num="21" count="0" type="stmt"/>
+        <line num="24" count="7" type="stmt"/>
+        <line num="25" count="7" type="cond" truecount="2" falsecount="0"/>
+        <line num="26" count="1" type="stmt"/>
+        <line num="27" count="1" type="stmt"/>
+        <line num="31" count="6" type="stmt"/>
+        <line num="32" count="6" type="stmt"/>
+        <line num="34" count="0" type="stmt"/>
+        <line num="35" count="0" type="stmt"/>
+        <line num="38" count="6" type="stmt"/>
+        <line num="39" count="24" type="stmt"/>
+        <line num="46" count="24" type="stmt"/>
+        <line num="47" count="6" type="cond" truecount="2" falsecount="0"/>
+        <line num="48" count="1" type="stmt"/>
+        <line num="49" count="1" type="stmt"/>
+        <line num="52" count="5" type="stmt"/>
+        <line num="53" count="5" type="stmt"/>
+        <line num="54" count="5" type="stmt"/>
+        <line num="55" count="5" type="stmt"/>
+        <line num="56" count="20" type="cond" truecount="2" falsecount="0"/>
+        <line num="57" count="20" type="cond" truecount="2" falsecount="0"/>
+        <line num="58" count="20" type="stmt"/>
+        <line num="61" count="5" type="stmt"/>
+        <line num="65" count="5" type="cond" truecount="2" falsecount="0"/>
+        <line num="66" count="1" type="stmt"/>
+        <line num="67" count="1" type="stmt"/>
+        <line num="70" count="4" type="stmt"/>
+        <line num="71" count="6" type="stmt"/>
+        <line num="72" count="6" type="stmt"/>
+        <line num="75" count="4" type="stmt"/>
+        <line num="80" count="4" type="stmt"/>
+        <line num="83" count="6" type="stmt"/>
+        <line num="86" count="4" type="stmt"/>
+        <line num="87" count="4" type="stmt"/>
+        <line num="95" count="4" type="stmt"/>
+      </file>
+      <file name="verify.ts" path="/home/brianba/projects/sandbox/proteus/packages/cli/src/commands/verify.ts">
+        <metrics statements="47" coveredstatements="42" conditionals="30" coveredconditionals="26" methods="5" coveredmethods="3"/>
+        <line num="28" count="10" type="stmt"/>
+        <line num="29" count="10" type="stmt"/>
+        <line num="31" count="0" type="stmt"/>
+        <line num="32" count="0" type="stmt"/>
+        <line num="35" count="10" type="stmt"/>
+        <line num="36" count="10" type="stmt"/>
+        <line num="38" count="10" type="cond" truecount="2" falsecount="0"/>
+        <line num="39" count="1" type="stmt"/>
+        <line num="42" count="1" type="stmt"/>
+        <line num="45" count="9" type="stmt"/>
+        <line num="46" count="9" type="stmt"/>
+        <line num="48" count="9" type="stmt"/>
+        <line num="53" count="9" type="stmt"/>
+        <line num="55" count="9" type="stmt"/>
+        <line num="56" count="36" type="cond" truecount="4" falsecount="0"/>
+        <line num="59" count="9" type="stmt"/>
+        <line num="65" count="9" type="cond" truecount="4" falsecount="0"/>
+        <line num="66" count="5" type="stmt"/>
+        <line num="70" count="4" type="stmt"/>
+        <line num="71" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="72" count="1" type="stmt"/>
+        <line num="73" count="1" type="stmt"/>
+        <line num="76" count="3" type="stmt"/>
+        <line num="81" count="3" type="stmt"/>
+        <line num="87" count="3" type="stmt"/>
+        <line num="88" count="3" type="cond" truecount="1" falsecount="1"/>
+        <line num="90" count="3" type="stmt"/>
+        <line num="91" count="3" type="stmt"/>
+        <line num="97" count="0" type="stmt"/>
+        <line num="99" count="3" type="stmt"/>
+        <line num="101" count="3" type="stmt"/>
+        <line num="102" count="3" type="stmt"/>
+        <line num="109" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="110" count="1" type="stmt"/>
+        <line num="111" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="112" count="1" type="stmt"/>
+        <line num="114" count="1" type="stmt"/>
+        <line num="118" count="2" type="stmt"/>
+        <line num="120" count="2" type="stmt"/>
+        <line num="125" count="2" type="stmt"/>
+        <line num="127" count="2" type="stmt"/>
+        <line num="128" count="8" type="cond" truecount="4" falsecount="0"/>
+        <line num="131" count="2" type="stmt"/>
+        <line num="137" count="2" type="stmt"/>
+        <line num="140" count="1" type="stmt"/>
+        <line num="154" count="0" type="stmt"/>
+        <line num="155" count="0" type="cond" truecount="0" falsecount="2"/>
+      </file>
+    </package>
+    <package name="config">
+      <metrics statements="28" coveredstatements="17" conditionals="8" coveredconditionals="4" methods="13" coveredmethods="7"/>
+      <file name="global.ts" path="/home/brianba/projects/sandbox/proteus/packages/cli/src/config/global.ts">
+        <metrics statements="14" coveredstatements="3" conditionals="4" coveredconditionals="0" methods="7" coveredmethods="1"/>
+        <line num="7" count="1" type="stmt"/>
+        <line num="8" count="1" type="stmt"/>
+        <line num="11" count="0" type="stmt"/>
+        <line num="15" count="0" type="stmt"/>
+        <line num="19" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="20" count="0" type="stmt"/>
+        <line num="25" count="6" type="stmt"/>
+        <line num="54" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="55" count="0" type="stmt"/>
+        <line num="57" count="0" type="stmt"/>
+        <line num="58" count="0" type="stmt"/>
+        <line num="62" count="0" type="stmt"/>
+        <line num="63" count="0" type="stmt"/>
+        <line num="67" count="0" type="stmt"/>
+      </file>
+      <file name="project.ts" path="/home/brianba/projects/sandbox/proteus/packages/cli/src/config/project.ts">
+        <metrics statements="14" coveredstatements="14" conditionals="4" coveredconditionals="4" methods="6" coveredmethods="6"/>
+        <line num="7" count="47" type="stmt"/>
+        <line num="11" count="4" type="stmt"/>
+        <line num="15" count="43" type="stmt"/>
+        <line num="16" count="43" type="cond" truecount="2" falsecount="0"/>
+        <line num="17" count="13" type="stmt"/>
+        <line num="24" count="2" type="stmt"/>
+        <line num="25" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="26" count="1" type="stmt"/>
+        <line num="28" count="1" type="stmt"/>
+        <line num="29" count="1" type="stmt"/>
+        <line num="36" count="1" type="stmt"/>
+        <line num="37" count="1" type="stmt"/>
+        <line num="38" count="1" type="stmt"/>
+        <line num="45" count="2" type="stmt"/>
+      </file>
+    </package>
+    <package name="prompts">
+      <metrics statements="58" coveredstatements="44" conditionals="46" coveredconditionals="31" methods="19" coveredmethods="18"/>
+      <file name="design.ts" path="/home/brianba/projects/sandbox/proteus/packages/cli/src/prompts/design.ts">
+        <metrics statements="5" coveredstatements="5" conditionals="8" coveredconditionals="8" methods="1" coveredmethods="1"/>
+        <line num="16" count="17" type="cond" truecount="2" falsecount="0"/>
+        <line num="31" count="17" type="stmt"/>
+        <line num="32" count="17" type="cond" truecount="2" falsecount="0"/>
+        <line num="36" count="17" type="cond" truecount="2" falsecount="0"/>
+        <line num="41" count="17" type="stmt"/>
+      </file>
+      <file name="execute.ts" path="/home/brianba/projects/sandbox/proteus/packages/cli/src/prompts/execute.ts">
+        <metrics statements="31" coveredstatements="17" conditionals="26" coveredconditionals="11" methods="7" coveredmethods="6"/>
+        <line num="50" count="0" type="stmt"/>
+        <line num="51" count="0" type="stmt"/>
+        <line num="54" count="0" type="stmt"/>
+        <line num="57" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="60" count="0" type="stmt"/>
+        <line num="61" count="0" type="stmt"/>
+        <line num="62" count="0" type="stmt"/>
+        <line num="63" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="64" count="0" type="stmt"/>
+        <line num="67" count="0" type="stmt"/>
+        <line num="72" count="0" type="stmt"/>
+        <line num="73" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="74" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="76" count="0" type="stmt"/>
+        <line num="87" count="23" type="stmt"/>
+        <line num="90" count="23" type="stmt"/>
+        <line num="93" count="92" type="stmt"/>
+        <line num="98" count="23" type="stmt"/>
+        <line num="99" count="69" type="stmt"/>
+        <line num="101" count="46" type="stmt"/>
+        <line num="102" count="46" type="cond" truecount="1" falsecount="1"/>
+        <line num="103" count="46" type="stmt"/>
+        <line num="104" count="46" type="cond" truecount="1" falsecount="1"/>
+        <line num="106" count="69" type="stmt"/>
+        <line num="110" count="46" type="stmt"/>
+        <line num="122" count="23" type="stmt"/>
+        <line num="123" count="23" type="cond" truecount="1" falsecount="1"/>
+        <line num="130" count="23" type="stmt"/>
+        <line num="135" count="23" type="cond" truecount="2" falsecount="0"/>
+        <line num="139" count="23" type="cond" truecount="2" falsecount="0"/>
+        <line num="143" count="23" type="stmt"/>
+      </file>
+      <file name="inspect.ts" path="/home/brianba/projects/sandbox/proteus/packages/cli/src/prompts/inspect.ts">
+        <metrics statements="1" coveredstatements="1" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
+        <line num="13" count="13" type="stmt"/>
+      </file>
+      <file name="plan.ts" path="/home/brianba/projects/sandbox/proteus/packages/cli/src/prompts/plan.ts">
+        <metrics statements="4" coveredstatements="4" conditionals="4" coveredconditionals="4" methods="1" coveredmethods="1"/>
+        <line num="11" count="14" type="stmt"/>
+        <line num="12" count="14" type="cond" truecount="2" falsecount="0"/>
+        <line num="15" count="14" type="cond" truecount="2" falsecount="0"/>
+        <line num="22" count="14" type="stmt"/>
+      </file>
+      <file name="split.ts" path="/home/brianba/projects/sandbox/proteus/packages/cli/src/prompts/split.ts">
+        <metrics statements="3" coveredstatements="3" conditionals="2" coveredconditionals="2" methods="1" coveredmethods="1"/>
+        <line num="10" count="13" type="stmt"/>
+        <line num="11" count="13" type="cond" truecount="2" falsecount="0"/>
+        <line num="15" count="13" type="stmt"/>
+      </file>
+      <file name="style.ts" path="/home/brianba/projects/sandbox/proteus/packages/cli/src/prompts/style.ts">
+        <metrics statements="1" coveredstatements="1" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
+        <line num="9" count="13" type="stmt"/>
+      </file>
+      <file name="verify-fix.ts" path="/home/brianba/projects/sandbox/proteus/packages/cli/src/prompts/verify-fix.ts">
+        <metrics statements="13" coveredstatements="13" conditionals="6" coveredconditionals="6" methods="7" coveredmethods="7"/>
+        <line num="10" count="2" type="stmt"/>
+        <line num="13" count="25" type="cond" truecount="2" falsecount="0"/>
+        <line num="14" count="24" type="stmt"/>
+        <line num="15" count="24" type="cond" truecount="2" falsecount="0"/>
+        <line num="16" count="1" type="stmt"/>
+        <line num="20" count="15" type="stmt"/>
+        <line num="21" count="54" type="cond" truecount="2" falsecount="0"/>
+        <line num="22" count="25" type="stmt"/>
+        <line num="40" count="15" type="stmt"/>
+        <line num="42" count="15" type="stmt"/>
+        <line num="45" count="25" type="stmt"/>
+        <line num="55" count="15" type="stmt"/>
+        <line num="74" count="25" type="stmt"/>
+      </file>
+    </package>
+    <package name="utils">
+      <metrics statements="331" coveredstatements="275" conditionals="265" coveredconditionals="177" methods="57" coveredmethods="48"/>
+      <file name="ansi.ts" path="/home/brianba/projects/sandbox/proteus/packages/cli/src/utils/ansi.ts">
+        <metrics statements="5" coveredstatements="5" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+        <line num="4" count="3" type="stmt"/>
+        <line num="15" count="3" type="stmt"/>
+        <line num="16" count="3" type="stmt"/>
+        <line num="17" count="3" type="stmt"/>
+        <line num="18" count="3" type="stmt"/>
+      </file>
+      <file name="api-key.ts" path="/home/brianba/projects/sandbox/proteus/packages/cli/src/utils/api-key.ts">
+        <metrics statements="5" coveredstatements="5" conditionals="4" coveredconditionals="4" methods="1" coveredmethods="1"/>
+        <line num="8" count="4" type="stmt"/>
+        <line num="9" count="4" type="stmt"/>
+        <line num="10" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="11" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="12" count="1" type="stmt"/>
+      </file>
+      <file name="costs.ts" path="/home/brianba/projects/sandbox/proteus/packages/cli/src/utils/costs.ts">
+        <metrics statements="20" coveredstatements="20" conditionals="4" coveredconditionals="4" methods="6" coveredmethods="6"/>
+        <line num="8" count="51" type="stmt"/>
+        <line num="12" count="26" type="stmt"/>
+        <line num="13" count="26" type="cond" truecount="2" falsecount="0"/>
+        <line num="14" count="8" type="stmt"/>
+        <line num="16" count="18" type="stmt"/>
+        <line num="17" count="18" type="stmt"/>
+        <line num="25" count="12" type="stmt"/>
+        <line num="26" count="12" type="stmt"/>
+        <line num="27" count="12" type="stmt"/>
+        <line num="28" count="12" type="stmt"/>
+        <line num="29" count="17" type="stmt"/>
+        <line num="32" count="12" type="stmt"/>
+        <line num="39" count="13" type="stmt"/>
+        <line num="40" count="13" type="cond" truecount="2" falsecount="0"/>
+        <line num="42" count="6" type="stmt"/>
+        <line num="43" count="6" type="stmt"/>
+        <line num="44" count="10" type="stmt"/>
+        <line num="46" count="6" type="stmt"/>
+        <line num="47" count="5" type="stmt"/>
+        <line num="50" count="6" type="stmt"/>
+      </file>
+      <file name="dashboard.ts" path="/home/brianba/projects/sandbox/proteus/packages/cli/src/utils/dashboard.ts">
+        <metrics statements="125" coveredstatements="100" conditionals="172" coveredconditionals="105" methods="15" coveredmethods="12"/>
+        <line num="15" count="8" type="cond" truecount="3" falsecount="1"/>
+        <line num="16" count="8" type="stmt"/>
+        <line num="17" count="8" type="cond" truecount="4" falsecount="0"/>
+        <line num="18" count="6" type="cond" truecount="1" falsecount="1"/>
+        <line num="20" count="2" type="cond" truecount="4" falsecount="0"/>
+        <line num="21" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="26" count="1" type="stmt"/>
+        <line num="29" count="1" type="stmt"/>
+        <line num="51" count="69" type="stmt"/>
+        <line num="56" count="1" type="stmt"/>
+        <line num="57" count="1" type="cond" truecount="2" falsecount="2"/>
+        <line num="58" count="0" type="stmt"/>
+        <line num="62" count="1" type="stmt"/>
+        <line num="63" count="1" type="cond" truecount="3" falsecount="1"/>
+        <line num="64" count="0" type="stmt"/>
+        <line num="68" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="69" count="1" type="stmt"/>
+        <line num="73" count="9" type="cond" truecount="3" falsecount="1"/>
+        <line num="75" count="9" type="cond" truecount="9" falsecount="14"/>
+        <line num="77" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="79" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="81" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="83" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="84" count="0" type="stmt"/>
+        <line num="85" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="87" count="0" type="stmt"/>
+        <line num="89" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="91" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="93" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="95" count="0" type="stmt"/>
+        <line num="109" count="9" type="stmt"/>
+        <line num="111" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="113" count="0" type="stmt"/>
+        <line num="118" count="0" type="stmt"/>
+        <line num="119" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="120" count="0" type="stmt"/>
+        <line num="124" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="133" count="16" type="stmt"/>
+        <line num="134" count="16" type="stmt"/>
+        <line num="135" count="16" type="stmt"/>
+        <line num="137" count="16" type="stmt"/>
+        <line num="139" count="16" type="stmt"/>
+        <line num="140" count="16" type="cond" truecount="2" falsecount="0"/>
+        <line num="141" count="16" type="stmt"/>
+        <line num="154" count="28" type="cond" truecount="2" falsecount="0"/>
+        <line num="159" count="1" type="stmt"/>
+        <line num="160" count="1" type="stmt"/>
+        <line num="164" count="27" type="cond" truecount="4" falsecount="0"/>
+        <line num="165" count="20" type="stmt"/>
+        <line num="166" count="20" type="stmt"/>
+        <line num="167" count="20" type="cond" truecount="1" falsecount="1"/>
+        <line num="169" count="20" type="stmt"/>
+        <line num="170" count="21" type="cond" truecount="4" falsecount="1"/>
+        <line num="173" count="21" type="cond" truecount="2" falsecount="0"/>
+        <line num="178" count="8" type="stmt"/>
+        <line num="181" count="8" type="cond" truecount="1" falsecount="1"/>
+        <line num="182" count="8" type="stmt"/>
+        <line num="183" count="8" type="stmt"/>
+        <line num="184" count="8" type="stmt"/>
+        <line num="185" count="8" type="stmt"/>
+        <line num="189" count="13" type="cond" truecount="4" falsecount="0"/>
+        <line num="190" count="9" type="stmt"/>
+        <line num="191" count="9" type="stmt"/>
+        <line num="192" count="9" type="stmt"/>
+        <line num="193" count="9" type="cond" truecount="1" falsecount="1"/>
+        <line num="194" count="9" type="cond" truecount="1" falsecount="1"/>
+        <line num="195" count="0" type="stmt"/>
+        <line num="197" count="9" type="stmt"/>
+        <line num="201" count="4" type="cond" truecount="1" falsecount="1"/>
+        <line num="206" count="4" type="stmt"/>
+        <line num="207" count="4" type="cond" truecount="4" falsecount="0"/>
+        <line num="208" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="209" count="3" type="cond" truecount="1" falsecount="1"/>
+        <line num="210" count="3" type="stmt"/>
+        <line num="215" count="20" type="stmt"/>
+        <line num="219" count="7" type="cond" truecount="2" falsecount="0"/>
+        <line num="220" count="4" type="stmt"/>
+        <line num="221" count="4" type="stmt"/>
+        <line num="222" count="4" type="stmt"/>
+        <line num="224" count="4" type="stmt"/>
+        <line num="225" count="4" type="stmt"/>
+        <line num="226" count="4" type="cond" truecount="4" falsecount="0"/>
+        <line num="227" count="2" type="stmt"/>
+        <line num="228" count="2" type="stmt"/>
+        <line num="233" count="4" type="stmt"/>
+        <line num="237" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="243" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="244" count="1" type="stmt"/>
+        <line num="245" count="1" type="cond" truecount="3" falsecount="1"/>
+        <line num="246" count="1" type="stmt"/>
+        <line num="247" count="1" type="stmt"/>
+        <line num="248" count="1" type="stmt"/>
+        <line num="251" count="1" type="stmt"/>
+        <line num="255" count="2" type="cond" truecount="1" falsecount="1"/>
+        <line num="256" count="2" type="stmt"/>
+        <line num="261" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="262" count="0" type="stmt"/>
+        <line num="267" count="8" type="stmt"/>
+        <line num="270" count="8" type="cond" truecount="2" falsecount="0"/>
+        <line num="272" count="8" type="cond" truecount="1" falsecount="1"/>
+        <line num="273" count="8" type="stmt"/>
+        <line num="276" count="8" type="stmt"/>
+        <line num="285" count="8" type="stmt"/>
+        <line num="286" count="8" type="stmt"/>
+        <line num="287" count="8" type="stmt"/>
+        <line num="291" count="8" type="cond" truecount="1" falsecount="1"/>
+        <line num="292" count="8" type="stmt"/>
+        <line num="293" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="295" count="7" type="stmt"/>
+        <line num="299" count="24" type="cond" truecount="2" falsecount="0"/>
+        <line num="300" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="305" count="23" type="cond" truecount="2" falsecount="0"/>
+        <line num="307" count="23" type="cond" truecount="1" falsecount="1"/>
+        <line num="308" count="0" type="stmt"/>
+        <line num="309" count="0" type="stmt"/>
+        <line num="311" count="23" type="stmt"/>
+        <line num="316" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="318" count="1" type="stmt"/>
+        <line num="319" count="1" type="stmt"/>
+        <line num="322" count="2" type="stmt"/>
+        <line num="323" count="1" type="stmt"/>
+        <line num="325" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="329" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="330" count="0" type="stmt"/>
+        <line num="334" count="1" type="stmt"/>
+      </file>
+      <file name="inbox.ts" path="/home/brianba/projects/sandbox/proteus/packages/cli/src/utils/inbox.ts">
+        <metrics statements="34" coveredstatements="22" conditionals="5" coveredconditionals="2" methods="7" coveredmethods="5"/>
+        <line num="15" count="18" type="stmt"/>
+        <line num="26" count="7" type="stmt"/>
+        <line num="27" count="7" type="stmt"/>
+        <line num="29" count="7" type="stmt"/>
+        <line num="30" count="7" type="stmt"/>
+        <line num="31" count="7" type="stmt"/>
+        <line num="33" count="7" type="stmt"/>
+        <line num="34" count="7" type="stmt"/>
+        <line num="36" count="7" type="stmt"/>
+        <line num="46" count="4" type="stmt"/>
+        <line num="47" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="49" count="3" type="stmt"/>
+        <line num="50" count="4" type="stmt"/>
+        <line num="52" count="3" type="stmt"/>
+        <line num="53" count="3" type="stmt"/>
+        <line num="54" count="4" type="stmt"/>
+        <line num="55" count="4" type="stmt"/>
+        <line num="56" count="4" type="stmt"/>
+        <line num="57" count="4" type="stmt"/>
+        <line num="58" count="4" type="stmt"/>
+        <line num="64" count="3" type="stmt"/>
+        <line num="75" count="0" type="stmt"/>
+        <line num="76" count="0" type="stmt"/>
+        <line num="79" count="0" type="stmt"/>
+        <line num="80" count="0" type="stmt"/>
+        <line num="82" count="0" type="stmt"/>
+        <line num="83" count="0" type="stmt"/>
+        <line num="84" count="0" type="stmt"/>
+        <line num="85" count="0" type="stmt"/>
+        <line num="86" count="0" type="stmt"/>
+        <line num="88" count="0" type="stmt"/>
+        <line num="92" count="0" type="stmt"/>
+        <line num="93" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="104" count="2" type="stmt"/>
+      </file>
+      <file name="log.ts" path="/home/brianba/projects/sandbox/proteus/packages/cli/src/utils/log.ts">
+        <metrics statements="4" coveredstatements="4" conditionals="0" coveredconditionals="0" methods="2" coveredmethods="2"/>
+        <line num="10" count="27" type="stmt"/>
+        <line num="17" count="27" type="stmt"/>
+        <line num="18" count="27" type="stmt"/>
+        <line num="22" count="27" type="stmt"/>
+      </file>
+      <file name="model-resolution.ts" path="/home/brianba/projects/sandbox/proteus/packages/cli/src/utils/model-resolution.ts">
+        <metrics statements="10" coveredstatements="10" conditionals="13" coveredconditionals="13" methods="1" coveredmethods="1"/>
+        <line num="17" count="9" type="cond" truecount="2" falsecount="0"/>
+        <line num="19" count="7" type="cond" truecount="2" falsecount="0"/>
+        <line num="20" count="2" type="stmt"/>
+        <line num="21" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="22" count="1" type="stmt"/>
+        <line num="26" count="1" type="stmt"/>
+        <line num="29" count="5" type="stmt"/>
+        <line num="30" count="5" type="cond" truecount="2" falsecount="0"/>
+        <line num="31" count="9" type="cond" truecount="2" falsecount="0"/>
+        <line num="36" count="9" type="stmt"/>
+      </file>
+      <file name="models-api.ts" path="/home/brianba/projects/sandbox/proteus/packages/cli/src/utils/models-api.ts">
+        <metrics statements="20" coveredstatements="20" conditionals="10" coveredconditionals="10" methods="3" coveredmethods="3"/>
+        <line num="27" count="5" type="stmt"/>
+        <line num="30" count="5" type="stmt"/>
+        <line num="31" count="6" type="stmt"/>
+        <line num="32" count="6" type="stmt"/>
+        <line num="33" count="6" type="cond" truecount="2" falsecount="0"/>
+        <line num="34" count="1" type="stmt"/>
+        <line num="37" count="6" type="stmt"/>
+        <line num="44" count="5" type="cond" truecount="2" falsecount="0"/>
+        <line num="45" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="46" count="1" type="stmt"/>
+        <line num="48" count="1" type="stmt"/>
+        <line num="53" count="3" type="stmt"/>
+        <line num="55" count="3" type="stmt"/>
+        <line num="56" count="4" type="stmt"/>
+        <line num="63" count="3" type="cond" truecount="4" falsecount="0"/>
+        <line num="64" count="1" type="stmt"/>
+        <line num="67" count="2" type="stmt"/>
+        <line num="75" count="6" type="stmt"/>
+        <line num="76" count="6" type="stmt"/>
+        <line num="84" count="6" type="stmt"/>
+      </file>
+      <file name="scaffold-commands.ts" path="/home/brianba/projects/sandbox/proteus/packages/cli/src/utils/scaffold-commands.ts">
+        <metrics statements="23" coveredstatements="23" conditionals="6" coveredconditionals="6" methods="6" coveredmethods="6"/>
+        <line num="17" count="1" type="stmt"/>
+        <line num="20" count="13" type="stmt"/>
+        <line num="54" count="13" type="stmt"/>
+        <line num="90" count="13" type="stmt"/>
+        <line num="125" count="13" type="stmt"/>
+        <line num="159" count="1" type="stmt"/>
+        <line num="167" count="2" type="stmt"/>
+        <line num="185" count="13" type="cond" truecount="2" falsecount="0"/>
+        <line num="186" count="13" type="stmt"/>
+        <line num="187" count="13" type="stmt"/>
+        <line num="189" count="13" type="stmt"/>
+        <line num="190" count="13" type="stmt"/>
+        <line num="191" count="52" type="stmt"/>
+        <line num="192" count="52" type="stmt"/>
+        <line num="193" count="52" type="stmt"/>
+        <line num="196" count="13" type="stmt"/>
+        <line num="197" count="13" type="stmt"/>
+        <line num="198" count="13" type="cond" truecount="2" falsecount="0"/>
+        <line num="199" count="3" type="stmt"/>
+        <line num="200" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="201" count="2" type="stmt"/>
+        <line num="202" count="2" type="stmt"/>
+        <line num="206" count="13" type="stmt"/>
+      </file>
+      <file name="stages.ts" path="/home/brianba/projects/sandbox/proteus/packages/cli/src/utils/stages.ts">
+        <metrics statements="21" coveredstatements="21" conditionals="13" coveredconditionals="13" methods="5" coveredmethods="5"/>
+        <line num="23" count="8" type="stmt"/>
+        <line num="25" count="8" type="stmt"/>
+        <line num="26" count="40" type="stmt"/>
+        <line num="27" count="40" type="stmt"/>
+        <line num="30" count="40" type="cond" truecount="2" falsecount="0"/>
+        <line num="31" count="10" type="stmt"/>
+        <line num="34" count="40" type="stmt"/>
+        <line num="39" count="3" type="stmt"/>
+        <line num="40" count="15" type="stmt"/>
+        <line num="42" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="44" count="2" type="stmt"/>
+        <line num="45" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="46" count="1" type="stmt"/>
+        <line num="52" count="2" type="stmt"/>
+        <line num="53" count="2" type="stmt"/>
+        <line num="55" count="2" type="stmt"/>
+        <line num="56" count="8" type="stmt"/>
+        <line num="57" count="8" type="stmt"/>
+        <line num="59" count="8" type="cond" truecount="2" falsecount="0"/>
+        <line num="66" count="1" type="stmt"/>
+        <line num="73" count="2" type="stmt"/>
+      </file>
+      <file name="verify.ts" path="/home/brianba/projects/sandbox/proteus/packages/cli/src/utils/verify.ts">
+        <metrics statements="64" coveredstatements="45" conditionals="38" coveredconditionals="20" methods="11" coveredmethods="7"/>
+        <line num="25" count="2" type="stmt"/>
+        <line num="33" count="2" type="stmt"/>
+        <line num="41" count="26" type="stmt"/>
+        <line num="42" count="108" type="cond" truecount="2" falsecount="0"/>
+        <line num="43" count="9" type="stmt"/>
+        <line num="46" count="17" type="stmt"/>
+        <line num="52" count="10" type="stmt"/>
+        <line num="53" count="10" type="stmt"/>
+        <line num="54" count="10" type="stmt"/>
+        <line num="55" count="9" type="stmt"/>
+        <line num="56" count="9" type="cond" truecount="2" falsecount="0"/>
+        <line num="58" count="2" type="stmt"/>
+        <line num="68" count="21" type="stmt"/>
+        <line num="69" count="21" type="stmt"/>
+        <line num="70" count="21" type="cond" truecount="2" falsecount="2"/>
+        <line num="71" count="21" type="cond" truecount="2" falsecount="0"/>
+        <line num="72" count="2" type="cond" truecount="1" falsecount="1"/>
+        <line num="74" count="19" type="stmt"/>
+        <line num="77" count="21" type="stmt"/>
+        <line num="78" count="0" type="stmt"/>
+        <line num="92" count="6" type="stmt"/>
+        <line num="93" count="6" type="stmt"/>
+        <line num="94" count="6" type="stmt"/>
+        <line num="97" count="6" type="stmt"/>
+        <line num="106" count="6" type="cond" truecount="2" falsecount="0"/>
+        <line num="107" count="5" type="stmt"/>
+        <line num="108" count="5" type="stmt"/>
+        <line num="109" count="5" type="stmt"/>
+        <line num="110" count="5" type="stmt"/>
+        <line num="111" count="5" type="cond" truecount="1" falsecount="1"/>
+        <line num="113" count="6" type="stmt"/>
+        <line num="116" count="6" type="stmt"/>
+        <line num="117" count="6" type="stmt"/>
+        <line num="118" count="18" type="stmt"/>
+        <line num="119" count="18" type="stmt"/>
+        <line num="128" count="18" type="cond" truecount="2" falsecount="0"/>
+        <line num="129" count="16" type="stmt"/>
+        <line num="130" count="16" type="stmt"/>
+        <line num="131" count="16" type="stmt"/>
+        <line num="132" count="16" type="stmt"/>
+        <line num="133" count="16" type="cond" truecount="2" falsecount="0"/>
+        <line num="135" count="18" type="stmt"/>
+        <line num="138" count="22" type="cond" truecount="2" falsecount="0"/>
+        <line num="139" count="6" type="stmt"/>
+        <line num="142" count="2" type="stmt"/>
+        <line num="143" count="2" type="stmt"/>
+        <line num="146" count="0" type="stmt"/>
+        <line num="148" count="0" type="stmt"/>
+        <line num="149" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="150" count="0" type="stmt"/>
+        <line num="151" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="152" count="0" type="stmt"/>
+        <line num="154" count="0" type="stmt"/>
+        <line num="158" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="159" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="160" count="0" type="stmt"/>
+        <line num="161" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="162" count="0" type="stmt"/>
+        <line num="163" count="0" type="stmt"/>
+        <line num="164" count="0" type="stmt"/>
+        <line num="165" count="0" type="stmt"/>
+        <line num="171" count="0" type="stmt"/>
+        <line num="179" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="180" count="0" type="stmt"/>
+      </file>
+    </package>
+  </project>
+</coverage>

@@ -1,0 +1,18 @@
+appId: com.proteus-forge.gui
+productName: Proteus Forge
+directories:
+  output: release
+files:
+  - dist/**/*
+  - package.json
+win:
+  target:
+    - nsis
+    - portable
+mac:
+  target:
+    - dmg
+linux:
+  target:
+    - AppImage
+    - deb

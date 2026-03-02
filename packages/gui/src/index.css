@@ -1,0 +1,34 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --green: #00ff88;
+    --amber: #ffb830;
+    --red: #ff4466;
+    --cyan: #00ddcc;
+    --text: #e2e8f0;
+    --text-dim: #8899aa;
+    --text-muted: #4a5568;
+    --bg: #0a0c0e;
+    --bg2: #0f1215;
+    --bg3: #141820;
+    --bg4: #1a1f2e;
+    --border: #1f2937;
+    --border2: #2d3748;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border2) transparent;
+  }
+}

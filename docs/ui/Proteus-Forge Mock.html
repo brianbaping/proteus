@@ -1,0 +1,2034 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Proteus-Forge — Prototype to Production</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c0e;
+    --bg2: #0f1215;
+    --bg3: #141820;
+    --bg4: #1a2030;
+    --border: #1f2937;
+    --border2: #2d3748;
+    --green: #00ff88;
+    --green-dim: #00cc6a;
+    --green-dark: #003322;
+    --amber: #ffb830;
+    --amber-dim: #cc9020;
+    --amber-dark: #2a1f00;
+    --text: #e2e8f0;
+    --text-dim: #8899aa;
+    --text-muted: #4a5568;
+    --red: #ff4466;
+    --cyan: #00ddcc;
+    --locked: #2d3748;
+    --locked-text: #4a5568;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 20px;
+    height: 48px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 15px;
+    letter-spacing: -0.5px;
+    color: var(--green);
+    white-space: nowrap;
+  }
+  .logo span { color: var(--amber); }
+
+  .topbar-divider {
+    width: 1px;
+    height: 20px;
+    background: var(--border);
+  }
+
+  .project-name {
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.5px;
+  }
+  .project-name strong { color: var(--text); font-weight: 500; }
+
+  .topbar-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .status-badge {
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 2px;
+    letter-spacing: 1px;
+    font-weight: 600;
+  }
+  .status-active {
+    background: var(--green-dark);
+    color: var(--green);
+    border: 1px solid var(--green-dim);
+  }
+
+  /* ── PHASE TABS ── */
+  .phase-tabs {
+    display: flex;
+    align-items: stretch;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 0 20px;
+    gap: 0;
+    flex-shrink: 0;
+    height: 44px;
+  }
+
+  .phase-tab {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 18px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s ease;
+    position: relative;
+    white-space: nowrap;
+    user-select: none;
+  }
+
+  .phase-tab.active {
+    color: var(--green);
+    border-bottom-color: var(--green);
+    background: linear-gradient(180deg, transparent 0%, rgba(0,255,136,0.04) 100%);
+  }
+
+  .phase-tab.completed {
+    color: var(--green-dim);
+    cursor: pointer;
+  }
+  .phase-tab.completed:hover {
+    color: var(--green);
+    background: rgba(0,255,136,0.03);
+  }
+
+  .phase-tab.locked {
+    color: var(--locked-text);
+    cursor: not-allowed;
+  }
+
+  .phase-num {
+    width: 18px;
+    height: 18px;
+    border-radius: 2px;
+    font-size: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+  }
+  .active .phase-num { background: var(--green); color: #000; }
+  .completed .phase-num { background: var(--green-dark); color: var(--green); border: 1px solid var(--green-dim); }
+  .locked .phase-num { background: var(--bg3); color: var(--locked-text); border: 1px solid var(--border); }
+
+  .phase-connector {
+    display: flex;
+    align-items: center;
+    color: var(--border2);
+    font-size: 12px;
+    padding: 0 2px;
+  }
+
+  /* ── MAIN LAYOUT ── */
+  .main {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ── CONTENT AREA ── */
+  .content-area {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* ── PHASE PANEL ── */
+  .phase-panel {
+    display: none;
+    flex: 1;
+    overflow: hidden;
+    flex-direction: column;
+  }
+  .phase-panel.active { display: flex; }
+
+  /* ── INSPECTION PHASE ── */
+  .inspection-layout {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 0;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .ingest-sidebar {
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 20px;
+    gap: 20px;
+  }
+
+  .sidebar-section-title {
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+    font-weight: 700;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 4px;
+  }
+
+  .ingest-option {
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    padding: 14px;
+    background: var(--bg3);
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+  .ingest-option:hover { border-color: var(--green-dim); background: rgba(0,255,136,0.03); }
+  .ingest-option.selected { border-color: var(--green); background: var(--green-dark); }
+
+  .ingest-option-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .selected .ingest-option-title { color: var(--green); }
+
+  .ingest-option-desc {
+    font-size: 10px;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+
+  .input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .input-label {
+    font-size: 9px;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+    font-weight: 600;
+  }
+
+  .mono-input {
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    border-radius: 3px;
+    padding: 8px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+    width: 100%;
+  }
+  .mono-input:focus { border-color: var(--green-dim); }
+  .mono-input::placeholder { color: var(--text-muted); }
+
+  .upload-zone {
+    border: 1px dashed var(--border2);
+    border-radius: 4px;
+    padding: 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--bg);
+  }
+  .upload-zone:hover { border-color: var(--green-dim); background: rgba(0,255,136,0.02); }
+
+  .upload-icon { font-size: 24px; margin-bottom: 8px; }
+  .upload-text { font-size: 10px; color: var(--text-dim); line-height: 1.6; }
+  .upload-text strong { color: var(--amber); }
+
+  .btn {
+    padding: 9px 16px;
+    border-radius: 3px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: center;
+  }
+
+  .btn-primary {
+    background: var(--green);
+    color: #000;
+  }
+  .btn-primary:hover { background: #00ffaa; }
+
+  .btn-secondary {
+    background: transparent;
+    border: 1px solid var(--border2);
+    color: var(--text-dim);
+  }
+  .btn-secondary:hover { border-color: var(--amber); color: var(--amber); }
+
+  .btn-amber {
+    background: var(--amber);
+    color: #000;
+  }
+  .btn-amber:hover { background: #ffc84a; }
+
+  /* ── ARTIFACT CANVAS ── */
+  .artifact-canvas {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .artifact-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .artifact-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .artifact-badge {
+    font-size: 9px;
+    font-family: 'JetBrains Mono', monospace;
+    padding: 2px 8px;
+    border-radius: 2px;
+    letter-spacing: 1px;
+    font-weight: 600;
+  }
+  .badge-analyzing { background: var(--amber-dark); color: var(--amber); border: 1px solid var(--amber-dim); }
+  .badge-complete { background: var(--green-dark); color: var(--green); border: 1px solid var(--green-dim); }
+  .badge-draft { background: #1a1f2e; color: var(--cyan); border: 1px solid #00aacc; }
+
+  .artifact-actions { display: flex; gap: 8px; }
+
+  /* Inspection artifact grid */
+  .inspection-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .info-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px;
+  }
+
+  .info-card-title {
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+
+  .info-card-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .file-tree {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px;
+    grid-column: 1 / -1;
+  }
+
+  .tree-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 3px 0;
+    font-size: 11px;
+    color: var(--text-dim);
+    border-left: 1px solid var(--border);
+    margin-left: 8px;
+    padding-left: 12px;
+  }
+  .tree-item.root { border-left: none; margin-left: 0; padding-left: 0; color: var(--text); font-weight: 600; }
+  .tree-item.file { color: var(--text-muted); }
+  .tree-item.highlight { color: var(--amber); }
+
+  .tree-icon { width: 14px; text-align: center; }
+
+  .findings-list { display: flex; flex-direction: column; gap: 8px; grid-column: 1/-1; }
+
+  .finding-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+    font-size: 11px;
+    background: var(--bg3);
+  }
+
+  .finding-severity {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 2px 6px;
+    border-radius: 2px;
+    white-space: nowrap;
+    margin-top: 1px;
+  }
+  .sev-critical { background: rgba(255,68,102,0.15); color: var(--red); border: 1px solid rgba(255,68,102,0.3); }
+  .sev-warn { background: var(--amber-dark); color: var(--amber); border: 1px solid var(--amber-dim); }
+  .sev-info { background: var(--green-dark); color: var(--green); border: 1px solid var(--green-dim); }
+
+  .finding-text { flex: 1; color: var(--text-dim); line-height: 1.5; }
+  .finding-text strong { color: var(--text); }
+
+  /* ── DESIGN PHASE ── */
+  .design-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 0;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .design-sidebar {
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 20px;
+    gap: 20px;
+  }
+
+  /* Toggle */
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+  }
+  .toggle-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .toggle-switch {
+    position: relative;
+    width: 32px;
+    height: 18px;
+    cursor: pointer;
+  }
+  .toggle-switch input { display: none; }
+  .toggle-track {
+    position: absolute;
+    inset: 0;
+    background: var(--border2);
+    border-radius: 9px;
+    transition: background 0.2s;
+  }
+  .toggle-switch input:checked + .toggle-track { background: var(--amber); }
+  .toggle-thumb {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 12px;
+    height: 12px;
+    background: #fff;
+    border-radius: 50%;
+    transition: left 0.2s;
+  }
+  .toggle-switch input:checked ~ .toggle-thumb { left: 17px; }
+
+  /* Brief list */
+  .brief-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .brief-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 3px;
+    font-size: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .brief-item:hover { border-color: var(--green-dim); }
+  .brief-item-icon { font-size: 16px; flex-shrink: 0; }
+  .brief-item-info { flex: 1; min-width: 0; }
+  .brief-item-name { color: var(--text); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .brief-item-meta { color: var(--text-muted); font-size: 9px; margin-top: 2px; }
+  .brief-item-remove { color: var(--text-muted); font-size: 11px; padding: 2px 4px; cursor: pointer; flex-shrink: 0; }
+  .brief-item-remove:hover { color: var(--red); }
+
+  .design-pane {
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    border-right: 1px solid var(--border);
+  }
+  .design-pane:last-child { border-right: none; }
+
+  .decision-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px;
+  }
+
+  .decision-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--amber);
+    margin-bottom: 4px;
+  }
+  .decision-body { font-size: 11px; color: var(--text-dim); line-height: 1.6; }
+  .decision-body strong { color: var(--text); }
+
+  .arch-diagram {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 20px;
+    text-align: center;
+    font-size: 10px;
+    color: var(--text-muted);
+    position: relative;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .arch-node {
+    padding: 6px 16px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .arch-node.frontend { background: var(--green-dark); color: var(--green); border: 1px solid var(--green-dim); }
+  .arch-node.backend { background: var(--amber-dark); color: var(--amber); border: 1px solid var(--amber-dim); }
+  .arch-node.db { background: #0d1a2e; color: var(--cyan); border: 1px solid #00aacc; }
+  .arch-arrow { color: var(--border2); font-size: 14px; }
+
+  /* ── PLANNING ── */
+  .planning-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 0;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .planning-sidebar {
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 20px;
+    gap: 20px;
+  }
+
+  .planning-content {
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .milestone {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .milestone-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+  }
+  .milestone-num {
+    width: 22px;
+    height: 22px;
+    border-radius: 2px;
+    background: var(--green-dark);
+    color: var(--green);
+    font-size: 10px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--green-dim);
+  }
+  .milestone-title { font-size: 12px; font-weight: 700; color: var(--text); flex: 1; }
+  .milestone-meta { font-size: 10px; color: var(--text-muted); }
+
+  .milestone-tasks { padding: 10px 14px; display: flex; flex-direction: column; gap: 6px; }
+  .task-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 10px;
+    color: var(--text-dim);
+    padding: 4px 0;
+  }
+  .task-check {
+    width: 13px;
+    height: 13px;
+    border: 1px solid var(--border2);
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  /* ── PLANNING BREAKDOWN ── */
+  .breakdown-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 0;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .breakdown-sidebar {
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 20px;
+    gap: 20px;
+  }
+
+  .breakdown-content {
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .sprint-lane {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px;
+  }
+  .sprint-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .sprint-title { font-size: 11px; font-weight: 700; color: var(--amber); }
+  .sprint-meta { font-size: 10px; color: var(--text-muted); }
+
+  .ticket-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+
+  .ticket {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 10px;
+    font-size: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .ticket:hover { border-color: var(--border2); }
+
+  .ticket-id { color: var(--text-muted); margin-bottom: 4px; font-size: 9px; }
+  .ticket-title { color: var(--text); font-weight: 600; margin-bottom: 6px; line-height: 1.4; }
+  .ticket-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+  .ticket-tag {
+    font-size: 8px;
+    padding: 1px 5px;
+    border-radius: 2px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .tag-fe { background: var(--green-dark); color: var(--green); }
+  .tag-be { background: var(--amber-dark); color: var(--amber); }
+  .tag-infra { background: #0d1a2e; color: var(--cyan); }
+  .tag-test { background: #1a1028; color: #cc88ff; }
+
+  /* ── EXECUTION ── */
+  .execution-layout {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 0;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .exec-sidebar {
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .exec-ticket {
+    padding: 10px 12px;
+    border-radius: 3px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-size: 10px;
+  }
+  .exec-ticket:hover { border-color: var(--border2); background: var(--bg3); }
+  .exec-ticket.active-ticket { border-color: var(--green-dim); background: var(--green-dark); }
+
+  .exec-ticket-id { color: var(--text-muted); font-size: 9px; margin-bottom: 3px; }
+  .exec-ticket-title { color: var(--text); font-weight: 600; line-height: 1.4; }
+  .active-ticket .exec-ticket-title { color: var(--green); }
+
+  .exec-main { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+
+  .code-block {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .code-block-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+  }
+  .code-file { font-size: 10px; color: var(--amber); }
+  .code-lang { font-size: 9px; color: var(--text-muted); letter-spacing: 1px; }
+  .code-body {
+    padding: 14px;
+    font-size: 11px;
+    line-height: 1.7;
+    overflow-x: auto;
+  }
+  .code-kw { color: #cc88ff; }
+  .code-fn { color: var(--green); }
+  .code-str { color: var(--amber); }
+  .code-comment { color: var(--text-muted); }
+  .code-type { color: var(--cyan); }
+
+  /* ── AI CHAT ── */
+  .ai-chat {
+    height: 220px;
+    flex-shrink: 0;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    background: var(--bg2);
+  }
+
+  .chat-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  .chat-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .chat-msg {
+    display: flex;
+    gap: 10px;
+    font-size: 11px;
+    line-height: 1.5;
+  }
+
+  .chat-msg-role {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    white-space: nowrap;
+    padding-top: 2px;
+    min-width: 50px;
+  }
+  .role-ai { color: var(--green); }
+  .role-user { color: var(--amber); }
+
+  .chat-msg-text { color: var(--text-dim); }
+  .chat-msg-text strong { color: var(--text); }
+
+  .chat-input-row {
+    display: flex;
+    gap: 8px;
+    padding: 8px 12px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .chat-input {
+    flex: 1;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 3px;
+    padding: 7px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text);
+    outline: none;
+  }
+  .chat-input:focus { border-color: var(--green-dim); }
+  .chat-input::placeholder { color: var(--text-muted); }
+
+  .chat-send {
+    padding: 7px 16px;
+    background: var(--green);
+    color: #000;
+    border: none;
+    border-radius: 3px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .chat-send:hover { background: #00ffaa; }
+
+  /* ── LOCKED OVERLAY ── */
+  .locked-overlay {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: var(--text-muted);
+    font-size: 11px;
+  }
+  .locked-icon { font-size: 32px; opacity: 0.3; }
+  .locked-text { text-align: center; line-height: 1.6; }
+  .locked-text strong { color: var(--text-dim); }
+
+  /* progress bar */
+  .progress-bar {
+    height: 2px;
+    background: var(--border);
+    position: relative;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--green), var(--amber));
+    transition: width 0.4s ease;
+  }
+
+  /* scan animation */
+  .scan-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--green), transparent);
+    animation: scan 2s linear infinite;
+    opacity: 0.6;
+  }
+  @keyframes scan {
+    0% { top: 0%; }
+    100% { top: 100%; }
+  }
+
+  /* ── ARTIFACT FILES ── */
+  .artifact-file {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 14px;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+    min-width: 100px;
+    text-align: center;
+  }
+  .artifact-file:hover { border-color: var(--green-dim); background: rgba(0,255,136,0.04); }
+
+  .artifact-file-icon { font-size: 24px; line-height: 1; }
+
+  .artifact-file-name {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text);
+    word-break: break-all;
+    line-height: 1.4;
+  }
+
+  .artifact-file-meta {
+    font-size: 9px;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+  }
+
+  .model-select {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 3px;
+    padding: 4px 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .model-select:focus, .model-select:hover { border-color: var(--green-dim); color: var(--text); }
+  .model-select option { background: var(--bg2); color: var(--text); }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+  /* complete button */
+  .complete-bar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 10px 20px;
+    border-top: 1px solid var(--border);
+    background: var(--bg2);
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .complete-hint { font-size: 10px; color: var(--text-muted); }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="logo">Proteus-<span>Forge</span></div>
+  <div class="topbar-divider"></div>
+  <div class="project-name">Project: <strong>ecommerce-v0.3</strong></div>
+  <div class="topbar-right">
+    <button class="btn btn-secondary" style="font-size:10px; padding:5px 14px; letter-spacing:0.5px;">+ Start New</button>
+    <span class="status-badge status-active">● ACTIVE SESSION</span>
+  </div>
+</div>
+
+<!-- PROGRESS -->
+<div class="progress-bar">
+  <div class="progress-fill" id="progressFill" style="width: 20%"></div>
+</div>
+
+<!-- PHASE TABS -->
+<div class="phase-tabs">
+  <div class="phase-tab active" data-phase="0" id="tab-0">
+    <div class="phase-num">1</div> INSPECTION
+  </div>
+  <div class="phase-connector">›</div>
+  <div class="phase-tab locked" data-phase="1" id="tab-1">
+    <div class="phase-num">2</div> DESIGN
+  </div>
+  <div class="phase-connector">›</div>
+  <div class="phase-tab locked" data-phase="2" id="tab-2">
+    <div class="phase-num">3</div> PLANNING
+  </div>
+  <div class="phase-connector">›</div>
+  <div class="phase-tab locked" data-phase="3" id="tab-3">
+    <div class="phase-num">4</div> BREAKDOWN
+  </div>
+  <div class="phase-connector">›</div>
+  <div class="phase-tab locked" data-phase="4" id="tab-4">
+    <div class="phase-num">5</div> EXECUTION
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="content-area">
+
+    <!-- ══ PHASE 1: INSPECTION ══ -->
+    <div class="phase-panel active" id="phase-0">
+      <div class="inspection-layout">
+
+        <!-- Sidebar: Ingest -->
+        <div class="ingest-sidebar">
+          <div>
+            <div class="sidebar-section-title">INGEST SOURCE</div>
+            <div style="display:flex; flex-direction:column; gap:10px; margin-top:8px;">
+
+              <div class="ingest-option selected" onclick="selectIngest(this)">
+                <div class="ingest-option-title">⬆ Upload Archive</div>
+                <div class="ingest-option-desc">Upload a .zip or .tar.gz containing your prototype codebase.</div>
+              </div>
+
+              <div class="ingest-option" onclick="selectIngest(this)">
+                <div class="ingest-option-title">⎇ GitHub Repo</div>
+                <div class="ingest-option-desc">Paste a GitHub URL and we'll clone & analyze it directly.</div>
+              </div>
+
+            </div>
+          </div>
+
+          <div>
+            <div class="sidebar-section-title">UPLOAD ARCHIVE</div>
+            <div class="upload-zone">
+              <div class="upload-icon">📦</div>
+              <div class="upload-text">Drop <strong>.zip</strong> or <strong>.tar.gz</strong> here<br>or click to browse</div>
+            </div>
+          </div>
+
+          <div class="input-group" style="display:none" id="githubInput">
+            <div class="sidebar-section-title">GITHUB URL</div>
+            <input class="mono-input" placeholder="https://github.com/user/repo" />
+            <button class="btn btn-secondary" style="margin-top:4px;">Clone & Analyze</button>
+          </div>
+
+          <div>
+            <div class="sidebar-section-title">PRODUCTION CANDIDATE FOLDER</div>
+            <div style="display:flex; flex-direction:column; gap:8px; margin-top:8px;">
+              <div class="input-group">
+                <div class="input-label">POC REPO PATH</div>
+                <div style="display:flex; gap:6px;">
+                  <input class="mono-input" placeholder="e.g. /projects/ecommerce-poc" style="flex:1;" />
+                  <button class="btn btn-secondary" style="padding:6px 10px; font-size:11px; white-space:nowrap;">Browse</button>
+                </div>
+              </div>
+              <div class="input-group">
+                <div class="input-label">CANDIDATE REPO PATH</div>
+                <div style="display:flex; gap:6px;">
+                  <input class="mono-input" placeholder="e.g. /projects/ecommerce-prod" style="flex:1;" />
+                  <button class="btn btn-secondary" style="padding:6px 10px; font-size:11px; white-space:nowrap;">Browse</button>
+                </div>
+              </div>
+              <div style="font-size:9px; color:var(--text-muted); line-height:1.6; padding:8px 10px; background:var(--bg); border:1px solid var(--border); border-radius:3px;">
+                Generated production artifacts will be written to the Candidate Repo Path at the end of each phase.
+              </div>
+            </div>
+          </div>
+
+          <button class="btn btn-primary" style="margin-top:auto;">
+            ▶ RUN INSPECTION
+          </button>
+        </div>
+
+        <!-- Artifact canvas -->
+        <div class="artifact-canvas">
+          <div class="artifact-header">
+            <div class="artifact-title">
+              Inspection Report
+              <span class="artifact-badge badge-complete">COMPLETE</span>
+              <select class="model-select"><option>Model</option><option>claude-opus-4-6</option><option selected>claude-sonnet-4-6</option><option>claude-haiku-4-5</option></select>
+            </div>
+            <div class="artifact-actions">
+              <button class="btn btn-secondary" style="font-size:10px; padding:5px 12px;">Export JSON</button>
+              <button class="btn btn-secondary" style="font-size:10px; padding:5px 12px;">Export MD</button>
+            </div>
+          </div>
+
+          <!-- Stats -->
+          <div class="inspection-grid">
+            <div class="info-card">
+              <div class="info-card-title">FILES ANALYZED</div>
+              <div class="info-card-value" style="color:var(--green); font-size:24px;">147</div>
+            </div>
+            <div class="info-card">
+              <div class="info-card-title">LINES OF CODE</div>
+              <div class="info-card-value" style="color:var(--green); font-size:24px;">12,483</div>
+            </div>
+            <div class="info-card">
+              <div class="info-card-title">ISSUES FOUND</div>
+              <div class="info-card-value" style="font-size:24px;"><span style="color:var(--red)">3</span> <span style="color:var(--text-muted);font-size:14px;">critical</span> &nbsp;<span style="color:var(--amber)">8</span> <span style="color:var(--text-muted);font-size:14px;">warn</span></div>
+            </div>
+            <div class="info-card">
+              <div class="info-card-title">STACK DETECTED</div>
+              <div class="info-card-value" style="font-size:12px; color:var(--cyan);">React · Express · MongoDB</div>
+            </div>
+          </div>
+
+          <!-- File tree -->
+          <div class="file-tree">
+            <div class="info-card-title">PROJECT STRUCTURE</div>
+            <div style="margin-top:8px;">
+              <div class="tree-item root">📁 ecommerce-v0.3/</div>
+              <div class="tree-item"><span class="tree-icon">📁</span> src/</div>
+              <div class="tree-item" style="margin-left:16px;"><span class="tree-icon">📁</span> components/ <span style="color:var(--text-muted);margin-left:6px;font-size:9px;">32 files</span></div>
+              <div class="tree-item" style="margin-left:16px;"><span class="tree-icon">📁</span> api/ <span style="color:var(--text-muted);margin-left:6px;font-size:9px;">18 files</span></div>
+              <div class="tree-item highlight" style="margin-left:16px;"><span class="tree-icon">⚠</span> utils/auth.js <span style="color:var(--text-muted);margin-left:6px;font-size:9px;">hardcoded secrets</span></div>
+              <div class="tree-item"><span class="tree-icon">📁</span> tests/ <span style="color:var(--text-muted);margin-left:6px;font-size:9px;">12% coverage</span></div>
+              <div class="tree-item file"><span class="tree-icon">📄</span> package.json</div>
+              <div class="tree-item file"><span class="tree-icon">📄</span> .env.example</div>
+            </div>
+          </div>
+
+          <!-- Findings -->
+          <div class="findings-list">
+            <div class="info-card-title">KEY FINDINGS</div>
+
+            <div class="finding-item">
+              <span class="finding-severity sev-critical">CRITICAL</span>
+              <div class="finding-text"><strong>Hardcoded API keys</strong> found in utils/auth.js and config/db.js. Credentials must be moved to environment variables before production deployment.</div>
+            </div>
+            <div class="finding-item">
+              <span class="finding-severity sev-critical">CRITICAL</span>
+              <div class="finding-text"><strong>No input validation</strong> on POST /api/orders and /api/users endpoints. SQL-injection and XSS risk present.</div>
+            </div>
+            <div class="finding-item">
+              <span class="finding-severity sev-critical">CRITICAL</span>
+              <div class="finding-text"><strong>Authentication bypass</strong> — JWT secret is a weak constant string "secret". Token validation is absent on 4 routes.</div>
+            </div>
+            <div class="finding-item">
+              <span class="finding-severity sev-warn">WARN</span>
+              <div class="finding-text"><strong>No error handling</strong> on async functions across API layer. Unhandled promise rejections will crash the process in Node.</div>
+            </div>
+            <div class="finding-item">
+              <span class="finding-severity sev-info">INFO</span>
+              <div class="finding-text"><strong>Test coverage at 12%.</strong> Core business logic (cart, checkout, payment) has zero coverage. Minimum 80% recommended for production.</div>
+            </div>
+          </div>
+
+          <!-- Inspection Artifacts -->
+          <div class="info-card">
+            <div class="info-card-title" style="margin-bottom:12px;">INSPECTION ARTIFACTS</div>
+            <div style="display:flex; flex-wrap:wrap; gap:10px;">
+              <div class="artifact-file">
+                <div class="artifact-file-icon">📄</div>
+                <div class="artifact-file-name">inspection-report.md</div>
+                <div class="artifact-file-meta">12 KB</div>
+              </div>
+              <div class="artifact-file">
+                <div class="artifact-file-icon">📋</div>
+                <div class="artifact-file-name">findings.json</div>
+                <div class="artifact-file-meta">4 KB</div>
+              </div>
+              <div class="artifact-file">
+                <div class="artifact-file-icon">🗂️</div>
+                <div class="artifact-file-name">file-tree.json</div>
+                <div class="artifact-file-meta">8 KB</div>
+              </div>
+              <div class="artifact-file">
+                <div class="artifact-file-icon">📊</div>
+                <div class="artifact-file-name">dependency-graph.json</div>
+                <div class="artifact-file-meta">21 KB</div>
+              </div>
+              <div class="artifact-file">
+                <div class="artifact-file-icon">🔐</div>
+                <div class="artifact-file-name">security-audit.md</div>
+                <div class="artifact-file-meta">6 KB</div>
+              </div>
+              <div class="artifact-file" style="border-style:dashed; border-color:var(--border2); background:var(--bg); min-width:100px; justify-content:center;">
+                <div class="artifact-file-icon">⬆</div>
+                <div class="artifact-file-name" style="color:var(--text-muted);">Upload</div>
+                <div class="artifact-file-meta">Add artifact</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PHASE 2: DESIGN ══ -->
+    <div class="phase-panel" id="phase-1">
+      <div class="design-layout">
+
+        <!-- Design Sidebar -->
+        <div class="design-sidebar">
+
+          <div>
+            <div class="sidebar-section-title">MANUAL BRIEF</div>
+            <textarea class="mono-input" rows="4" placeholder="Type or paste your design brief here..." style="resize:vertical; line-height:1.6; margin-top:8px;"></textarea>
+          </div>
+
+          <div>
+            <div class="sidebar-section-title">UPLOAD BRIEF</div>
+            <div class="upload-zone" style="margin-top:8px;">
+              <div class="upload-icon">📎</div>
+              <div class="upload-text">Drop a <strong>.pdf</strong>, <strong>.md</strong>, or <strong>.txt</strong> brief here<br>or click to browse</div>
+            </div>
+          </div>
+
+          <div>
+            <div class="sidebar-section-title">OPTIONS</div>
+            <div class="toggle-row" style="margin-top:8px;">
+              <span class="toggle-label">Exclude UI</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="excludeUiToggle" />
+                <div class="toggle-track"></div>
+                <div class="toggle-thumb"></div>
+              </label>
+            </div>
+          </div>
+
+          <div style="flex:1;">
+            <div class="sidebar-section-title">UPLOADED BRIEFS</div>
+            <div class="brief-list" style="margin-top:8px;">
+              <div class="brief-item">
+                <div class="brief-item-icon">📄</div>
+                <div class="brief-item-info">
+                  <div class="brief-item-name">product-requirements.pdf</div>
+                  <div class="brief-item-meta">142 KB · Added 2m ago</div>
+                </div>
+                <div class="brief-item-remove">✕</div>
+              </div>
+              <div class="brief-item">
+                <div class="brief-item-icon">📝</div>
+                <div class="brief-item-info">
+                  <div class="brief-item-name">api-contracts.md</div>
+                  <div class="brief-item-meta">18 KB · Added 5m ago</div>
+                </div>
+                <div class="brief-item-remove">✕</div>
+              </div>
+              <div class="brief-item">
+                <div class="brief-item-icon">📄</div>
+                <div class="brief-item-info">
+                  <div class="brief-item-name">security-standards.txt</div>
+                  <div class="brief-item-meta">6 KB · Added 8m ago</div>
+                </div>
+                <div class="brief-item-remove">✕</div>
+              </div>
+            </div>
+          </div>
+
+          <button class="btn btn-primary" style="margin-top:auto;">▶ RUN DESIGN</button>
+
+        </div>
+
+        <!-- Design Content -->
+        <div class="design-pane">
+          <div class="artifact-header">
+            <div class="artifact-title">
+              Architecture Decisions
+              <span class="artifact-badge badge-draft">DRAFT</span>
+              <select class="model-select"><option>Model</option><option>claude-opus-4-6</option><option selected>claude-sonnet-4-6</option><option>claude-haiku-4-5</option></select>
+            </div>
+          </div>
+
+          <div class="decision-card">
+            <div class="decision-title">AUTH STRATEGY</div>
+            <div class="decision-body">Replace hardcoded JWT secret with <strong>rotated RS256 keypairs</strong> stored in a secrets manager (AWS SM / Vault). Implement refresh token rotation.</div>
+          </div>
+          <div class="decision-card">
+            <div class="decision-title">DATABASE LAYER</div>
+            <div class="decision-body">Migrate from raw MongoDB queries to <strong>Mongoose with schema validation</strong>. Add read replica for reporting queries. Connection pooling via Mongoose.</div>
+          </div>
+          <div class="decision-card">
+            <div class="decision-title">API LAYER</div>
+            <div class="decision-body">Introduce <strong>Zod schema validation</strong> at all API entry points. Add rate-limiting middleware (express-rate-limit). Standardize error response format.</div>
+          </div>
+          <div class="decision-card">
+            <div class="decision-title">DEPLOYMENT TARGET</div>
+            <div class="decision-body">Containerize with Docker. Deploy to <strong>ECS Fargate</strong> behind an ALB. Use ECR for image registry. CI/CD via GitHub Actions.</div>
+          </div>
+
+          <div class="arch-diagram" style="position:relative; overflow:hidden;">
+            <div class="scan-line"></div>
+            <div style="font-size:9px; color:var(--text-muted); letter-spacing:1px; margin-bottom:12px;">PROPOSED ARCHITECTURE</div>
+            <div class="arch-node frontend">React SPA (CloudFront/S3)</div>
+            <div class="arch-arrow">↕ HTTPS</div>
+            <div class="arch-node backend">Express API (ECS Fargate)</div>
+            <div style="display:flex; gap:16px; align-items:center;">
+              <div>
+                <div class="arch-arrow">↕</div>
+                <div class="arch-node db">MongoDB Atlas</div>
+              </div>
+              <div>
+                <div class="arch-arrow">↕</div>
+                <div class="arch-node" style="background:#1a1028;color:#cc88ff;border:1px solid #6633aa;">Redis Cache</div>
+              </div>
+              <div>
+                <div class="arch-arrow">↕</div>
+                <div class="arch-node" style="background:#0d1a1a;color:#00ddcc;border:1px solid #008877;">Secrets Manager</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="decision-card">
+            <div class="decision-title">RISK ASSESSMENT</div>
+            <div class="decision-body">
+              <span style="color:var(--red)">■</span> Auth overhaul — high complexity, critical priority<br>
+              <span style="color:var(--amber)">■</span> Schema migration — medium complexity, high priority<br>
+              <span style="color:var(--green)">■</span> Rate limiting — low complexity, high priority
+            </div>
+          </div>
+
+          <!-- Design Artifacts -->
+          <div class="info-card">
+            <div class="info-card-title" style="margin-bottom:12px;">DESIGN ARTIFACTS</div>
+            <div style="display:flex; flex-wrap:wrap; gap:10px;">
+              <div class="artifact-file">
+                <div class="artifact-file-icon">🏗️</div>
+                <div class="artifact-file-name">architecture.md</div>
+                <div class="artifact-file-meta">18 KB</div>
+              </div>
+              <div class="artifact-file">
+                <div class="artifact-file-icon">📐</div>
+                <div class="artifact-file-name">system-diagram.svg</div>
+                <div class="artifact-file-meta">9 KB</div>
+              </div>
+              <div class="artifact-file">
+                <div class="artifact-file-icon">🔌</div>
+                <div class="artifact-file-name">api-contracts.md</div>
+                <div class="artifact-file-meta">24 KB</div>
+              </div>
+              <div class="artifact-file">
+                <div class="artifact-file-icon">🗄️</div>
+                <div class="artifact-file-name">data-models.md</div>
+                <div class="artifact-file-meta">14 KB</div>
+              </div>
+              <div class="artifact-file">
+                <div class="artifact-file-icon">⚠️</div>
+                <div class="artifact-file-name">risk-assessment.md</div>
+                <div class="artifact-file-meta">7 KB</div>
+              </div>
+              <div class="artifact-file" style="border-style:dashed; border-color:var(--border2); background:var(--bg); min-width:100px; justify-content:center;">
+                <div class="artifact-file-icon">⬆</div>
+                <div class="artifact-file-name" style="color:var(--text-muted);">Upload</div>
+                <div class="artifact-file-meta">Add artifact</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══ PHASE 3: PLANNING ══ -->
+    <div class="phase-panel" id="phase-2">
+      <div class="planning-layout">
+
+        <!-- Planning Sidebar -->
+        <div class="planning-sidebar">
+
+          <div>
+            <div class="sidebar-section-title">MANUAL PLAN</div>
+            <textarea class="mono-input" rows="4" placeholder="Type or paste planning notes here..." style="resize:vertical; line-height:1.6; margin-top:8px;"></textarea>
+          </div>
+
+          <div>
+            <div class="sidebar-section-title">UPLOAD PLAN</div>
+            <div class="upload-zone" style="margin-top:8px;">
+              <div class="upload-icon">📎</div>
+              <div class="upload-text">Drop a <strong>.pdf</strong>, <strong>.md</strong>, or <strong>.txt</strong> plan here<br>or click to browse</div>
+            </div>
+          </div>
+
+          <div style="flex:1;">
+            <div class="sidebar-section-title">UPLOADED PLANS</div>
+            <div class="brief-list" style="margin-top:8px;">
+              <div class="brief-item">
+                <div class="brief-item-icon">📄</div>
+                <div class="brief-item-info">
+                  <div class="brief-item-name">project-roadmap.pdf</div>
+                  <div class="brief-item-meta">88 KB · Added 3m ago</div>
+                </div>
+                <div class="brief-item-remove">✕</div>
+              </div>
+              <div class="brief-item">
+                <div class="brief-item-icon">📝</div>
+                <div class="brief-item-info">
+                  <div class="brief-item-name">team-constraints.md</div>
+                  <div class="brief-item-meta">11 KB · Added 6m ago</div>
+                </div>
+                <div class="brief-item-remove">✕</div>
+              </div>
+            </div>
+          </div>
+
+          <button class="btn btn-primary" style="margin-top:auto;">▶ APPROVE PLAN</button>
+
+        </div>
+
+        <!-- Planning Content -->
+        <div class="planning-content">
+          <div class="artifact-header">
+            <div class="artifact-title">
+              Milestones & Roadmap
+              <span class="artifact-badge badge-draft">DRAFT</span>
+              <select class="model-select"><option>Model</option><option>claude-opus-4-6</option><option selected>claude-sonnet-4-6</option><option>claude-haiku-4-5</option></select>
+            </div>
+          </div>
+
+          <div class="milestone">
+            <div class="milestone-header">
+              <div class="milestone-num">1</div>
+              <div class="milestone-title">Security Hardening</div>
+              <div class="milestone-meta">Est. 2 weeks</div>
+            </div>
+            <div class="milestone-tasks">
+              <div class="task-item"><div class="task-check"></div> Rotate all secrets, move to env vars + secrets manager</div>
+              <div class="task-item"><div class="task-check"></div> Implement proper JWT RS256 auth with refresh tokens</div>
+              <div class="task-item"><div class="task-check"></div> Add Zod validation to all API endpoints</div>
+              <div class="task-item"><div class="task-check"></div> Implement rate limiting & CORS hardening</div>
+            </div>
+          </div>
+
+          <div class="milestone">
+            <div class="milestone-header">
+              <div class="milestone-num">2</div>
+              <div class="milestone-title">Data Layer Refactor</div>
+              <div class="milestone-meta">Est. 1.5 weeks</div>
+            </div>
+            <div class="milestone-tasks">
+              <div class="task-item"><div class="task-check"></div> Migrate to Mongoose with strict schema validation</div>
+              <div class="task-item"><div class="task-check"></div> Add indexes for core query patterns</div>
+              <div class="task-item"><div class="task-check"></div> Implement Redis caching for product catalog</div>
+            </div>
+          </div>
+
+          <div class="milestone">
+            <div class="milestone-header">
+              <div class="milestone-num">3</div>
+              <div class="milestone-title">Test Coverage & Error Handling</div>
+              <div class="milestone-meta">Est. 2 weeks</div>
+            </div>
+            <div class="milestone-tasks">
+              <div class="task-item"><div class="task-check"></div> Write unit tests to reach 80% coverage</div>
+              <div class="task-item"><div class="task-check"></div> Add global error handler middleware</div>
+              <div class="task-item"><div class="task-check"></div> Integration tests for checkout & payment flows</div>
+            </div>
+          </div>
+
+          <div class="milestone">
+            <div class="milestone-header">
+              <div class="milestone-num">4</div>
+              <div class="milestone-title">Containerization & CI/CD</div>
+              <div class="milestone-meta">Est. 1 week</div>
+            </div>
+            <div class="milestone-tasks">
+              <div class="task-item"><div class="task-check"></div> Dockerize app with multi-stage build</div>
+              <div class="task-item"><div class="task-check"></div> Set up GitHub Actions pipeline (lint → test → build → deploy)</div>
+              <div class="task-item"><div class="task-check"></div> Deploy to ECS Fargate staging environment</div>
+            </div>
+          </div>
+
+          <!-- Planning Artifacts -->
+          <div class="info-card">
+            <div class="info-card-title" style="margin-bottom:12px;">PLANNING ARTIFACTS</div>
+            <div style="display:flex; flex-wrap:wrap; gap:10px;">
+              <div class="artifact-file">
+                <div class="artifact-file-icon">🗺️</div>
+                <div class="artifact-file-name">roadmap.md</div>
+                <div class="artifact-file-meta">16 KB</div>
+              </div>
+              <div class="artifact-file">
+                <div class="artifact-file-icon">🏁</div>
+                <div class="artifact-file-name">milestones.json</div>
+                <div class="artifact-file-meta">8 KB</div>
+              </div>
+              <div class="artifact-file">
+                <div class="artifact-file-icon">📅</div>
+                <div class="artifact-file-name">timeline.md</div>
+                <div class="artifact-file-meta">5 KB</div>
+              </div>
+              <div class="artifact-file">
+                <div class="artifact-file-icon">⚖️</div>
+                <div class="artifact-file-name">effort-estimates.md</div>
+                <div class="artifact-file-meta">10 KB</div>
+              </div>
+              <div class="artifact-file" style="border-style:dashed; border-color:var(--border2); background:var(--bg); min-width:100px; justify-content:center;">
+                <div class="artifact-file-icon">⬆</div>
+                <div class="artifact-file-name" style="color:var(--text-muted);">Upload</div>
+                <div class="artifact-file-meta">Add artifact</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══ PHASE 4: BREAKDOWN ══ -->
+    <div class="phase-panel" id="phase-3">
+      <div class="breakdown-layout">
+
+        <!-- Breakdown Sidebar -->
+        <div class="breakdown-sidebar">
+
+          <div>
+            <div class="sidebar-section-title">MANUAL BREAKDOWN</div>
+            <textarea class="mono-input" rows="4" placeholder="Type or paste breakdown notes here..." style="resize:vertical; line-height:1.6; margin-top:8px;"></textarea>
+          </div>
+
+          <div>
+            <div class="sidebar-section-title">UPLOAD BREAKDOWN</div>
+            <div class="upload-zone" style="margin-top:8px;">
+              <div class="upload-icon">📎</div>
+              <div class="upload-text">Drop a <strong>.pdf</strong>, <strong>.md</strong>, or <strong>.txt</strong> file here<br>or click to browse</div>
+            </div>
+          </div>
+
+          <div style="flex:1;">
+            <div class="sidebar-section-title">UPLOADED BREAKDOWNS</div>
+            <div class="brief-list" style="margin-top:8px;">
+              <div class="brief-item">
+                <div class="brief-item-icon">📄</div>
+                <div class="brief-item-info">
+                  <div class="brief-item-name">sprint-structure.pdf</div>
+                  <div class="brief-item-meta">54 KB · Added 2m ago</div>
+                </div>
+                <div class="brief-item-remove">✕</div>
+              </div>
+              <div class="brief-item">
+                <div class="brief-item-icon">📝</div>
+                <div class="brief-item-info">
+                  <div class="brief-item-name">team-allocation.md</div>
+                  <div class="brief-item-meta">9 KB · Added 4m ago</div>
+                </div>
+                <div class="brief-item-remove">✕</div>
+              </div>
+            </div>
+          </div>
+
+          <button class="btn btn-primary" style="margin-top:auto;">▶ APPROVE BREAKDOWN</button>
+
+        </div>
+
+        <!-- Breakdown Content -->
+        <div class="breakdown-content">
+          <div class="artifact-header">
+            <div class="artifact-title">
+              Roadmap Break Down
+              <span class="artifact-badge badge-draft">DRAFT</span>
+              <select class="model-select"><option>Model</option><option>claude-opus-4-6</option><option selected>claude-sonnet-4-6</option><option>claude-haiku-4-5</option></select>
+            </div>
+          </div>
+
+          <div class="milestone">
+            <div class="milestone-header">
+              <div class="milestone-num">1</div>
+              <div class="milestone-title">Security</div>
+              <div class="milestone-meta">Auth · Secrets · Validation</div>
+            </div>
+            <div class="milestone-tasks">
+              <div class="task-item"><div class="task-check"></div> Rotate all secrets and migrate to secrets manager</div>
+              <div class="task-item"><div class="task-check"></div> Implement RS256 JWT with refresh token rotation</div>
+              <div class="task-item"><div class="task-check"></div> Add input validation and sanitization across all endpoints</div>
+              <div class="task-item"><div class="task-check"></div> Harden CORS, rate limiting, and security headers</div>
+            </div>
+          </div>
+
+          <div class="milestone">
+            <div class="milestone-header">
+              <div class="milestone-num">2</div>
+              <div class="milestone-title">Data</div>
+              <div class="milestone-meta">Database · Caching · Migrations</div>
+            </div>
+            <div class="milestone-tasks">
+              <div class="task-item"><div class="task-check"></div> Migrate raw queries to Mongoose with schema validation</div>
+              <div class="task-item"><div class="task-check"></div> Add indexes for core query patterns</div>
+              <div class="task-item"><div class="task-check"></div> Implement Redis caching layer for catalog endpoints</div>
+              <div class="task-item"><div class="task-check"></div> Write and run data migration scripts</div>
+            </div>
+          </div>
+
+          <div class="milestone">
+            <div class="milestone-header">
+              <div class="milestone-num">3</div>
+              <div class="milestone-title">Backend</div>
+              <div class="milestone-meta">API · Services · Error Handling</div>
+            </div>
+            <div class="milestone-tasks">
+              <div class="task-item"><div class="task-check"></div> Standardize API error response format</div>
+              <div class="task-item"><div class="task-check"></div> Add global async error handler middleware</div>
+              <div class="task-item"><div class="task-check"></div> Refactor service layer for separation of concerns</div>
+              <div class="task-item"><div class="task-check"></div> Add request logging and tracing</div>
+            </div>
+          </div>
+
+          <div class="milestone">
+            <div class="milestone-header">
+              <div class="milestone-num">4</div>
+              <div class="milestone-title">Frontend</div>
+              <div class="milestone-meta">UI · State · Integration</div>
+            </div>
+            <div class="milestone-tasks">
+              <div class="task-item"><div class="task-check"></div> Update API client to handle new error response format</div>
+              <div class="task-item"><div class="task-check"></div> Implement auth token refresh flow in the client</div>
+              <div class="task-item"><div class="task-check"></div> Add loading and error states to all async views</div>
+            </div>
+          </div>
+
+          <div class="milestone">
+            <div class="milestone-header">
+              <div class="milestone-num">5</div>
+              <div class="milestone-title">Infrastructure</div>
+              <div class="milestone-meta">CI/CD · Containers · Cloud</div>
+            </div>
+            <div class="milestone-tasks">
+              <div class="task-item"><div class="task-check"></div> Dockerize app with multi-stage production build</div>
+              <div class="task-item"><div class="task-check"></div> Set up GitHub Actions pipeline (lint → test → build → deploy)</div>
+              <div class="task-item"><div class="task-check"></div> Configure ECS Fargate + ALB for staging environment</div>
+              <div class="task-item"><div class="task-check"></div> Set up CloudWatch logging and alarms</div>
+            </div>
+          </div>
+
+          <div class="milestone">
+            <div class="milestone-header">
+              <div class="milestone-num">6</div>
+              <div class="milestone-title">Testing</div>
+              <div class="milestone-meta">Unit · Integration · E2E</div>
+            </div>
+            <div class="milestone-tasks">
+              <div class="task-item"><div class="task-check"></div> Write unit tests to reach 80% coverage</div>
+              <div class="task-item"><div class="task-check"></div> Integration tests for checkout and payment flows</div>
+              <div class="task-item"><div class="task-check"></div> E2E tests for critical user journeys</div>
+              <div class="task-item"><div class="task-check"></div> Performance and load testing baseline</div>
+            </div>
+          </div>
+
+          <!-- Breakdown Artifacts -->
+          <div class="info-card">
+            <div class="info-card-title" style="margin-bottom:12px;">BREAKDOWN ARTIFACTS</div>
+            <div style="display:flex; flex-wrap:wrap; gap:10px;">
+              <div class="artifact-file">
+                <div class="artifact-file-icon">🔢</div>
+                <div class="artifact-file-name">breakdown.md</div>
+                <div class="artifact-file-meta">22 KB</div>
+              </div>
+              <div class="artifact-file">
+                <div class="artifact-file-icon">🎫</div>
+                <div class="artifact-file-name">tickets.json</div>
+                <div class="artifact-file-meta">31 KB</div>
+              </div>
+              <div class="artifact-file">
+                <div class="artifact-file-icon">👥</div>
+                <div class="artifact-file-name">team-allocation.md</div>
+                <div class="artifact-file-meta">9 KB</div>
+              </div>
+              <div class="artifact-file">
+                <div class="artifact-file-icon">🔗</div>
+                <div class="artifact-file-name">dependencies.md</div>
+                <div class="artifact-file-meta">7 KB</div>
+              </div>
+              <div class="artifact-file">
+                <div class="artifact-file-icon">📊</div>
+                <div class="artifact-file-name">velocity-estimate.md</div>
+                <div class="artifact-file-meta">5 KB</div>
+              </div>
+              <div class="artifact-file" style="border-style:dashed; border-color:var(--border2); background:var(--bg); min-width:100px; justify-content:center;">
+                <div class="artifact-file-icon">⬆</div>
+                <div class="artifact-file-name" style="color:var(--text-muted);">Upload</div>
+                <div class="artifact-file-meta">Add artifact</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══ PHASE 5: EXECUTION ══ -->
+    <div class="phase-panel" id="phase-4">
+      <div class="execution-layout">
+
+        <div class="exec-sidebar" style="display:flex; flex-direction:column;">
+          <div class="sidebar-section-title" style="margin-bottom:8px;">CURRENT SPRINT</div>
+          <div class="exec-ticket active-ticket">
+            <div class="exec-ticket-id">SEC-001</div>
+            <div class="exec-ticket-title">Move all secrets to env vars & secrets manager</div>
+          </div>
+          <div class="exec-ticket">
+            <div class="exec-ticket-id">SEC-002</div>
+            <div class="exec-ticket-title">Implement RS256 JWT with refresh token rotation</div>
+          </div>
+          <div class="exec-ticket">
+            <div class="exec-ticket-id">SEC-003</div>
+            <div class="exec-ticket-title">Add Zod validation to POST /api/orders</div>
+          </div>
+          <div class="exec-ticket">
+            <div class="exec-ticket-id">SEC-004</div>
+            <div class="exec-ticket-title">Add Zod validation to /api/users endpoints</div>
+          </div>
+          <div class="exec-ticket">
+            <div class="exec-ticket-id">SEC-005</div>
+            <div class="exec-ticket-title">Add express-rate-limit middleware</div>
+          </div>
+          <div class="exec-ticket">
+            <div class="exec-ticket-id">SEC-006</div>
+            <div class="exec-ticket-title">Harden CORS & helmet.js headers</div>
+          </div>
+          <button class="btn btn-primary" style="margin-top:auto;">▶ BUILD CANDIDATE</button>
+        </div>
+
+        <div class="exec-main">
+          <div class="artifact-header">
+            <div class="artifact-title">
+              SEC-001 — Secrets Migration
+              <span class="artifact-badge badge-analyzing">IN PROGRESS</span>
+              <select class="model-select"><option>Model</option><option>claude-opus-4-6</option><option selected>claude-sonnet-4-6</option><option>claude-haiku-4-5</option></select>
+            </div>
+            <div class="artifact-actions">
+              <button class="btn btn-secondary" style="font-size:10px;padding:5px 12px;">Mark Done ✓</button>
+            </div>
+          </div>
+
+          <div class="code-block">
+            <div class="code-block-header">
+              <div class="code-file">config/secrets.js</div>
+              <div class="code-lang">JAVASCRIPT · GENERATED</div>
+            </div>
+            <div class="code-body">
+<span class="code-comment">// BEFORE: hardcoded in source</span>
+<span class="code-comment">// const DB_URI = "mongodb://admin:<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="6c1c0d1f1f1b031e085d5e5f2c1c1e030841080e42050218091e020d00">[email&#160;protected]</a>";</span>
+<span class="code-comment">// const JWT_SECRET = "secret";</span>
+
+<span class="code-kw">const</span> { <span class="code-fn">SecretsManagerClient</span>, <span class="code-fn">GetSecretValueCommand</span> } =
+  <span class="code-fn">require</span>(<span class="code-str">"@aws-sdk/client-secrets-manager"</span>);
+
+<span class="code-kw">const</span> client = <span class="code-kw">new</span> <span class="code-fn">SecretsManagerClient</span>({ region: <span class="code-fn">process</span>.env.<span class="code-type">AWS_REGION</span> });
+
+<span class="code-kw">async function</span> <span class="code-fn">getSecret</span>(secretName) {
+  <span class="code-kw">const</span> response = <span class="code-kw">await</span> client.<span class="code-fn">send</span>(
+    <span class="code-kw">new</span> <span class="code-fn">GetSecretValueCommand</span>({ SecretId: secretName })
+  );
+  <span class="code-kw">return</span> <span class="code-type">JSON</span>.<span class="code-fn">parse</span>(response.SecretString);
+}
+
+module.exports = { getSecret };
+            </div>
+          </div>
+
+          <div class="code-block">
+            <div class="code-block-header">
+              <div class="code-file">.env.example</div>
+              <div class="code-lang">ENV · UPDATED</div>
+            </div>
+            <div class="code-body">
+<span class="code-comment"># AWS Configuration</span>
+<span class="code-type">AWS_REGION</span>=us-east-1
+<span class="code-type">AWS_SECRET_NAME</span>=ecommerce/prod/secrets
+
+<span class="code-comment"># All sensitive values now pulled from Secrets Manager at runtime</span>
+<span class="code-comment"># No credentials stored in this file or codebase</span>
+            </div>
+          </div>
+
+          <!-- Execution Artifacts -->
+          <div class="info-card">
+            <div class="info-card-title" style="margin-bottom:12px;">EXECUTION ARTIFACTS</div>
+            <div style="display:flex; flex-wrap:wrap; gap:10px;">
+              <div class="artifact-file">
+                <div class="artifact-file-icon">📝</div>
+                <div class="artifact-file-name">changelog.md</div>
+                <div class="artifact-file-meta">11 KB</div>
+              </div>
+              <div class="artifact-file">
+                <div class="artifact-file-icon">🐳</div>
+                <div class="artifact-file-name">Dockerfile</div>
+                <div class="artifact-file-meta">2 KB</div>
+              </div>
+              <div class="artifact-file">
+                <div class="artifact-file-icon">⚙️</div>
+                <div class="artifact-file-name">ci-pipeline.yml</div>
+                <div class="artifact-file-meta">4 KB</div>
+              </div>
+              <div class="artifact-file">
+                <div class="artifact-file-icon">🧪</div>
+                <div class="artifact-file-name">test-results.json</div>
+                <div class="artifact-file-meta">18 KB</div>
+              </div>
+              <div class="artifact-file">
+                <div class="artifact-file-icon">📦</div>
+                <div class="artifact-file-name">build-manifest.json</div>
+                <div class="artifact-file-meta">3 KB</div>
+              </div>
+              <div class="artifact-file" style="border-style:dashed; border-color:var(--border2); background:var(--bg); min-width:100px; justify-content:center;">
+                <div class="artifact-file-icon">⬆</div>
+                <div class="artifact-file-name" style="color:var(--text-muted);">Upload</div>
+                <div class="artifact-file-meta">Add artifact</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- COMPLETE BAR -->
+  <div class="complete-bar" id="completeBar">
+    <button class="btn" id="destroyPhaseBtn" style="background:var(--red); color:#fff; font-size:11px; opacity:0.85; visibility:hidden;">← Destroy Phase & Revert</button>
+    <div style="display:flex; align-items:center; gap:10px; margin-left:auto;">
+      <span class="complete-hint">Review the inspection report before proceeding</span>
+      <button class="btn btn-amber" id="completePhaseBtn">Complete Phase & Unlock Next →</button>
+    </div>
+  </div>
+
+  <!-- AI CHAT -->
+  <div class="ai-chat">
+    <div class="chat-header">
+      <div class="chat-dot"></div>
+      AI ASSISTANT — INSPECTION PHASE
+    </div>
+    <div class="chat-messages" id="chatMessages">
+      <div class="chat-msg">
+        <div class="chat-msg-role role-ai">AI</div>
+        <div class="chat-msg-text">Inspection complete. I found <strong>3 critical security issues</strong> that must be addressed before this codebase can be considered production-ready. The most urgent is the hardcoded credentials in <strong>utils/auth.js</strong>. Want me to walk through each finding?</div>
+      </div>
+      <div class="chat-msg">
+        <div class="chat-msg-role role-user">YOU</div>
+        <div class="chat-msg-text">Yes, and what's the risk severity of the JWT issue?</div>
+      </div>
+      <div class="chat-msg">
+        <div class="chat-msg-role role-ai">AI</div>
+        <div class="chat-msg-text">The JWT issue is <strong>critical severity</strong>. Using "secret" as your JWT signing key means any attacker can forge valid tokens and authenticate as any user — including admins. I'll design a RS256 keypair solution in the Design phase that eliminates this entirely.</div>
+      </div>
+    </div>
+    <div class="chat-input-row">
+      <input class="chat-input" id="chatInput" placeholder="Ask about this phase's findings..." />
+      <button class="chat-send" id="chatSendBtn">SEND</button>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+  let currentPhase = 0;
+  let completedPhases = new Set();
+
+  const chatLabels = [
+    'AI ASSISTANT — INSPECTION PHASE',
+    'AI ASSISTANT — DESIGN PHASE',
+    'AI ASSISTANT — PLANNING PHASE',
+    'AI ASSISTANT — BREAKDOWN PHASE',
+    'AI ASSISTANT — EXECUTION PHASE',
+  ];
+
+  const completeHints = [
+    'Review the inspection report before proceeding',
+    'Review architecture decisions before proceeding',
+    'Approve the milestone plan to continue',
+    'Approve the sprint breakdown to continue',
+    'Mark tickets complete as you execute',
+  ];
+
+  const progressPct = [20, 40, 60, 80, 100];
+
+  function switchPhase(idx) {
+    const tab = document.getElementById('tab-' + idx);
+    if (!tab || tab.classList.contains('locked')) return;
+
+    document.querySelectorAll('.phase-tab').forEach(t => t.classList.remove('active'));
+    completedPhases.forEach(p => {
+      if (p !== idx) {
+        const ct = document.getElementById('tab-' + p);
+        if (ct) { ct.classList.remove('active'); ct.classList.add('completed'); }
+      }
+    });
+
+    tab.classList.remove('completed');
+    tab.classList.add('active');
+
+    document.querySelectorAll('.phase-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('phase-' + idx).classList.add('active');
+
+    currentPhase = idx;
+
+    document.querySelector('.chat-header').innerHTML = '<div class="chat-dot"></div> ' + chatLabels[idx];
+    document.querySelector('.complete-hint').textContent = completeHints[idx];
+    document.getElementById('progressFill').style.width = progressPct[idx] + '%';
+    document.getElementById('destroyPhaseBtn').style.visibility = idx === 0 ? 'hidden' : 'visible';
+    document.getElementById('completePhaseBtn').style.display = idx === 4 ? 'none' : '';
+    document.querySelector('.complete-hint').style.display = idx === 4 ? 'none' : '';
+  }
+
+  function completePhase() {
+    completedPhases.add(currentPhase);
+
+    const currentTab = document.getElementById('tab-' + currentPhase);
+    if (currentTab) {
+      currentTab.classList.remove('active');
+      currentTab.classList.add('completed');
+    }
+
+    const next = currentPhase + 1;
+    if (next <= 4) {
+      const nextTab = document.getElementById('tab-' + next);
+      if (nextTab) {
+        nextTab.classList.remove('locked');
+        nextTab.classList.remove('completed');
+      }
+      switchPhase(next);
+    }
+  }
+
+  function sendChat() {
+    const input = document.getElementById('chatInput');
+    const val = input.value.trim();
+    if (!val) return;
+    const messages = document.getElementById('chatMessages');
+    const msg = document.createElement('div');
+    msg.className = 'chat-msg';
+    msg.innerHTML = '<div class="chat-msg-role role-user">YOU</div><div class="chat-msg-text">' + val + '</div>';
+    messages.appendChild(msg);
+    input.value = '';
+    messages.scrollTop = messages.scrollHeight;
+    setTimeout(function() {
+      const reply = document.createElement('div');
+      reply.className = 'chat-msg';
+      reply.innerHTML = '<div class="chat-msg-role role-ai">AI</div><div class="chat-msg-text">Analyzing your question about <strong>' + val.substring(0,30) + '...</strong> I\'ll incorporate that feedback into the current phase artifacts.</div>';
+      messages.appendChild(reply);
+      messages.scrollTop = messages.scrollHeight;
+    }, 600);
+  }
+
+  function selectIngest(el) {
+    document.querySelectorAll('.ingest-option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    const isGithub = el.querySelector('.ingest-option-title').textContent.includes('GitHub');
+    const uploadZone = document.querySelector('.upload-zone');
+    if (uploadZone) uploadZone.parentElement.style.display = isGithub ? 'none' : 'block';
+    const githubInput = document.getElementById('githubInput');
+    if (githubInput) githubInput.style.display = isGithub ? 'flex' : 'none';
+  }
+
+  // Wire up events
+  document.querySelectorAll('.phase-tab').forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      switchPhase(parseInt(tab.dataset.phase));
+    });
+  });
+
+  document.getElementById('completePhaseBtn').addEventListener('click', completePhase);
+
+  document.getElementById('destroyPhaseBtn').addEventListener('click', function() {
+    if (currentPhase > 0) {
+      const revertedPhase = currentPhase;
+      const revertedTab = document.getElementById('tab-' + revertedPhase);
+      if (revertedTab) {
+        revertedTab.classList.remove('active', 'completed');
+        revertedTab.classList.add('locked');
+      }
+      completedPhases.delete(revertedPhase);
+      switchPhase(currentPhase - 1);
+    }
+  });
+
+  document.getElementById('chatSendBtn').addEventListener('click', sendChat);
+
+  document.getElementById('chatInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') sendChat();
+  });
+
+  document.querySelectorAll('.ingest-option').forEach(function(opt) {
+    opt.addEventListener('click', function() { selectIngest(opt); });
+  });
+
+});
+</script>-e 
+</body>
+</html>
