@@ -1,6 +1,7 @@
 import React, { useCallback } from "react";
 import { STAGE_DIRS } from "@proteus-forge/shared";
 import { ArtifactHeader } from "../shared/ArtifactHeader.js";
+import { StalenessWarning } from "../shared/StalenessWarning.js";
 import { StatCard } from "../shared/StatCard.js";
 import { useSessionStore } from "../../stores/session-store.js";
 import { useProjectStore } from "../../stores/project-store.js";
@@ -69,6 +70,7 @@ export function DesignCanvas({ data }: DesignCanvasProps): React.JSX.Element {
           ) : undefined
         }
       />
+      <StalenessWarning stage="design" />
 
       <div className="p-4 space-y-4">
         {/* Stats grid */}

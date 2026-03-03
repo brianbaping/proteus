@@ -1,16 +1,12 @@
 # Next Steps
 
-Status as of 2026-03-03. The GUI is functionally complete for the core pipeline flow — all 5 phases run, IPC is wired, session events stream to the chat panel, file drop zones work, export buttons work, and GitHub clone is live. All 5 pipeline phases have artifact viewers that render results after completion. Abort buttons are live in all 5 phases. IngestSidebar path persistence is wired (blur dirty-check + browse/clone flows). Cost and duration display inline in the CompleteBar after each stage finishes. Test coverage is 91.7% statements / 83.5% branches across 174 tests.
+Status as of 2026-03-03. The GUI is functionally complete for the core pipeline flow — all 5 phases run, IPC is wired, session events stream to the chat panel, file drop zones work, export buttons work, and GitHub clone is live. All 5 pipeline phases have artifact viewers that render results after completion. Abort buttons are live in all 5 phases. IngestSidebar path persistence is wired (blur dirty-check + browse/clone flows). Cost and duration display inline in the CompleteBar after each stage finishes. Staleness warnings render in design, plan, split, and execute canvases when upstream artifacts have changed.
 
 Below are the remaining gaps, ordered by impact.
 
 ---
 
 ## Medium Priority
-
-### Staleness Warnings
-
-`project-store.staleness` is fetched on every `refreshStatus()` but never rendered. When upstream artifacts change, downstream phases should show a warning badge or banner (e.g., "Design is stale — inspect artifacts changed since last run").
 
 ### Revert / Destroy Phase Wiring
 
