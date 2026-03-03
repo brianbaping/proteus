@@ -67,4 +67,22 @@ describe("CompleteBar", () => {
     rerender(<CompleteBar {...defaults} currentPhase="execute" />);
     expect(screen.getByText(/Review generated code and verify output/)).toBeDefined();
   });
+
+  it("displays session ID when present", () => {
+    useSessionStore.setState({ cost: 1.0, duration: "2m", sessionId: "sess-abc-123-def" });
+
+    render(<CompleteBar {...defaults} />);
+
+    const sessionIdEl = screen.getByTestId("session-id");
+    expect(sessionIdEl.textContent).toBe("sess-abc-123-def");
+    expect(sessionIdEl.title).toBe("sess-abc-123-def");
+  });
+
+  it("does not display session ID when empty", () => {
+    useSessionStore.setState({ cost: 1.0, duration: "2m", sessionId: "" });
+
+    render(<CompleteBar {...defaults} />);
+
+    expect(screen.queryByTestId("session-id")).toBeNull();
+  });
 });

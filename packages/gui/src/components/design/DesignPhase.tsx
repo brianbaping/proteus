@@ -91,7 +91,7 @@ export function DesignPhase(): React.JSX.Element {
     } catch {
       // Session may have already ended
     }
-    endSession(false, 0, "0s");
+    endSession(false, 0, "0s", "");
     addMessage("ai", "Stage aborted by user.");
   }
 
@@ -111,7 +111,7 @@ export function DesignPhase(): React.JSX.Element {
           excludeStyle: excludeStyle || undefined,
         },
       });
-      endSession(result.success, result.cost.estimatedCost, result.cost.duration);
+      endSession(result.success, result.cost.estimatedCost, result.cost.duration, result.sessionId);
       await refreshStatus();
 
       if (result.success) {
@@ -121,7 +121,7 @@ export function DesignPhase(): React.JSX.Element {
         addMessage("ai", "Design failed.");
       }
     } catch (err) {
-      endSession(false, 0, "0s");
+      endSession(false, 0, "0s", "");
       addMessage("ai", `Error: ${(err as Error).message}`);
     }
   }

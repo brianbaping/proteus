@@ -161,6 +161,48 @@ describe("pipeline IPC handlers", () => {
       expect(result.cost.estimatedCost).toBe(2.5);
     });
 
+    it("returns sessionId from costs.json on success", async () => {
+      const { runInspect, getActiveProject, readCosts } = await import("@proteus-forge/cli/api");
+      vi.mocked(runInspect).mockResolvedValue(true);
+      vi.mocked(getActiveProject).mockResolvedValue({
+        name: "proj",
+        entry: { source: "/s", target: "/t", createdAt: "", currentStage: "inspect" },
+      });
+      vi.mocked(readCosts).mockResolvedValue({
+        stages: { inspect: { estimatedCost: 0.5, timestamp: "", teammates: 1, tier: "fast", duration: "1s", inputTokens: 100, outputTokens: 50, sessionId: "sess-abc-123" } },
+        totalEstimatedCost: 0.5,
+      } as never);
+
+      const handler = handlers.get("stage:run")!;
+      const result = await handler({}, { projectName: "proj", stage: "inspect" }) as {
+        success: boolean;
+        sessionId: string;
+      };
+
+      expect(result.success).toBe(true);
+      expect(result.sessionId).toBe("sess-abc-123");
+    });
+
+    it("returns empty sessionId when costs.json has no sessionId", async () => {
+      const { runPlan, getActiveProject, readCosts } = await import("@proteus-forge/cli/api");
+      vi.mocked(runPlan).mockResolvedValue(true);
+      vi.mocked(getActiveProject).mockResolvedValue({
+        name: "proj",
+        entry: { source: "/s", target: "/t", createdAt: "", currentStage: "plan" },
+      });
+      vi.mocked(readCosts).mockResolvedValue({
+        stages: { plan: { estimatedCost: 1.0, timestamp: "", teammates: 1, tier: "standard", duration: "2m", inputTokens: 1000, outputTokens: 500 } },
+        totalEstimatedCost: 1.0,
+      } as never);
+
+      const handler = handlers.get("stage:run")!;
+      const result = await handler({}, { projectName: "proj", stage: "plan" }) as {
+        sessionId: string;
+      };
+
+      expect(result.sessionId).toBe("");
+    });
+
     it("returns zero cost on failure", async () => {
       const { runSplit, getActiveProject } = await import("@proteus-forge/cli/api");
       vi.mocked(runSplit).mockResolvedValue(false);

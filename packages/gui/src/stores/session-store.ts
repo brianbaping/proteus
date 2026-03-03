@@ -8,11 +8,12 @@ interface SessionState {
   errors: string[];
   cost: number;
   duration: string;
+  sessionId: string;
 
   startStage(stage: StageName): void;
   addLog(message: string): void;
   addError(message: string): void;
-  endSession(success: boolean, cost: number, duration: string): void;
+  endSession(success: boolean, cost: number, duration: string, sessionId: string): void;
   reset(): void;
 }
 
@@ -23,6 +24,7 @@ export const useSessionStore = create<SessionState>((set) => ({
   errors: [],
   cost: 0,
   duration: "",
+  sessionId: "",
 
   startStage: (stage) => set({
     isRunning: true,
@@ -31,6 +33,7 @@ export const useSessionStore = create<SessionState>((set) => ({
     errors: [],
     cost: 0,
     duration: "",
+    sessionId: "",
   }),
 
   addLog: (message) => set((state) => ({
@@ -41,10 +44,11 @@ export const useSessionStore = create<SessionState>((set) => ({
     errors: [...state.errors, message],
   })),
 
-  endSession: (success, cost, duration) => set({
+  endSession: (_success, cost, duration, sessionId) => set({
     isRunning: false,
     cost,
     duration,
+    sessionId,
   }),
 
   reset: () => set({
@@ -54,5 +58,6 @@ export const useSessionStore = create<SessionState>((set) => ({
     errors: [],
     cost: 0,
     duration: "",
+    sessionId: "",
   }),
 }));

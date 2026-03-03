@@ -13,6 +13,7 @@ describe("useSessionStore", () => {
     expect(state.errors).toEqual([]);
     expect(state.cost).toBe(0);
     expect(state.duration).toBe("");
+    expect(state.sessionId).toBe("");
   });
 
   it("startStage sets isRunning and currentStage, clears logs and errors", () => {
@@ -29,6 +30,7 @@ describe("useSessionStore", () => {
     expect(state.errors).toEqual([]);
     expect(state.cost).toBe(0);
     expect(state.duration).toBe("");
+    expect(state.sessionId).toBe("");
   });
 
   it("addLog appends messages to logs array", () => {
@@ -47,28 +49,39 @@ describe("useSessionStore", () => {
     expect(useSessionStore.getState().errors).toEqual(["err1", "err2"]);
   });
 
-  it("endSession sets cost and duration, clears isRunning", () => {
+  it("endSession sets cost, duration, and sessionId, clears isRunning", () => {
     const { startStage, endSession } = useSessionStore.getState();
     startStage("design");
 
-    endSession(true, 1.25, "2m 15s");
+    endSession(true, 1.25, "2m 15s", "sess-abc-123");
 
     const state = useSessionStore.getState();
     expect(state.isRunning).toBe(false);
     expect(state.cost).toBe(1.25);
     expect(state.duration).toBe("2m 15s");
+    expect(state.sessionId).toBe("sess-abc-123");
   });
 
   it("endSession works for failed sessions", () => {
     const { startStage, endSession } = useSessionStore.getState();
     startStage("plan");
 
-    endSession(false, 0, "0s");
+    endSession(false, 0, "0s", "");
 
     const state = useSessionStore.getState();
     expect(state.isRunning).toBe(false);
     expect(state.cost).toBe(0);
     expect(state.duration).toBe("0s");
+    expect(state.sessionId).toBe("");
+  });
+
+  it("startStage clears previous sessionId", () => {
+    const { endSession, startStage } = useSessionStore.getState();
+    endSession(true, 1.0, "1m", "sess-old");
+    expect(useSessionStore.getState().sessionId).toBe("sess-old");
+
+    startStage("plan");
+    expect(useSessionStore.getState().sessionId).toBe("");
   });
 
   it("reset returns all state to initial values", () => {
@@ -76,7 +89,7 @@ describe("useSessionStore", () => {
     startStage("execute");
     addLog("some log");
     addError("some error");
-    endSession(true, 5.0, "10m 3s");
+    endSession(true, 5.0, "10m 3s", "sess-xyz");
 
     reset();
 
@@ -87,5 +100,6 @@ describe("useSessionStore", () => {
     expect(state.errors).toEqual([]);
     expect(state.cost).toBe(0);
     expect(state.duration).toBe("");
+    expect(state.sessionId).toBe("");
   });
 });

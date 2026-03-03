@@ -250,6 +250,7 @@ describe("ExecutionPhase", () => {
       expect(sess.isRunning).toBe(false);
       expect(sess.cost).toBe(5.0);
       expect(sess.duration).toBe("15m 30s");
+      expect(sess.sessionId).toBe("s1");
 
       const messages = useChatStore.getState().messages;
       expect(messages.some((m) => m.text === "Execution complete.")).toBe(true);

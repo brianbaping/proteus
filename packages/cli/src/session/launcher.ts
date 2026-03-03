@@ -114,6 +114,7 @@ export async function launchSession(
         inputTokens: 0,
         outputTokens: 0,
         estimatedCost: resultMessage?.total_cost_usd ?? 0,
+        sessionId,
       },
     };
   }
@@ -143,6 +144,7 @@ export async function launchSession(
         inputTokens: totalInputTokens,
         outputTokens: totalOutputTokens,
         estimatedCost: resultMessage.total_cost_usd,
+        sessionId,
       },
     };
   }
@@ -163,6 +165,7 @@ export async function launchSession(
       inputTokens: 0,
       outputTokens: 0,
       estimatedCost: resultMessage?.total_cost_usd ?? 0,
+      sessionId,
     },
   };
 }

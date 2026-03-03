@@ -74,8 +74,9 @@ export function registerPipelineHandlers(
     const elapsedMs = Date.now() - startTime;
     const duration = formatDuration(elapsedMs);
 
-    // Read cost from costs.json if the stage completed
+    // Read cost and sessionId from costs.json if the stage completed
     let estimatedCost = 0;
+    let sessionId = "";
     if (success) {
       try {
         const active = await getActiveProject();
@@ -84,14 +85,15 @@ export function registerPipelineHandlers(
           const stageCost = costs.stages[options.stage];
           if (stageCost) {
             estimatedCost = stageCost.estimatedCost;
+            sessionId = stageCost.sessionId ?? "";
           }
         }
       } catch {
-        // Cost read failed — leave at 0
+        // Cost read failed — leave at defaults
       }
     }
 
-    return { success, sessionId: "", cost: { estimatedCost, duration } };
+    return { success, sessionId, cost: { estimatedCost, duration } };
   });
 
   ipcMain.handle("stage:abort", async () => {

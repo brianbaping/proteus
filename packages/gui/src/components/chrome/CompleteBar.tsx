@@ -19,6 +19,7 @@ const COMPLETE_HINTS: Record<StageName, string> = {
 export function CompleteBar({ currentPhase, onDestroy, onComplete }: CompleteBarProps): React.JSX.Element {
   const cost = useSessionStore((s) => s.cost);
   const duration = useSessionStore((s) => s.duration);
+  const sessionId = useSessionStore((s) => s.sessionId);
 
   return (
     <div className="flex items-center justify-between h-12 px-4 bg-bg-2 border-t border-border">
@@ -35,6 +36,15 @@ export function CompleteBar({ currentPhase, onDestroy, onComplete }: CompleteBar
             {duration && (
               <span className="text-fg-muted"> · {duration}</span>
             )}
+          </span>
+        )}
+        {sessionId && (
+          <span
+            className="text-2xs text-fg-muted font-mono truncate max-w-48"
+            data-testid="session-id"
+            title={sessionId}
+          >
+            {sessionId}
           </span>
         )}
       </div>

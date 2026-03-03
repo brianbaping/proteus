@@ -82,6 +82,7 @@ export interface StageCost {
   inputTokens: number;
   outputTokens: number;
   estimatedCost: number;
+  sessionId?: string;
 }
 
 export interface CostTracking {
