@@ -6,14 +6,6 @@ Below are the remaining gaps, ordered by impact.
 
 ---
 
-## Low Priority
-
-### shadcn/ui
-
-CLAUDE.md mentions shadcn/ui for base components but none are installed. Either adopt it (cleaner primitives for dialogs, buttons, badges) or update the docs to reflect the hand-rolled Tailwind approach.
-
----
-
 ## CLI
 
 ### In-place Dashboard

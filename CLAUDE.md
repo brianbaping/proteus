@@ -155,7 +155,7 @@ Within a package, imports still use relative paths with `.js` extensions.
 
 - **React + TypeScript** with Vite bundler
 - **Tailwind CSS** with design tokens mapped from the HTML mock (`docs/ui/`)
-- **shadcn/ui** for base components (Button, Badge, Card, Dialog, etc.)
+- **Hand-rolled Tailwind components** for UI controls (buttons, badges, dialogs, cards) — no component library dependency
 - **Zustand** for state management (one store per domain: project, session, chat)
 - **Electron** main process built with tsup (CJS format for Electron compatibility)
 - Components live in `packages/gui/src/components/` organized by feature area
