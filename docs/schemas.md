@@ -232,7 +232,14 @@ Launches an Agent Team in the target directory. The Lead reads the source repo (
     "path": "/tmp/demo-poc",
     "name": "task-tracker-poc",
     "fileCount": 10,
-    "primaryLanguage": "TypeScript"
+    "primaryLanguage": "TypeScript",
+    "totalLines": 1250,
+    "fileTree": [
+      { "path": "src", "type": "dir" },
+      { "path": "src/auth", "type": "dir" },
+      { "path": "src/auth/routes.ts", "type": "file" },
+      { "path": "package.json", "type": "file" }
+    ]
   },
   "domains": [
     {
@@ -292,7 +299,17 @@ Launches an Agent Team in the target directory. The Lead reads the source repo (
     "languages": ["TypeScript", "TSX", "JSON", "Dockerfile"],
     "frameworks": ["Express.js", "React", "Prisma", "React Router", "Vite"],
     "entryPoints": ["src/index.ts", "client/src/App.tsx"],
-    "testCoverage": "none"
+    "testCoverage": "none",
+    "totalLines": 1250,
+    "fileTree": [
+      { "path": "src", "type": "dir" },
+      { "path": "src/auth", "type": "dir" },
+      { "path": "src/auth/routes.ts", "type": "file" },
+      { "path": "client", "type": "dir" },
+      { "path": "client/src", "type": "dir" },
+      { "path": "client/src/App.tsx", "type": "file" },
+      { "path": "package.json", "type": "file" }
+    ]
   },
   "features": [
     {

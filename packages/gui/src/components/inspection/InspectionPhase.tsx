@@ -1,19 +1,9 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { IngestSidebar } from "./IngestSidebar.js";
-import { InspectionCanvas } from "./InspectionCanvas.js";
+import { InspectionCanvas, type InspectionData } from "./InspectionCanvas.js";
 import { useProjectStore } from "../../stores/project-store.js";
 import { useSessionStore } from "../../stores/session-store.js";
 import { useChatStore } from "../../stores/chat-store.js";
-
-interface InspectionData {
-  filesAnalyzed: number;
-  linesOfCode: number;
-  issuesFound: number;
-  stackDetected: string;
-  findings: Array<{ severity: "critical" | "warning" | "info"; text: string }>;
-  fileTree: Array<{ name: string; type: "file" | "dir"; highlight?: boolean; indent: number }>;
-  artifacts: Array<{ name: string; size: string; icon: string }>;
-}
 
 interface FeaturesJson {
   source?: {
@@ -21,6 +11,8 @@ interface FeaturesJson {
     languages?: string[];
     frameworks?: string[];
     entryPoints?: string[];
+    totalLines?: number;
+    fileTree?: Array<{ path: string; type: "file" | "dir" }>;
   };
   features?: Array<{
     id: string;
@@ -35,7 +27,7 @@ interface FeaturesJson {
   summary?: string;
 }
 
-function featuresJsonToInspectionData(features: FeaturesJson): InspectionData {
+export function featuresJsonToInspectionData(features: FeaturesJson): InspectionData {
   const allSourceFiles = new Set<string>();
   for (const feat of features.features ?? []) {
     for (const f of feat.sourceFiles ?? []) {
@@ -52,13 +44,23 @@ function featuresJsonToInspectionData(features: FeaturesJson): InspectionData {
     findings.push({ severity: "warning", text: issue });
   }
 
+  const fileTree: InspectionData["fileTree"] = (features.source?.fileTree ?? []).map((entry) => {
+    const segments = entry.path.split("/").filter(Boolean);
+    const lastSegment = segments[segments.length - 1] ?? entry.path;
+    return {
+      name: entry.type === "dir" ? `${lastSegment}/` : lastSegment,
+      type: entry.type,
+      indent: segments.length - 1,
+    };
+  });
+
   return {
     filesAnalyzed: allSourceFiles.size,
-    linesOfCode: 0,
+    linesOfCode: features.source?.totalLines ?? 0,
     issuesFound: (features.knownIssues ?? []).length,
     stackDetected: stack,
     findings,
-    fileTree: [],
+    fileTree,
     artifacts: [
       { name: "features.json", size: `${(features.features ?? []).length} features`, icon: "\u{1f4cb}" },
       { name: "inspect.md", size: "—", icon: "\u{1f4dd}" },
@@ -99,7 +101,7 @@ export function InspectionPhase(): React.JSX.Element {
     } catch {
       // Session may have already ended
     }
-    endSession(false, 0, "0s");
+    endSession(false, 0, "0s", "");
     addMessage("ai", "Stage aborted by user.");
   }
 
@@ -117,7 +119,7 @@ export function InspectionPhase(): React.JSX.Element {
         options: { excludeStyle: options.excludeStyle },
       });
 
-      endSession(result.success, result.cost.estimatedCost, result.cost.duration);
+      endSession(result.success, result.cost.estimatedCost, result.cost.duration, result.sessionId);
       await refreshStatus();
 
       if (result.success) {
@@ -127,7 +129,7 @@ export function InspectionPhase(): React.JSX.Element {
         addMessage("ai", "Inspection failed. Check the errors above.");
       }
     } catch (err) {
-      endSession(false, 0, "0s");
+      endSession(false, 0, "0s", "");
       addMessage("ai", `Error: ${(err as Error).message}`);
     }
   }

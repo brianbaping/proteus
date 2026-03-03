@@ -46,6 +46,7 @@ Analyze the source repository at ${sourcePath}. Scan:
 - Configuration files (.env, docker-compose.yml, Dockerfile, CI configs)
 - README and documentation
 - Test directories and coverage
+- Count total lines of source code (exclude node_modules, vendor, dist, build, lock files, and generated code)
 
 Identify the major domains of concern. Domains are functional areas like:
 - Authentication & Security
@@ -69,7 +70,9 @@ The scout.json should contain:
     "path": "${sourcePath}",
     "name": "<repo name>",
     "fileCount": <number>,
-    "primaryLanguage": "<language>"
+    "primaryLanguage": "<language>",
+    "totalLines": <number>,
+    "fileTree": [{ "path": "<relative path>", "type": "file" | "dir" }]
   },
   "domains": [
     {
@@ -82,6 +85,8 @@ The scout.json should contain:
   ]
 }
 \`\`\`
+
+Note: \`totalLines\` is the total number of source code lines (excluding node_modules, .git, vendor, dist, build, lock files, and generated code). \`fileTree\` should include directories and key files to a depth of 3 levels, omitting node_modules/.git/vendor/dist/build.
 
 ### Step 2: Create Agent Team (MANDATORY)
 
@@ -148,6 +153,7 @@ During synthesis:
 - Identify the data model (database, ORM, entities)
 - Identify external integrations
 - Write a summary of the overall POC
+- Carry forward \`totalLines\` and \`fileTree\` from scout.json into the final features.json \`source\` block
 
 Write the final output to TWO files:
 
@@ -167,7 +173,9 @@ The features.json schema:
     "languages": ["<all languages found>"],
     "frameworks": ["<all frameworks found>"],
     "entryPoints": ["<main entry files>"],
-    "testCoverage": "<none|minimal|moderate|comprehensive>"
+    "testCoverage": "<none|minimal|moderate|comprehensive>",
+    "totalLines": <number>,
+    "fileTree": [{ "path": "<relative path>", "type": "file" | "dir" }]
   },
   "features": [<merged features array>],
   "dataModel": {

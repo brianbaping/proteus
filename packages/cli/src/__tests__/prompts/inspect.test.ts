@@ -76,4 +76,42 @@ describe("inspect prompt", () => {
     const prompt = generateInspectLeadPrompt(sourcePath, targetPath);
     expect(prompt).toContain("DO NOT attempt to do all the analysis yourself sequentially");
   });
+
+  it("includes totalLines in scout.json schema", () => {
+    const prompt = generateInspectLeadPrompt(sourcePath, targetPath);
+    expect(prompt).toContain('"totalLines"');
+  });
+
+  it("includes fileTree in scout.json schema", () => {
+    const prompt = generateInspectLeadPrompt(sourcePath, targetPath);
+    expect(prompt).toContain('"fileTree"');
+  });
+
+  it("includes totalLines in features.json schema", () => {
+    const prompt = generateInspectLeadPrompt(sourcePath, targetPath);
+    // features.json schema has totalLines in the source block
+    const featuresSchemaStart = prompt.indexOf("The features.json schema:");
+    const afterSchema = prompt.slice(featuresSchemaStart);
+    expect(afterSchema).toContain('"totalLines"');
+  });
+
+  it("includes fileTree in features.json schema", () => {
+    const prompt = generateInspectLeadPrompt(sourcePath, targetPath);
+    const featuresSchemaStart = prompt.indexOf("The features.json schema:");
+    const afterSchema = prompt.slice(featuresSchemaStart);
+    expect(afterSchema).toContain('"fileTree"');
+  });
+
+  it("instructs to carry forward totalLines and fileTree from scout.json", () => {
+    const prompt = generateInspectLeadPrompt(sourcePath, targetPath);
+    expect(prompt).toContain("Carry forward");
+    expect(prompt).toContain("totalLines");
+    expect(prompt).toContain("fileTree");
+    expect(prompt).toContain("scout.json");
+  });
+
+  it("instructs to count total lines of source code", () => {
+    const prompt = generateInspectLeadPrompt(sourcePath, targetPath);
+    expect(prompt).toContain("Count total lines of source code");
+  });
 });

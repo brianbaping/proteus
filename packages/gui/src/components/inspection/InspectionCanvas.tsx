@@ -5,7 +5,7 @@ import { StatCard } from "../shared/StatCard.js";
 import { useSessionStore } from "../../stores/session-store.js";
 import { useProjectStore } from "../../stores/project-store.js";
 
-interface InspectionData {
+export interface InspectionData {
   filesAnalyzed: number;
   linesOfCode: number;
   issuesFound: number;

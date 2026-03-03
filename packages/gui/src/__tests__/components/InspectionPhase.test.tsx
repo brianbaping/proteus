@@ -4,6 +4,7 @@ import type { ElectronAPI } from "#electron/preload.js";
 import { useProjectStore } from "../../stores/project-store.js";
 import { useSessionStore } from "../../stores/session-store.js";
 import { useChatStore } from "../../stores/chat-store.js";
+import { featuresJsonToInspectionData } from "../../components/inspection/InspectionPhase.js";
 
 // Mock child components to isolate InspectionPhase logic
 vi.mock("../../components/inspection/IngestSidebar.js", () => ({
@@ -146,7 +147,7 @@ describe("InspectionPhase", () => {
         source: { languages: ["TypeScript"], frameworks: ["React"] },
         features: [{ id: "f1", name: "Auth", description: "Auth", category: "core", sourceFiles: ["auth.ts"], complexity: "medium" }],
       };
-      mockRunStage.mockResolvedValue({
+      mockRunStage.mockResolvedValueOnce({
         success: true,
         sessionId: "s1",
         cost: { estimatedCost: 0.5, duration: "1m 30s" },
@@ -177,6 +178,7 @@ describe("InspectionPhase", () => {
       expect(session.isRunning).toBe(false);
       expect(session.cost).toBe(0.5);
       expect(session.duration).toBe("1m 30s");
+      expect(session.sessionId).toBe("s1");
 
       const messages = useChatStore.getState().messages;
       expect(messages.some((m) => m.text.includes("Inspection complete"))).toBe(true);
@@ -255,5 +257,58 @@ describe("InspectionPhase", () => {
 
       expect(mockRunStage).not.toHaveBeenCalled();
     });
+  });
+});
+
+describe("featuresJsonToInspectionData", () => {
+  it("maps totalLines to linesOfCode", () => {
+    const result = featuresJsonToInspectionData({
+      source: { totalLines: 12345 },
+    });
+    expect(result.linesOfCode).toBe(12345);
+  });
+
+  it("defaults linesOfCode to 0 when totalLines is missing", () => {
+    const result = featuresJsonToInspectionData({
+      source: { primaryLanguage: "TypeScript" },
+    });
+    expect(result.linesOfCode).toBe(0);
+  });
+
+  it("defaults linesOfCode to 0 when source is missing", () => {
+    const result = featuresJsonToInspectionData({});
+    expect(result.linesOfCode).toBe(0);
+  });
+
+  it("transforms fileTree paths to indented display entries", () => {
+    const result = featuresJsonToInspectionData({
+      source: {
+        fileTree: [
+          { path: "src", type: "dir" as const },
+          { path: "src/components", type: "dir" as const },
+          { path: "src/components/App.tsx", type: "file" as const },
+          { path: "package.json", type: "file" as const },
+        ],
+      },
+    });
+
+    expect(result.fileTree).toEqual([
+      { name: "src/", type: "dir", indent: 0 },
+      { name: "components/", type: "dir", indent: 1 },
+      { name: "App.tsx", type: "file", indent: 2 },
+      { name: "package.json", type: "file", indent: 0 },
+    ]);
+  });
+
+  it("returns empty fileTree when source.fileTree is missing", () => {
+    const result = featuresJsonToInspectionData({
+      source: { primaryLanguage: "TypeScript" },
+    });
+    expect(result.fileTree).toEqual([]);
+  });
+
+  it("returns empty fileTree when source is missing", () => {
+    const result = featuresJsonToInspectionData({});
+    expect(result.fileTree).toEqual([]);
   });
 });
