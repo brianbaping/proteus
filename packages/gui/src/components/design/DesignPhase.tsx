@@ -1,21 +1,99 @@
-import React, { useState } from "react";
-import { ArtifactHeader } from "../shared/ArtifactHeader.js";
+import React, { useCallback, useEffect, useState } from "react";
 import { FileDropZone } from "../shared/FileDropZone.js";
+import { DesignCanvas } from "./DesignCanvas.js";
+import type { DesignData, ServiceEntry } from "./DesignCanvas.js";
 import { useProjectStore } from "../../stores/project-store.js";
 import { useSessionStore } from "../../stores/session-store.js";
 import { useChatStore } from "../../stores/chat-store.js";
 
+interface DesignMetaJson {
+  architectureStyle?: string;
+  targetStack?: Record<string, string>;
+  services?: Array<{
+    id: string;
+    name: string;
+    description?: string;
+    discipline?: string;
+    implementsFeatures?: string[];
+    exposedInterfaces?: Array<{ type: string; path: string; methods?: string[] }>;
+    ownedEntities?: string[];
+  }>;
+  featureToServiceMap?: Record<string, string>;
+}
+
+function designMetaToDesignData(meta: DesignMetaJson, hasMd: boolean): DesignData {
+  const services: ServiceEntry[] = (meta.services ?? []).map((s) => ({
+    id: s.id,
+    name: s.name,
+    description: s.description,
+    discipline: s.discipline,
+    implementsFeatures: s.implementsFeatures,
+    exposedInterfaces: s.exposedInterfaces,
+    ownedEntities: s.ownedEntities,
+  }));
+
+  const featureCount = Object.keys(meta.featureToServiceMap ?? {}).length;
+  const stack = meta.targetStack ?? {};
+
+  const artifacts = [
+    { name: "design-meta.json", size: `${services.length} services`, icon: "\u{1f4cb}" },
+  ];
+  if (hasMd) {
+    artifacts.push({ name: "design.md", size: "—", icon: "\u{1f4dd}" });
+  }
+
+  return {
+    architectureStyle: meta.architectureStyle ?? "Unknown",
+    framework: stack.framework ?? "—",
+    servicesCount: services.length,
+    featuresMapped: featureCount,
+    targetStack: stack,
+    services,
+    artifacts,
+  };
+}
+
 export function DesignPhase(): React.JSX.Element {
-  const { activeProjectName, stageStatuses, refreshStatus } = useProjectStore();
+  const { activeEntry, activeProjectName, stageStatuses, refreshStatus } = useProjectStore();
   const { isRunning, startStage, endSession } = useSessionStore();
   const { addMessage, clearMessages } = useChatStore();
   const [brief, setBrief] = useState("");
   const [briefFile, setBriefFile] = useState("");
   const [excludeStyle, setExcludeStyle] = useState(false);
+  const [designData, setDesignData] = useState<DesignData | null>(null);
 
   const designComplete = stageStatuses.find((s) => s.stage === "design")?.complete ?? false;
-  const badge = isRunning && useSessionStore.getState().currentStage === "design"
-    ? "analyzing" : designComplete ? "complete" : "idle";
+
+  const loadDesignArtifacts = useCallback(async () => {
+    if (!activeEntry?.target) return;
+    try {
+      const result = await window.electronAPI.readArtifacts(activeEntry.target, "design");
+      if (result?.designMeta) {
+        setDesignData(designMetaToDesignData(
+          result.designMeta as DesignMetaJson,
+          typeof result.designMd === "string",
+        ));
+      }
+    } catch {
+      // Artifacts not available yet
+    }
+  }, [activeEntry?.target]);
+
+  useEffect(() => {
+    if (designComplete) {
+      loadDesignArtifacts();
+    }
+  }, [designComplete, loadDesignArtifacts]);
+
+  async function handleAbort(): Promise<void> {
+    try {
+      await window.electronAPI.abortStage();
+    } catch {
+      // Session may have already ended
+    }
+    endSession(false, 0, "0s");
+    addMessage("ai", "Stage aborted by user.");
+  }
 
   async function handleRunDesign(): Promise<void> {
     if (!activeProjectName) return;
@@ -35,7 +113,13 @@ export function DesignPhase(): React.JSX.Element {
       });
       endSession(result.success, result.cost.estimatedCost, result.cost.duration);
       await refreshStatus();
-      addMessage("ai", result.success ? "Design complete." : "Design failed.");
+
+      if (result.success) {
+        addMessage("ai", "Design complete.");
+        await loadDesignArtifacts();
+      } else {
+        addMessage("ai", "Design failed.");
+      }
     } catch (err) {
       endSession(false, 0, "0s");
       addMessage("ai", `Error: ${(err as Error).message}`);
@@ -88,37 +172,25 @@ export function DesignPhase(): React.JSX.Element {
         <div className="flex-1" />
 
         <div className="p-4">
-          <button
-            onClick={handleRunDesign}
-            disabled={isRunning}
-            className={`w-full py-2.5 rounded font-bold text-sm transition-colors ${
-              isRunning ? "bg-bg-3 text-fg-muted cursor-not-allowed" : "bg-green text-bg hover:bg-green-dim"
-            }`}
-          >
-            {isRunning ? "Running..." : "\u25b6 RUN DESIGN"}
-          </button>
+          {isRunning ? (
+            <button
+              onClick={handleAbort}
+              className="w-full py-2.5 rounded font-bold text-sm bg-red text-bg hover:bg-red/80 transition-colors"
+            >
+              ⏹ STOP
+            </button>
+          ) : (
+            <button
+              onClick={handleRunDesign}
+              className="w-full py-2.5 rounded font-bold text-sm bg-green text-bg hover:bg-green-dim transition-colors"
+            >
+              ▶ RUN DESIGN
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Design content */}
-      <div className="flex-1 overflow-y-auto bg-bg">
-        <ArtifactHeader title="Architecture Design" badge={badge} />
-        <div className="p-4">
-          {!designComplete && !isRunning && (
-            <div className="flex items-center justify-center h-64 text-fg-muted text-sm">
-              Run design to generate architecture decisions
-            </div>
-          )}
-          {isRunning && (
-            <div className="flex items-center justify-center h-64">
-              <div className="text-center space-y-2">
-                <div className="w-8 h-8 border-2 border-green border-t-transparent rounded-full animate-spin mx-auto" />
-                <div className="text-fg-dim text-sm">Designing production architecture...</div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+      <DesignCanvas data={designData} />
     </div>
   );
 }

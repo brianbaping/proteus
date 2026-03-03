@@ -93,6 +93,16 @@ export function InspectionPhase(): React.JSX.Element {
     }
   }, [inspectComplete, loadInspectionArtifacts]);
 
+  async function handleAbort(): Promise<void> {
+    try {
+      await window.electronAPI.abortStage();
+    } catch {
+      // Session may have already ended
+    }
+    endSession(false, 0, "0s");
+    addMessage("ai", "Stage aborted by user.");
+  }
+
   async function handleRunInspection(options: { excludeStyle?: boolean }): Promise<void> {
     if (!activeProjectName) return;
 
@@ -124,7 +134,7 @@ export function InspectionPhase(): React.JSX.Element {
 
   return (
     <div className="flex h-full">
-      <IngestSidebar onRunInspection={handleRunInspection} />
+      <IngestSidebar onRunInspection={handleRunInspection} onAbort={handleAbort} />
       <InspectionCanvas data={inspectionData} />
     </div>
   );

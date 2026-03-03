@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ArtifactHeader } from "../shared/ArtifactHeader.js";
+import { ExecutionCanvas } from "./ExecutionCanvas.js";
+import type { ExecutionData } from "./ExecutionCanvas.js";
 import { useProjectStore } from "../../stores/project-store.js";
 import { useSessionStore } from "../../stores/session-store.js";
 import { useChatStore } from "../../stores/chat-store.js";
@@ -16,16 +17,61 @@ interface ManifestJson {
   tracks?: TrackEntry[];
 }
 
+interface SessionJson {
+  status?: string;
+  sessionId?: string;
+  startedAt?: string;
+  completedAt?: string;
+  progress?: {
+    totalTasks: number;
+    completed: number;
+    failed: number;
+  };
+}
+
+function sessionJsonToExecutionData(session: SessionJson): ExecutionData {
+  const progress = session.progress ?? { totalTasks: 0, completed: 0, failed: 0 };
+  const successRate = progress.totalTasks > 0
+    ? `${Math.round((progress.completed / progress.totalTasks) * 100)}%`
+    : "—";
+
+  let duration = "—";
+  if (session.startedAt && session.completedAt) {
+    const start = new Date(session.startedAt).getTime();
+    const end = new Date(session.completedAt).getTime();
+    const diffMs = end - start;
+    if (diffMs > 0) {
+      const mins = Math.floor(diffMs / 60000);
+      const secs = Math.floor((diffMs % 60000) / 1000);
+      duration = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+    }
+  }
+
+  return {
+    totalTasks: progress.totalTasks,
+    completed: progress.completed,
+    failed: progress.failed,
+    successRate,
+    status: session.status ?? "unknown",
+    sessionId: session.sessionId ?? "",
+    startedAt: session.startedAt ?? "",
+    completedAt: session.completedAt ?? "",
+    duration,
+    artifacts: [
+      { name: "session.json", size: `${progress.totalTasks} tasks`, icon: "\u{1f4cb}" },
+    ],
+  };
+}
+
 export function ExecutionPhase(): React.JSX.Element {
   const { activeEntry, activeProjectName, stageStatuses, refreshStatus } = useProjectStore();
   const { isRunning, startStage, endSession } = useSessionStore();
   const { addMessage, clearMessages } = useChatStore();
   const [tracks, setTracks] = useState<TrackEntry[]>([]);
+  const [executionData, setExecutionData] = useState<ExecutionData | null>(null);
 
   const splitComplete = stageStatuses.find((s) => s.stage === "split")?.complete ?? false;
   const executeComplete = stageStatuses.find((s) => s.stage === "execute")?.complete ?? false;
-  const badge = isRunning && useSessionStore.getState().currentStage === "execute"
-    ? "analyzing" : executeComplete ? "complete" : "idle";
 
   const loadManifest = useCallback(async () => {
     if (!activeEntry?.target) return;
@@ -40,11 +86,39 @@ export function ExecutionPhase(): React.JSX.Element {
     }
   }, [activeEntry?.target]);
 
+  const loadSessionArtifacts = useCallback(async () => {
+    if (!activeEntry?.target) return;
+    try {
+      const result = await window.electronAPI.readArtifacts(activeEntry.target, "execute");
+      if (result?.session) {
+        setExecutionData(sessionJsonToExecutionData(result.session as SessionJson));
+      }
+    } catch {
+      // Session artifacts not available
+    }
+  }, [activeEntry?.target]);
+
   useEffect(() => {
     if (splitComplete) {
       loadManifest();
     }
   }, [splitComplete, loadManifest]);
+
+  useEffect(() => {
+    if (executeComplete) {
+      loadSessionArtifacts();
+    }
+  }, [executeComplete, loadSessionArtifacts]);
+
+  async function handleAbort(): Promise<void> {
+    try {
+      await window.electronAPI.abortStage();
+    } catch {
+      // Session may have already ended
+    }
+    endSession(false, 0, "0s");
+    addMessage("ai", "Stage aborted by user.");
+  }
 
   async function handleBuildCandidate(): Promise<void> {
     if (!activeProjectName) return;
@@ -59,7 +133,13 @@ export function ExecutionPhase(): React.JSX.Element {
       });
       endSession(result.success, result.cost.estimatedCost, result.cost.duration);
       await refreshStatus();
-      addMessage("ai", result.success ? "Execution complete." : "Execution failed.");
+
+      if (result.success) {
+        addMessage("ai", "Execution complete.");
+        await loadSessionArtifacts();
+      } else {
+        addMessage("ai", "Execution failed.");
+      }
     } catch (err) {
       endSession(false, 0, "0s");
       addMessage("ai", `Error: ${(err as Error).message}`);
@@ -102,38 +182,25 @@ export function ExecutionPhase(): React.JSX.Element {
         </div>
 
         <div className="p-4">
-          <button
-            onClick={handleBuildCandidate}
-            disabled={isRunning}
-            className={`w-full py-2.5 rounded font-bold text-sm transition-colors ${
-              isRunning ? "bg-bg-3 text-fg-muted cursor-not-allowed" : "bg-green text-bg hover:bg-green-dim"
-            }`}
-          >
-            {isRunning ? "Building..." : "\u25b6 BUILD CANDIDATE"}
-          </button>
+          {isRunning ? (
+            <button
+              onClick={handleAbort}
+              className="w-full py-2.5 rounded font-bold text-sm bg-red text-bg hover:bg-red/80 transition-colors"
+            >
+              ⏹ STOP
+            </button>
+          ) : (
+            <button
+              onClick={handleBuildCandidate}
+              className="w-full py-2.5 rounded font-bold text-sm bg-green text-bg hover:bg-green-dim transition-colors"
+            >
+              ▶ BUILD CANDIDATE
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Execution main content */}
-      <div className="flex-1 overflow-y-auto bg-bg">
-        <ArtifactHeader title="Execution" badge={badge} />
-        <div className="p-4">
-          {!executeComplete && !isRunning && (
-            <div className="flex items-center justify-center h-64 text-fg-muted text-sm">
-              Click "Build Candidate" to start production code generation
-            </div>
-          )}
-          {isRunning && (
-            <div className="flex items-center justify-center h-64">
-              <div className="text-center space-y-2">
-                <div className="w-8 h-8 border-2 border-green border-t-transparent rounded-full animate-spin mx-auto" />
-                <div className="text-fg-dim text-sm">Agent Team executing production build...</div>
-                <div className="text-fg-muted text-2xs">Check AI Chat for real-time agent activity</div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+      <ExecutionCanvas data={executionData} />
     </div>
   );
 }

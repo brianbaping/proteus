@@ -1,20 +1,82 @@
-import React, { useState } from "react";
-import { ArtifactHeader } from "../shared/ArtifactHeader.js";
+import React, { useCallback, useEffect, useState } from "react";
 import { FileDropZone } from "../shared/FileDropZone.js";
+import { BreakdownCanvas } from "./BreakdownCanvas.js";
+import type { BreakdownData, TrackDisplay } from "./BreakdownCanvas.js";
 import { useProjectStore } from "../../stores/project-store.js";
 import { useSessionStore } from "../../stores/session-store.js";
 import { useChatStore } from "../../stores/chat-store.js";
 
+interface ManifestJson {
+  tracks?: Array<{
+    id: string;
+    discipline: string;
+    taskCount: number;
+    file: string;
+    dependsOnTracks: string[];
+    requiredByTracks?: string[];
+  }>;
+}
+
+function manifestToBreakdownData(manifest: ManifestJson): BreakdownData {
+  const tracks: TrackDisplay[] = (manifest.tracks ?? []).map((t) => ({
+    id: t.id,
+    discipline: t.discipline,
+    taskCount: t.taskCount,
+    dependsOnTracks: t.dependsOnTracks ?? [],
+    requiredByTracks: t.requiredByTracks ?? [],
+  }));
+
+  const totalTasks = tracks.reduce((sum, t) => sum + t.taskCount, 0);
+  const disciplines = [...new Set(tracks.map((t) => t.discipline))];
+
+  return {
+    totalTracks: tracks.length,
+    totalTasks,
+    disciplines,
+    tracks,
+    artifacts: [
+      { name: "manifest.json", size: `${tracks.length} tracks`, icon: "\u{1f4cb}" },
+    ],
+  };
+}
+
 export function BreakdownPhase(): React.JSX.Element {
-  const { activeProjectName, stageStatuses, refreshStatus } = useProjectStore();
+  const { activeEntry, activeProjectName, stageStatuses, refreshStatus } = useProjectStore();
   const { isRunning, startStage, endSession } = useSessionStore();
   const { addMessage, clearMessages } = useChatStore();
   const [notes, setNotes] = useState("");
   const [briefFile, setBriefFile] = useState("");
+  const [breakdownData, setBreakdownData] = useState<BreakdownData | null>(null);
 
   const splitComplete = stageStatuses.find((s) => s.stage === "split")?.complete ?? false;
-  const badge = isRunning && useSessionStore.getState().currentStage === "split"
-    ? "analyzing" : splitComplete ? "complete" : "idle";
+
+  const loadBreakdownArtifacts = useCallback(async () => {
+    if (!activeEntry?.target) return;
+    try {
+      const result = await window.electronAPI.readArtifacts(activeEntry.target, "split");
+      if (result?.manifest) {
+        setBreakdownData(manifestToBreakdownData(result.manifest as ManifestJson));
+      }
+    } catch {
+      // Artifacts not available yet
+    }
+  }, [activeEntry?.target]);
+
+  useEffect(() => {
+    if (splitComplete) {
+      loadBreakdownArtifacts();
+    }
+  }, [splitComplete, loadBreakdownArtifacts]);
+
+  async function handleAbort(): Promise<void> {
+    try {
+      await window.electronAPI.abortStage();
+    } catch {
+      // Session may have already ended
+    }
+    endSession(false, 0, "0s");
+    addMessage("ai", "Stage aborted by user.");
+  }
 
   async function handleApproveBreakdown(): Promise<void> {
     if (!activeProjectName) return;
@@ -32,7 +94,13 @@ export function BreakdownPhase(): React.JSX.Element {
       });
       endSession(result.success, result.cost.estimatedCost, result.cost.duration);
       await refreshStatus();
-      addMessage("ai", result.success ? "Breakdown complete." : "Breakdown failed.");
+
+      if (result.success) {
+        addMessage("ai", "Breakdown complete.");
+        await loadBreakdownArtifacts();
+      } else {
+        addMessage("ai", "Breakdown failed.");
+      }
     } catch (err) {
       endSession(false, 0, "0s");
       addMessage("ai", `Error: ${(err as Error).message}`);
@@ -68,37 +136,25 @@ export function BreakdownPhase(): React.JSX.Element {
         <div className="flex-1" />
 
         <div className="p-4">
-          <button
-            onClick={handleApproveBreakdown}
-            disabled={isRunning}
-            className={`w-full py-2.5 rounded font-bold text-sm transition-colors ${
-              isRunning ? "bg-bg-3 text-fg-muted cursor-not-allowed" : "bg-green text-bg hover:bg-green-dim"
-            }`}
-          >
-            {isRunning ? "Running..." : "\u25b6 APPROVE BREAKDOWN"}
-          </button>
+          {isRunning ? (
+            <button
+              onClick={handleAbort}
+              className="w-full py-2.5 rounded font-bold text-sm bg-red text-bg hover:bg-red/80 transition-colors"
+            >
+              ⏹ STOP
+            </button>
+          ) : (
+            <button
+              onClick={handleApproveBreakdown}
+              className="w-full py-2.5 rounded font-bold text-sm bg-green text-bg hover:bg-green-dim transition-colors"
+            >
+              ▶ APPROVE BREAKDOWN
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Breakdown content */}
-      <div className="flex-1 overflow-y-auto bg-bg">
-        <ArtifactHeader title="Roadmap Break Down" badge={badge} />
-        <div className="p-4">
-          {!splitComplete && !isRunning && (
-            <div className="flex items-center justify-center h-64 text-fg-muted text-sm">
-              Approve breakdown to partition plan into discipline-specific tracks
-            </div>
-          )}
-          {isRunning && (
-            <div className="flex items-center justify-center h-64">
-              <div className="text-center space-y-2">
-                <div className="w-8 h-8 border-2 border-green border-t-transparent rounded-full animate-spin mx-auto" />
-                <div className="text-fg-dim text-sm">Splitting into tracks...</div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+      <BreakdownCanvas data={breakdownData} />
     </div>
   );
 }

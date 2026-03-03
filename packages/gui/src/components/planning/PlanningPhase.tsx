@@ -1,20 +1,106 @@
-import React, { useState } from "react";
-import { ArtifactHeader } from "../shared/ArtifactHeader.js";
+import React, { useCallback, useEffect, useState } from "react";
 import { FileDropZone } from "../shared/FileDropZone.js";
+import { PlanningCanvas } from "./PlanningCanvas.js";
+import type { PlanData, TaskEntry, WaveEntry } from "./PlanningCanvas.js";
 import { useProjectStore } from "../../stores/project-store.js";
 import { useSessionStore } from "../../stores/session-store.js";
 import { useChatStore } from "../../stores/chat-store.js";
 
+interface PlanJson {
+  tasks?: Array<{
+    id: string;
+    title: string;
+    discipline?: string;
+    estimatedComplexity?: string;
+    testingExpectation?: string;
+    dependsOn?: string[];
+  }>;
+  executionWaves?: Array<{
+    wave: number;
+    tasks: string[];
+    rationale?: string;
+  }>;
+  criticalPath?: string[];
+}
+
+function planJsonToPlanData(plan: PlanJson, hasMd: boolean): PlanData {
+  const tasks = plan.tasks ?? [];
+  const waves = plan.executionWaves ?? [];
+  const criticalPath = plan.criticalPath ?? [];
+  const taskMap = new Map<string, TaskEntry>(tasks.map((t) => [t.id, t]));
+
+  const disciplines = [...new Set(tasks.map((t) => t.discipline).filter(Boolean) as string[])];
+
+  const waveDetails = waves.map((w) => ({
+    ...w,
+    taskDetails: w.tasks.map((id) => taskMap.get(id) ?? { id, title: id }).map((t) => ({
+      id: t.id,
+      title: t.title,
+      discipline: t.discipline,
+      estimatedComplexity: t.estimatedComplexity,
+      testingExpectation: t.testingExpectation,
+      dependsOn: t.dependsOn,
+    })),
+  }));
+
+  const artifacts = [
+    { name: "plan.json", size: `${tasks.length} tasks`, icon: "\u{1f4cb}" },
+  ];
+  if (hasMd) {
+    artifacts.push({ name: "plan.md", size: "—", icon: "\u{1f4dd}" });
+  }
+
+  return {
+    totalTasks: tasks.length,
+    waveCount: waves.length,
+    criticalPathLength: criticalPath.length,
+    disciplines,
+    waves: waveDetails,
+    criticalPath,
+    artifacts,
+  };
+}
+
 export function PlanningPhase(): React.JSX.Element {
-  const { activeProjectName, stageStatuses, refreshStatus } = useProjectStore();
+  const { activeEntry, activeProjectName, stageStatuses, refreshStatus } = useProjectStore();
   const { isRunning, startStage, endSession } = useSessionStore();
   const { addMessage, clearMessages } = useChatStore();
   const [notes, setNotes] = useState("");
   const [briefFile, setBriefFile] = useState("");
+  const [planData, setPlanData] = useState<PlanData | null>(null);
 
   const planComplete = stageStatuses.find((s) => s.stage === "plan")?.complete ?? false;
-  const badge = isRunning && useSessionStore.getState().currentStage === "plan"
-    ? "analyzing" : planComplete ? "complete" : "idle";
+
+  const loadPlanArtifacts = useCallback(async () => {
+    if (!activeEntry?.target) return;
+    try {
+      const result = await window.electronAPI.readArtifacts(activeEntry.target, "plan");
+      if (result?.plan) {
+        setPlanData(planJsonToPlanData(
+          result.plan as PlanJson,
+          typeof result.planMd === "string",
+        ));
+      }
+    } catch {
+      // Artifacts not available yet
+    }
+  }, [activeEntry?.target]);
+
+  useEffect(() => {
+    if (planComplete) {
+      loadPlanArtifacts();
+    }
+  }, [planComplete, loadPlanArtifacts]);
+
+  async function handleAbort(): Promise<void> {
+    try {
+      await window.electronAPI.abortStage();
+    } catch {
+      // Session may have already ended
+    }
+    endSession(false, 0, "0s");
+    addMessage("ai", "Stage aborted by user.");
+  }
 
   async function handleApprovePlan(): Promise<void> {
     if (!activeProjectName) return;
@@ -32,7 +118,13 @@ export function PlanningPhase(): React.JSX.Element {
       });
       endSession(result.success, result.cost.estimatedCost, result.cost.duration);
       await refreshStatus();
-      addMessage("ai", result.success ? "Plan generated." : "Plan failed.");
+
+      if (result.success) {
+        addMessage("ai", "Plan generated.");
+        await loadPlanArtifacts();
+      } else {
+        addMessage("ai", "Plan failed.");
+      }
     } catch (err) {
       endSession(false, 0, "0s");
       addMessage("ai", `Error: ${(err as Error).message}`);
@@ -68,37 +160,25 @@ export function PlanningPhase(): React.JSX.Element {
         <div className="flex-1" />
 
         <div className="p-4">
-          <button
-            onClick={handleApprovePlan}
-            disabled={isRunning}
-            className={`w-full py-2.5 rounded font-bold text-sm transition-colors ${
-              isRunning ? "bg-bg-3 text-fg-muted cursor-not-allowed" : "bg-green text-bg hover:bg-green-dim"
-            }`}
-          >
-            {isRunning ? "Running..." : "\u25b6 APPROVE PLAN"}
-          </button>
+          {isRunning ? (
+            <button
+              onClick={handleAbort}
+              className="w-full py-2.5 rounded font-bold text-sm bg-red text-bg hover:bg-red/80 transition-colors"
+            >
+              ⏹ STOP
+            </button>
+          ) : (
+            <button
+              onClick={handleApprovePlan}
+              className="w-full py-2.5 rounded font-bold text-sm bg-green text-bg hover:bg-green-dim transition-colors"
+            >
+              ▶ APPROVE PLAN
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Planning content */}
-      <div className="flex-1 overflow-y-auto bg-bg">
-        <ArtifactHeader title="Milestone Roadmap" badge={badge} />
-        <div className="p-4">
-          {!planComplete && !isRunning && (
-            <div className="flex items-center justify-center h-64 text-fg-muted text-sm">
-              Approve plan to generate task DAG with execution waves
-            </div>
-          )}
-          {isRunning && (
-            <div className="flex items-center justify-center h-64">
-              <div className="text-center space-y-2">
-                <div className="w-8 h-8 border-2 border-green border-t-transparent rounded-full animate-spin mx-auto" />
-                <div className="text-fg-dim text-sm">Generating execution plan...</div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+      <PlanningCanvas data={planData} />
     </div>
   );
 }
