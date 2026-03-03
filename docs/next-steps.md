@@ -1,26 +1,12 @@
 # Next Steps
 
-Status as of 2026-03-03. The GUI is functionally complete for the core pipeline flow — all 5 phases run, IPC is wired, session events stream to the chat panel, file drop zones work, export buttons work, and GitHub clone is live. All 5 pipeline phases now have artifact viewers that render results after completion. Abort buttons are live in all 5 phases. Test coverage is 91%+ statements across 155 tests.
+Status as of 2026-03-03. The GUI is functionally complete for the core pipeline flow — all 5 phases run, IPC is wired, session events stream to the chat panel, file drop zones work, export buttons work, and GitHub clone is live. All 5 pipeline phases have artifact viewers that render results after completion. Abort buttons are live in all 5 phases. IngestSidebar path persistence is wired (blur dirty-check + browse/clone flows). Cost and duration display inline in the CompleteBar after each stage finishes. Test coverage is 91.7% statements / 83.5% branches across 174 tests.
 
 Below are the remaining gaps, ordered by impact.
 
 ---
 
-## High Priority
-
-### IngestSidebar Path Persistence
-
-The POC path and target path inputs in `IngestSidebar` are local state only. Changing them does not update the project entry. A user who edits the paths and clicks "Run Inspection" still runs against the originally registered paths. Either wire the sidebar inputs to update the project config via IPC, or make them read-only displays of the registered paths.
-
----
-
 ## Medium Priority
-
-### Cost Display
-
-`session-store.ts` tracks `cost` and `duration` per session. `readCosts` IPC is wired. But no component renders cost data anywhere — not in session badges, phase headers, or a dedicated panel. Options:
-- Add cost/duration to the `SessionBadge` or `CompleteBar` after a stage finishes
-- Add a costs summary view (per-stage breakdown, total spend)
 
 ### Staleness Warnings
 

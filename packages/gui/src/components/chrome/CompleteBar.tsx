@@ -1,5 +1,6 @@
 import React from "react";
 import type { StageName } from "@proteus-forge/shared";
+import { useSessionStore } from "../../stores/session-store.js";
 
 interface CompleteBarProps {
   currentPhase: StageName;
@@ -16,14 +17,27 @@ const COMPLETE_HINTS: Record<StageName, string> = {
 };
 
 export function CompleteBar({ currentPhase, onDestroy, onComplete }: CompleteBarProps): React.JSX.Element {
+  const cost = useSessionStore((s) => s.cost);
+  const duration = useSessionStore((s) => s.duration);
+
   return (
     <div className="flex items-center justify-between h-12 px-4 bg-bg-2 border-t border-border">
-      <button
-        onClick={onDestroy}
-        className="px-4 py-1.5 text-sm bg-red-dark text-red border border-red/30 rounded hover:bg-red/20 transition-colors"
-      >
-        &larr; Destroy Phase &amp; Revert
-      </button>
+      <div className="flex items-center gap-4">
+        <button
+          onClick={onDestroy}
+          className="px-4 py-1.5 text-sm bg-red-dark text-red border border-red/30 rounded hover:bg-red/20 transition-colors"
+        >
+          &larr; Destroy Phase &amp; Revert
+        </button>
+        {cost > 0 && (
+          <span className="text-xs" data-testid="cost-duration">
+            <span className="text-green">${cost.toFixed(2)}</span>
+            {duration && (
+              <span className="text-fg-muted"> · {duration}</span>
+            )}
+          </span>
+        )}
+      </div>
 
       <div className="flex items-center gap-4">
         <span className="text-fg-muted text-xs">
