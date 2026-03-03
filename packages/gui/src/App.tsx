@@ -109,7 +109,18 @@ export function App(): React.JSX.Element {
     useProjectStore.getState().refreshStatus();
   }, [activePhase]);
 
-  const handleDestroy = useCallback(() => {
+  const handleDestroy = useCallback(async () => {
+    const confirmed = window.confirm(
+      `Destroy ${activePhase} artifacts and all downstream stages?`
+    );
+    if (!confirmed) return;
+
+    try {
+      await window.electronAPI.revertStage(activePhase);
+    } catch {
+      // Revert failed — still navigate back so UI is consistent
+    }
+
     const idx = STAGE_ORDER.indexOf(activePhase);
     if (idx > 0) {
       setActivePhase(STAGE_ORDER[idx - 1]);

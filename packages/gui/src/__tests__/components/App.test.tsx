@@ -92,6 +92,7 @@ describe("App", () => {
       saveFile: vi.fn(),
       cloneRepo: vi.fn(),
       updateProject: vi.fn(),
+      revertStage: vi.fn().mockResolvedValue({ removed: [] }),
     } as unknown as ElectronAPI;
 
     useProjectStore.setState({
@@ -296,7 +297,7 @@ describe("App", () => {
     });
   });
 
-  it("handleDestroy moves phase back and refreshes status", async () => {
+  it("handleDestroy calls revertStage and moves phase back when confirmed", async () => {
     // Start on "design" phase (set via stageStatuses)
     useProjectStore.setState({
       stageStatuses: [{ stage: "inspect", complete: true, artifactPath: "/p" }] as never,
@@ -304,6 +305,8 @@ describe("App", () => {
 
     const refreshSpy = vi.fn().mockResolvedValue(undefined);
     useProjectStore.setState({ refreshStatus: refreshSpy } as never);
+
+    vi.spyOn(window, "confirm").mockReturnValue(true);
 
     const { App } = await import("../../App.js");
     render(<App />);
@@ -316,8 +319,35 @@ describe("App", () => {
     capturedOnDestroy!();
 
     await waitFor(() => {
+      expect(window.electronAPI.revertStage).toHaveBeenCalledWith("design");
       expect(refreshSpy).toHaveBeenCalled();
     });
+  });
+
+  it("handleDestroy does nothing when confirm returns false", async () => {
+    useProjectStore.setState({
+      stageStatuses: [{ stage: "inspect", complete: true, artifactPath: "/p" }] as never,
+    });
+
+    const refreshSpy = vi.fn().mockResolvedValue(undefined);
+    useProjectStore.setState({ refreshStatus: refreshSpy } as never);
+
+    vi.spyOn(window, "confirm").mockReturnValue(false);
+
+    const { App } = await import("../../App.js");
+    render(<App />);
+
+    await waitFor(() => {
+      expect(capturedOnDestroy).toBeDefined();
+    });
+
+    capturedOnDestroy!();
+
+    // Give time for any async operations
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(window.electronAPI.revertStage).not.toHaveBeenCalled();
+    expect(refreshSpy).not.toHaveBeenCalled();
   });
 
   it("uses agentId fallback when agentName is missing in agent-spawned", async () => {

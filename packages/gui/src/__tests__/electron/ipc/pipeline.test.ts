@@ -14,6 +14,7 @@ vi.mock("@proteus-forge/cli/api", () => ({
   writeInboxMessage: vi.fn(),
   getInboxDir: vi.fn(),
   getActiveProject: vi.fn(),
+  revertStage: vi.fn(),
 }));
 
 vi.mock("#electron/gui-dashboard.js", () => {
@@ -301,6 +302,31 @@ describe("pipeline IPC handlers", () => {
 
       expect(readCosts).toHaveBeenCalledWith("/target/path");
       expect(result).toBe(mockCosts);
+    });
+  });
+
+  describe("stage:revert", () => {
+    it("calls revertStage with the active project target path", async () => {
+      const { getActiveProject, revertStage } = await import("@proteus-forge/cli/api");
+      vi.mocked(getActiveProject).mockResolvedValue({
+        name: "proj",
+        entry: { source: "/s", target: "/t", createdAt: "", currentStage: "plan" },
+      });
+      vi.mocked(revertStage).mockResolvedValue({ removed: ["plan", "split", "execute"] });
+
+      const handler = handlers.get("stage:revert")!;
+      const result = await handler({}, "design");
+
+      expect(revertStage).toHaveBeenCalledWith("/t", "design");
+      expect(result).toEqual({ removed: ["plan", "split", "execute"] });
+    });
+
+    it("throws when no active project", async () => {
+      const { getActiveProject } = await import("@proteus-forge/cli/api");
+      vi.mocked(getActiveProject).mockResolvedValue(null);
+
+      const handler = handlers.get("stage:revert")!;
+      await expect(handler({}, "inspect")).rejects.toThrow("No active project");
     });
   });
 });

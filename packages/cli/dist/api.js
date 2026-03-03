@@ -28,6 +28,7 @@ import {
   readProjectConfig,
   readRegistry,
   registerProject,
+  revertStage,
   runDesign,
   runExecute,
   runInspect,
@@ -41,7 +42,7 @@ import {
   writeGlobalConfig,
   writeProjectConfig,
   writeRegistry
-} from "./chunk-OOJKWLVX.js";
+} from "./chunk-M6QTDOAG.js";
 import {
   getInboxDir,
   isInboxActive,
@@ -79,6 +80,7 @@ export {
   readProjectConfig,
   readRegistry,
   registerProject,
+  revertStage,
   runDesign,
   runExecute,
   runInspect,

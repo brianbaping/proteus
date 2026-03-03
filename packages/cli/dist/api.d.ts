@@ -238,6 +238,10 @@ declare class AgentDashboard {
  */
 declare function createDashboard(stageName: string): AgentDashboard;
 
+declare function revertStage(targetPath: string, stage: StageName): Promise<{
+    removed: StageName[];
+}>;
+
 declare function appendLogEntry(targetPath: string, entry: LogEntry): Promise<void>;
 
-export { AgentDashboard, type LaunchOptions, type SessionResult, appendCostEntry, appendLogEntry, checkStaleness, createDashboard, createProjectConfig, ensureProjectDir, generateDesignLeadPrompt, generateExecuteLeadPrompt, generateInspectLeadPrompt, generatePlanLeadPrompt, generateSplitLeadPrompt, generateStyleLeadPrompt, getActiveProject, getCurrentStage, getDefaultGlobalConfig, getForgeDir, getGlobalConfigPath, getInboxDir, getProject, getProjectForgeDir, getStageStatuses, globalConfigExists, isInboxActive, launchSession, loadExecuteContext, readCosts, readGlobalConfig, readProjectConfig, readRegistry, registerProject, runDesign, runExecute, runInspect, runPlan, runSplit, runStyle, setActiveProject, terminalReporter, unregisterProject, updateProject, writeGlobalConfig, writeInboxMessage, writeProjectConfig, writeRegistry };
+export { AgentDashboard, type LaunchOptions, type SessionResult, appendCostEntry, appendLogEntry, checkStaleness, createDashboard, createProjectConfig, ensureProjectDir, generateDesignLeadPrompt, generateExecuteLeadPrompt, generateInspectLeadPrompt, generatePlanLeadPrompt, generateSplitLeadPrompt, generateStyleLeadPrompt, getActiveProject, getCurrentStage, getDefaultGlobalConfig, getForgeDir, getGlobalConfigPath, getInboxDir, getProject, getProjectForgeDir, getStageStatuses, globalConfigExists, isInboxActive, launchSession, loadExecuteContext, readCosts, readGlobalConfig, readProjectConfig, readRegistry, registerProject, revertStage, runDesign, runExecute, runInspect, runPlan, runSplit, runStyle, setActiveProject, terminalReporter, unregisterProject, updateProject, writeGlobalConfig, writeInboxMessage, writeProjectConfig, writeRegistry };

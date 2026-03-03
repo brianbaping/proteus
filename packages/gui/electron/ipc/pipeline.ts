@@ -1,5 +1,6 @@
 import type { IpcMain, BrowserWindow } from "electron";
 import type { ProgressReporter, StageRunOptions } from "@proteus-forge/shared";
+import type { StageName } from "@proteus-forge/shared";
 import {
   runInspect,
   runDesign,
@@ -11,6 +12,7 @@ import {
   writeInboxMessage,
   getInboxDir,
   getActiveProject,
+  revertStage,
 } from "@proteus-forge/cli/api";
 import { existsSync } from "node:fs";
 import { unlink } from "node:fs/promises";
@@ -129,5 +131,11 @@ export function registerPipelineHandlers(
 
   ipcMain.handle("costs:read", async (_event, targetPath: string) => {
     return readCosts(targetPath);
+  });
+
+  ipcMain.handle("stage:revert", async (_event, stage: StageName) => {
+    const active = await getActiveProject();
+    if (!active) throw new Error("No active project");
+    return revertStage(active.entry.target, stage);
   });
 }

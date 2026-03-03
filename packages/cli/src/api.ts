@@ -44,5 +44,8 @@ export { terminalReporter } from "./utils/terminal-reporter.js";
 export { AgentDashboard } from "./utils/dashboard.js";
 export { createDashboard } from "./utils/progress.js";
 
+// Revert
+export { revertStage } from "./utils/revert.js";
+
 // Log
 export { appendLogEntry } from "./utils/log.js";

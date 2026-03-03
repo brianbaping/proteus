@@ -22,6 +22,7 @@ export type IpcChannel =
   | "config:read-global"
   | "stage:run"
   | "stage:abort"
+  | "stage:revert"
   | "session:send-message"
   | "session:event"
   | "costs:read"

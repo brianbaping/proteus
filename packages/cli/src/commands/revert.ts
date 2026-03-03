@@ -1,13 +1,10 @@
 import { Command } from "commander";
-import { rm } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { resolveProject } from "../utils/resolve-project.js";
 import { isValidStage, getStagesAfter, getStageDir } from "../utils/stages.js";
-import { removeCostEntries } from "../utils/costs.js";
-import { appendLogEntry } from "../utils/log.js";
-import { gitStageAndCommit } from "../utils/git.js";
 import { confirm } from "../utils/confirm.js";
+import { revertStage } from "../utils/revert.js";
 
 export const revertCommand = new Command("revert")
   .description("Roll back to a stage, removing all artifacts after it")
@@ -67,29 +64,10 @@ export const revertCommand = new Command("revert")
       return;
     }
 
-    for (const d of existingDirs) {
-      await rm(d.path, { recursive: true, force: true });
-      console.log(`  \u2713 Removed ${d.dir}`);
-    }
+    const result = await revertStage(project.entry.target, stage);
 
-    await removeCostEntries(
-      project.entry.target,
-      downstream
-    );
-
-    await appendLogEntry(project.entry.target, {
-      action: "revert",
-      status: "success",
-      details: `Reverted to ${stage}, removed: ${existingDirs.map((d) => d.stage).join(", ")}`,
-    });
-
-    try {
-      await gitStageAndCommit(
-        project.entry.target,
-        `proteus-forge: revert to ${stage}`
-      );
-    } catch {
-      // Git commit is non-blocking
+    for (const s of result.removed) {
+      console.log(`  \u2713 Removed ${getStageDir(s)}`);
     }
 
     console.log(`\nReverted to "${stage}" successfully.`);

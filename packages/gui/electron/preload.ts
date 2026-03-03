@@ -19,6 +19,7 @@ export interface ElectronAPI {
   // Pipeline
   runStage(options: StageRunOptions): Promise<{ success: boolean; sessionId: string; cost: { estimatedCost: number; duration: string } }>;
   abortStage(): Promise<void>;
+  revertStage(stage: StageName): Promise<{ removed: string[] }>;
 
   // Session events (subscription)
   onSessionEvent(callback: (event: unknown) => void): () => void;
@@ -58,6 +59,7 @@ const electronAPI: ElectronAPI = {
   // Pipeline
   runStage: (options) => ipcRenderer.invoke("stage:run" satisfies IpcChannel, options),
   abortStage: () => ipcRenderer.invoke("stage:abort" satisfies IpcChannel),
+  revertStage: (stage) => ipcRenderer.invoke("stage:revert" satisfies IpcChannel, stage),
 
   // Session events (subscription)
   onSessionEvent: (callback) => {

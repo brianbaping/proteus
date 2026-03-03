@@ -3024,6 +3024,38 @@ var executeCommand = new Command6("execute").description("Build production code 
   if (!success) process.exit(1);
 });
 
+// src/utils/revert.ts
+import { rm } from "fs/promises";
+import { existsSync as existsSync17 } from "fs";
+import { join as join18 } from "path";
+import { getStagesAfter as getStagesAfter2, getStageDir as getStageDir2 } from "@proteus-forge/shared";
+async function revertStage(targetPath, stage) {
+  const downstream = getStagesAfter2(stage);
+  if (downstream.length === 0) {
+    return { removed: [] };
+  }
+  const forgeDir = join18(targetPath, ".proteus-forge");
+  const existingDirs = downstream.map((s) => ({ stage: s, path: join18(forgeDir, getStageDir2(s)) })).filter((d) => existsSync17(d.path));
+  if (existingDirs.length === 0) {
+    return { removed: [] };
+  }
+  for (const d of existingDirs) {
+    await rm(d.path, { recursive: true, force: true });
+  }
+  const removedStages = existingDirs.map((d) => d.stage);
+  await removeCostEntries(targetPath, downstream);
+  await appendLogEntry(targetPath, {
+    action: "revert",
+    status: "success",
+    details: `Reverted to ${stage}, removed: ${removedStages.join(", ")}`
+  });
+  try {
+    await gitStageAndCommit(targetPath, `proteus-forge: revert to ${stage}`);
+  } catch {
+  }
+  return { removed: removedStages };
+}
+
 export {
   getForgeDir,
   getGlobalConfigPath,
@@ -3090,5 +3122,6 @@ export {
   runVerification,
   printVerifyResult,
   runExecute,
-  executeCommand
+  executeCommand,
+  revertStage
 };

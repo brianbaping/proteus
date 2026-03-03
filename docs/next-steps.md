@@ -1,16 +1,12 @@
 # Next Steps
 
-Status as of 2026-03-03. The GUI is functionally complete for the core pipeline flow — all 5 phases run, IPC is wired, session events stream to the chat panel, file drop zones work, export buttons work, and GitHub clone is live. All 5 pipeline phases have artifact viewers that render results after completion. Abort buttons are live in all 5 phases. IngestSidebar path persistence is wired (blur dirty-check + browse/clone flows). Cost and duration display inline in the CompleteBar after each stage finishes. Staleness warnings render in design, plan, split, and execute canvases when upstream artifacts have changed.
+Status as of 2026-03-03. The GUI is functionally complete for the core pipeline flow — all 5 phases run, IPC is wired, session events stream to the chat panel, file drop zones work, export buttons work, and GitHub clone is live. All 5 pipeline phases have artifact viewers that render results after completion. Abort buttons are live in all 5 phases. IngestSidebar path persistence is wired (blur dirty-check + browse/clone flows). Cost and duration display inline in the CompleteBar after each stage finishes. Staleness warnings render in design, plan, split, and execute canvases when upstream artifacts have changed. Revert/Destroy Phase button is wired to the CLI revert logic via `stage:revert` IPC — confirms with `window.confirm()`, removes downstream artifacts, costs, and commits.
 
 Below are the remaining gaps, ordered by impact.
 
 ---
 
 ## Medium Priority
-
-### Revert / Destroy Phase Wiring
-
-`CompleteBar` has a "Destroy Phase & Revert" button, but `handleDestroy` in `App.tsx` only navigates the phase tab backward and refreshes status. It does not call any IPC to actually remove stage artifacts. Need a `stage:revert` IPC handler that calls the CLI's `revert` logic.
 
 ### Archive Upload Flow
 

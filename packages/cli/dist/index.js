@@ -38,6 +38,7 @@ import {
   resolveApiKey,
   resolveModel,
   resolveProject,
+  revertStage,
   runDesign,
   runExecute,
   runInspect,
@@ -52,7 +53,7 @@ import {
   writeGlobalConfig,
   writeProjectConfig,
   writeRegistry
-} from "./chunk-OOJKWLVX.js";
+} from "./chunk-M6QTDOAG.js";
 import {
   getInboxDir,
   isInboxActive,
@@ -311,7 +312,6 @@ Project: ${name}`);
 
 // src/commands/revert.ts
 import { Command as Command6 } from "commander";
-import { rm as rm2 } from "fs/promises";
 import { existsSync as existsSync3 } from "fs";
 import { join as join2 } from "path";
 var revertCommand = new Command6("revert").description("Roll back to a stage, removing all artifacts after it").argument("<stage>", "Stage to revert to (inspect, design, plan, split, execute)").argument("[name]", "Project name (defaults to active project)").action(async (stage, name) => {
@@ -363,25 +363,9 @@ Remove ${existingDirs.length} stage director${existingDirs.length === 1 ? "y" : 
     console.log("Cancelled.");
     return;
   }
-  for (const d of existingDirs) {
-    await rm2(d.path, { recursive: true, force: true });
-    console.log(`  \u2713 Removed ${d.dir}`);
-  }
-  await removeCostEntries(
-    project.entry.target,
-    downstream
-  );
-  await appendLogEntry(project.entry.target, {
-    action: "revert",
-    status: "success",
-    details: `Reverted to ${stage}, removed: ${existingDirs.map((d) => d.stage).join(", ")}`
-  });
-  try {
-    await gitStageAndCommit(
-      project.entry.target,
-      `proteus-forge: revert to ${stage}`
-    );
-  } catch {
+  const result = await revertStage(project.entry.target, stage);
+  for (const s of result.removed) {
+    console.log(`  \u2713 Removed ${getStageDir(s)}`);
   }
   console.log(`
 Reverted to "${stage}" successfully.`);
@@ -389,7 +373,7 @@ Reverted to "${stage}" successfully.`);
 
 // src/commands/reset.ts
 import { Command as Command7 } from "commander";
-import { rm as rm3 } from "fs/promises";
+import { rm as rm2 } from "fs/promises";
 import { existsSync as existsSync4 } from "fs";
 import { join as join3 } from "path";
 var resetCommand = new Command7("reset").description("Remove artifacts for a single stage").argument("<stage>", "Stage to reset (inspect, design, plan, split, execute)").argument("[name]", "Project name (defaults to active project)").action(async (stage, name) => {
@@ -436,7 +420,7 @@ Delete ${dir}?`);
     console.log("Cancelled.");
     return;
   }
-  await rm3(dirPath, { recursive: true, force: true });
+  await rm2(dirPath, { recursive: true, force: true });
   console.log(`  \u2713 Removed ${dir}`);
   await removeCostEntries(project.entry.target, [stage]);
   await appendLogEntry(project.entry.target, {
