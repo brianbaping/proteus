@@ -6,14 +6,6 @@ Below are the remaining gaps, ordered by impact.
 
 ---
 
-## CLI
-
-### In-place Dashboard
-
-Replace the scrolling agent dashboard with a fixed-line display using ANSI cursor-up sequences. Each agent gets a pinned terminal line that updates in place. Fall back to scrolling when `!process.stdout.isTTY`. (From `docs/future.md`.)
-
----
-
 ## Deferred
 
 ### E2E Tests

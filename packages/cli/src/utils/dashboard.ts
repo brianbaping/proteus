@@ -1,5 +1,5 @@
 import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
-import { AGENT_COLORS, RESET, DIM, SHOW_CURSOR } from "./ansi.js";
+import { AGENT_COLORS, RESET, DIM, SHOW_CURSOR, HIDE_CURSOR, CLEAR_LINE, cursorUp } from "./ansi.js";
 
 interface AgentInfo {
   id: string;
@@ -7,6 +7,7 @@ interface AgentInfo {
   color: string;
   status: "spawning" | "working" | "idle" | "done";
   currentTool: string | null;
+  currentActivity: string;
   lastProgressPrint: number;
   spawnedAt: number;
 }
@@ -136,6 +137,14 @@ export class AgentDashboard {
   private isTTY: boolean;
   private agentCount = 0;
 
+  // TTY in-place status board state
+  private agentOrder: string[] = ["lead"];
+  private statusBoardLines = 0;
+  private statusBoardDrawn = false;
+  private refreshTimer: ReturnType<typeof setInterval> | null = null;
+  private lastRedrawTime = 0;
+  private exitHandler: (() => void) | null = null;
+
   constructor(private stageName: string) {
     this.isTTY = process.stdout.isTTY ?? false;
     this.leadAgent = {
@@ -144,9 +153,16 @@ export class AgentDashboard {
       color: AGENT_COLORS[0],
       status: "idle",
       currentTool: null,
+      currentActivity: "Idle",
       lastProgressPrint: 0,
       spawnedAt: Date.now(),
     };
+    if (this.isTTY) {
+      this.exitHandler = () => {
+        process.stdout.write(SHOW_CURSOR);
+      };
+      process.on("exit", this.exitHandler);
+    }
   }
 
   onMessage(message: SDKMessage): void {
@@ -156,7 +172,8 @@ export class AgentDashboard {
       "subtype" in message &&
       message.subtype === "init"
     ) {
-      this.printLine(this.leadAgent, `Session started (${this.stageName})`);
+      this.leadAgent.currentActivity = `Session started (${this.stageName})`;
+      this.printScrollingLine(this.leadAgent, `Session started (${this.stageName})`);
       return;
     }
 
@@ -180,8 +197,10 @@ export class AgentDashboard {
           );
           const id = "id" in block ? String(block.id) : `task-${this.agentCount}`;
           const newAgent = this.registerAgent(id, name);
-          this.printLine(agent, `Spawning teammate: ${newAgent.name}`);
-          this.printLine(newAgent, "Started");
+          this.agentOrder.push(id);
+          agent.currentActivity = `Spawning teammate: ${newAgent.name}`;
+          this.printScrollingLine(agent, `Spawning teammate: ${newAgent.name}`);
+          this.printScrollingLine(newAgent, "Started");
           continue;
         }
 
@@ -192,7 +211,12 @@ export class AgentDashboard {
           agent.status = "working";
           const desc = describeToolUse(toolName, "input" in block ? block.input : undefined);
           if (desc) {
-            this.printLine(agent, desc);
+            agent.currentActivity = desc;
+            if (this.isTTY) {
+              this.redrawStatusBoard();
+            } else {
+              this.printScrollingLine(agent, desc);
+            }
           }
           continue;
         }
@@ -207,7 +231,7 @@ export class AgentDashboard {
           if (text.length > 0 && !isInternalNoise(text)) {
             const preview = text.length <= 200 ? text : summarizeText(text);
             if (preview) {
-              this.printLine(agent, preview);
+              this.printScrollingLine(agent, preview);
             }
           }
         }
@@ -221,14 +245,21 @@ export class AgentDashboard {
       agent.currentTool = message.tool_name;
       agent.status = "working";
 
-      const now = Date.now();
       const elapsed = message.elapsed_time_seconds;
-      if (elapsed >= 3 && now - agent.lastProgressPrint >= 5000) {
-        agent.lastProgressPrint = now;
-        this.printLine(
-          agent,
-          `\u23f3 ${message.tool_name} (${Math.round(elapsed)}s)`
-        );
+      if (this.isTTY) {
+        if (elapsed >= 3) {
+          agent.currentActivity = `\u23f3 ${message.tool_name} (${Math.round(elapsed)}s)`;
+          this.redrawStatusBoard();
+        }
+      } else {
+        const now = Date.now();
+        if (elapsed >= 3 && now - agent.lastProgressPrint >= 5000) {
+          agent.lastProgressPrint = now;
+          this.printScrollingLine(
+            agent,
+            `\u23f3 ${message.tool_name} (${Math.round(elapsed)}s)`
+          );
+        }
       }
       return;
     }
@@ -245,7 +276,12 @@ export class AgentDashboard {
         if (agent && agent.status !== "done") {
           agent.status = "done";
           agent.currentTool = null;
-          this.printLine(agent, "Done \u2713");
+          agent.currentActivity = "Done \u2713";
+          if (this.isTTY) {
+            this.redrawStatusBoard();
+          } else {
+            this.printScrollingLine(agent, "Done \u2713");
+          }
         }
       }
       return;
@@ -253,13 +289,23 @@ export class AgentDashboard {
 
     // Session result — print summary
     if (message.type === "result") {
+      this.stopRefreshTimer();
+      if (this.isTTY) {
+        this.eraseStatusBoard();
+      }
       this.printSummary();
     }
   }
 
   cleanup(): void {
+    this.stopRefreshTimer();
     if (this.isTTY) {
+      this.eraseStatusBoard();
       process.stdout.write(SHOW_CURSOR);
+      if (this.exitHandler) {
+        process.removeListener("exit", this.exitHandler);
+        this.exitHandler = null;
+      }
     }
   }
 
@@ -279,6 +325,7 @@ export class AgentDashboard {
       color: AGENT_COLORS[this.nextColorIndex % AGENT_COLORS.length],
       status: "spawning",
       currentTool: null,
+      currentActivity: "Starting...",
       lastProgressPrint: 0,
       spawnedAt: Date.now(),
     };
@@ -300,13 +347,91 @@ export class AgentDashboard {
     return this.agents.get(parentToolUseId) ?? this.leadAgent;
   }
 
-  private printLine(agent: AgentInfo, text: string): void {
+  private getTermWidth(): number {
+    return process.stdout.columns ?? 80;
+  }
+
+  private formatElapsed(spawnedAt: number): string {
+    const seconds = Math.round((Date.now() - spawnedAt) / 1000);
+    if (seconds >= 60) {
+      return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
+    }
+    return `${seconds}s`;
+  }
+
+  private formatStatusLine(agent: AgentInfo): string {
+    const elapsed = this.formatElapsed(agent.spawnedAt);
+    const nameField = agent.name.padEnd(this.maxNameLen + 2);
+    // Calculate available width for activity: total - "  ● " (4) - name - " " - " " - elapsed
+    const overhead = 4 + nameField.length + 1 + 1 + elapsed.length;
+    const maxActivity = Math.max(10, this.getTermWidth() - overhead);
+    const activity = agent.currentActivity.length > maxActivity
+      ? agent.currentActivity.slice(0, maxActivity - 3) + "..."
+      : agent.currentActivity;
+    return `\r${CLEAR_LINE}  ${agent.color}\u25cf ${nameField}${RESET} ${activity} ${DIM}${elapsed}${RESET}\n`;
+  }
+
+  private eraseStatusBoard(): void {
+    if (this.statusBoardDrawn && this.statusBoardLines > 0) {
+      process.stdout.write(cursorUp(this.statusBoardLines));
+      for (let i = 0; i < this.statusBoardLines; i++) {
+        process.stdout.write(`${CLEAR_LINE}\n`);
+      }
+      process.stdout.write(cursorUp(this.statusBoardLines));
+      this.statusBoardDrawn = false;
+    }
+  }
+
+  private drawStatusBoard(): void {
+    if (!this.isTTY) return;
+    if (!this.statusBoardDrawn) {
+      process.stdout.write(HIDE_CURSOR);
+    }
+    let lines = 0;
+    for (const id of this.agentOrder) {
+      const agent = id === "lead" ? this.leadAgent : this.agents.get(id);
+      if (agent) {
+        process.stdout.write(this.formatStatusLine(agent));
+        lines++;
+      }
+    }
+    this.statusBoardLines = lines;
+    this.statusBoardDrawn = true;
+    this.startRefreshTimer();
+  }
+
+  private redrawStatusBoard(): void {
+    if (!this.isTTY || !this.statusBoardDrawn) return;
+    const now = Date.now();
+    if (now - this.lastRedrawTime < 100) return;
+    this.lastRedrawTime = now;
+    process.stdout.write(cursorUp(this.statusBoardLines));
+    this.drawStatusBoard();
+  }
+
+  private startRefreshTimer(): void {
+    if (this.refreshTimer || !this.isTTY) return;
+    this.refreshTimer = setInterval(() => {
+      this.redrawStatusBoard();
+    }, 1000);
+  }
+
+  private stopRefreshTimer(): void {
+    if (this.refreshTimer) {
+      clearInterval(this.refreshTimer);
+      this.refreshTimer = null;
+    }
+  }
+
+  private printScrollingLine(agent: AgentInfo, text: string): void {
     const truncated =
       text.length > 70 ? text.slice(0, 67) + "..." : text;
 
     if (this.isTTY) {
+      this.eraseStatusBoard();
       const prefix = `${agent.color}  \u25cf ${agent.name.padEnd(this.maxNameLen)}${RESET}`;
       process.stdout.write(`${prefix} ${truncated}\n`);
+      this.drawStatusBoard();
     } else {
       process.stdout.write(`  [${agent.name}] ${truncated}\n`);
     }

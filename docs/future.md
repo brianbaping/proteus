@@ -4,4 +4,4 @@ Ideas and improvements for future versions. Not committed to — just tracked.
 
 ## Dashboard
 
-- **In-place agent status display**: Replace the current scrolling dashboard (`src/utils/dashboard.ts`) with an in-place multi-line display where each agent has a fixed terminal line that gets overwritten with updated status. Would require ANSI cursor-up (`\x1b[A`) and line-clear (`\x1b[2K`) sequences. Fall back to scrolling mode when `!process.stdout.isTTY`.
+- ~~**In-place agent status display**~~: Implemented. The `AgentDashboard` now pins agent status lines to the bottom of the terminal in TTY mode, updating in-place via ANSI cursor-up and line-clear sequences. Non-TTY falls back to scrolling.
