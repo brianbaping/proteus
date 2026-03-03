@@ -13,6 +13,7 @@ interface ProjectState {
   setActiveProject(name: string): Promise<void>;
   refreshStatus(): Promise<void>;
   createProject(name: string, source: string, target?: string): Promise<void>;
+  updateProject(name: string, updates: { source?: string; target?: string }): Promise<void>;
 }
 
 export const useProjectStore = create<ProjectState>((set, get) => ({
@@ -63,6 +64,11 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
 
   createProject: async (name: string, source: string, target?: string) => {
     await window.electronAPI.createProject(name, source, target);
+    await get().loadRegistry();
+  },
+
+  updateProject: async (name: string, updates: { source?: string; target?: string }) => {
+    await window.electronAPI.updateProject(name, updates);
     await get().loadRegistry();
   },
 }));

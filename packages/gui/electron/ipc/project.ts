@@ -7,6 +7,7 @@ import {
   registerProject,
   unregisterProject,
   getProject,
+  updateProject,
 } from "@proteus-forge/cli/api";
 import { getStageStatuses, checkStaleness } from "@proteus-forge/cli/api";
 import { createProjectConfig, writeProjectConfig } from "@proteus-forge/cli/api";
@@ -67,14 +68,41 @@ export function registerProjectHandlers(ipcMain: IpcMain): void {
       if (existsSync(featuresPath)) {
         artifacts.features = JSON.parse(await readFile(featuresPath, "utf-8"));
       }
+    } else if (stage === "design") {
+      const metaPath = join(stageDir, "design-meta.json");
+      if (existsSync(metaPath)) {
+        artifacts.designMeta = JSON.parse(await readFile(metaPath, "utf-8"));
+      }
+      const mdPath = join(stageDir, "design.md");
+      if (existsSync(mdPath)) {
+        artifacts.designMd = await readFile(mdPath, "utf-8");
+      }
+    } else if (stage === "plan") {
+      const planPath = join(stageDir, "plan.json");
+      if (existsSync(planPath)) {
+        artifacts.plan = JSON.parse(await readFile(planPath, "utf-8"));
+      }
+      const planMdPath = join(stageDir, "plan.md");
+      if (existsSync(planMdPath)) {
+        artifacts.planMd = await readFile(planMdPath, "utf-8");
+      }
     } else if (stage === "split") {
       const manifestPath = join(stageDir, "manifest.json");
       if (existsSync(manifestPath)) {
         artifacts.manifest = JSON.parse(await readFile(manifestPath, "utf-8"));
       }
+    } else if (stage === "execute") {
+      const sessionPath = join(stageDir, "session.json");
+      if (existsSync(sessionPath)) {
+        artifacts.session = JSON.parse(await readFile(sessionPath, "utf-8"));
+      }
     }
 
     return Object.keys(artifacts).length > 0 ? artifacts : null;
+  });
+
+  ipcMain.handle("project:update", async (_event, name: string, updates: { source?: string; target?: string }) => {
+    await updateProject(name, updates);
   });
 
   ipcMain.handle("project:clone-repo", async (_event, url: string) => {

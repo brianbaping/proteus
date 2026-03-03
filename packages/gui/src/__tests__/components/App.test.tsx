@@ -91,6 +91,7 @@ describe("App", () => {
       openFile: vi.fn(),
       saveFile: vi.fn(),
       cloneRepo: vi.fn(),
+      updateProject: vi.fn(),
     } as unknown as ElectronAPI;
 
     useProjectStore.setState({

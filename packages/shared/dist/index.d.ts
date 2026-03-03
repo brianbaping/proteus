@@ -95,7 +95,7 @@ interface SessionEvent {
     timestamp: number;
 }
 /** Type-safe IPC channel names. */
-type IpcChannel = "project:list" | "project:get-active" | "project:set-active" | "project:create" | "project:destroy" | "project:status" | "config:read-global" | "stage:run" | "stage:abort" | "session:send-message" | "session:event" | "costs:read" | "project:read-artifacts" | "dialog:open-directory" | "dialog:open-file" | "dialog:save-file" | "project:clone-repo" | "reporter:log" | "reporter:warn" | "reporter:error";
+type IpcChannel = "project:list" | "project:get-active" | "project:set-active" | "project:create" | "project:destroy" | "project:status" | "config:read-global" | "stage:run" | "stage:abort" | "session:send-message" | "session:event" | "costs:read" | "project:read-artifacts" | "dialog:open-directory" | "dialog:open-file" | "dialog:save-file" | "project:update" | "project:clone-repo" | "reporter:log" | "reporter:warn" | "reporter:error";
 /** Options for running a pipeline stage via IPC. */
 interface StageRunOptions {
     projectName?: string;

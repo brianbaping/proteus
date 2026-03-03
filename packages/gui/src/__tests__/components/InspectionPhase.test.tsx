@@ -7,10 +7,15 @@ import { useChatStore } from "../../stores/chat-store.js";
 
 // Mock child components to isolate InspectionPhase logic
 vi.mock("../../components/inspection/IngestSidebar.js", () => ({
-  IngestSidebar: ({ onRunInspection }: { onRunInspection: (opts: { excludeStyle?: boolean }) => void }) => (
-    <button data-testid="run-btn" onClick={() => onRunInspection({})}>
-      Run
-    </button>
+  IngestSidebar: ({ onRunInspection, onAbort }: { onRunInspection: (opts: { excludeStyle?: boolean }) => void; onAbort: () => void }) => (
+    <div>
+      <button data-testid="run-btn" onClick={() => onRunInspection({})}>
+        Run
+      </button>
+      <button data-testid="stop-btn" onClick={onAbort}>
+        STOP
+      </button>
+    </div>
   ),
 }));
 
@@ -57,6 +62,7 @@ describe("InspectionPhase", () => {
       openFile: vi.fn(),
       saveFile: vi.fn(),
       cloneRepo: vi.fn(),
+      updateProject: vi.fn(),
     } as unknown as ElectronAPI;
   });
 
@@ -218,6 +224,23 @@ describe("InspectionPhase", () => {
 
       const messages = useChatStore.getState().messages;
       expect(messages.some((m) => m.text.includes("network error"))).toBe(true);
+    });
+
+    it("calls abortStage when stop button is clicked during run", async () => {
+      useSessionStore.setState({ isRunning: true, currentStage: "inspect" });
+      setProjectStoreState({});
+
+      const { InspectionPhase } = await import("../../components/inspection/InspectionPhase.js");
+      render(<InspectionPhase />);
+
+      await act(async () => {
+        fireEvent.click(screen.getByTestId("stop-btn"));
+      });
+
+      expect(window.electronAPI.abortStage).toHaveBeenCalled();
+      expect(useSessionStore.getState().isRunning).toBe(false);
+      const messages = useChatStore.getState().messages;
+      expect(messages.some((m) => m.text.includes("aborted"))).toBe(true);
     });
 
     it("does nothing when no active project name", async () => {

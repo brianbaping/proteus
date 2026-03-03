@@ -29,6 +29,7 @@ export type IpcChannel =
   | "dialog:open-directory"
   | "dialog:open-file"
   | "dialog:save-file"
+  | "project:update"
   | "project:clone-repo"
   | "reporter:log"
   | "reporter:warn"

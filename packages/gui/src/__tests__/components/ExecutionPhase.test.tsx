@@ -5,9 +5,9 @@ import { useProjectStore } from "../../stores/project-store.js";
 import { useSessionStore } from "../../stores/session-store.js";
 import { useChatStore } from "../../stores/chat-store.js";
 
-vi.mock("../../components/shared/ArtifactHeader.js", () => ({
-  ArtifactHeader: ({ title, badge }: { title: string; badge: string }) => (
-    <div data-testid="artifact-header">{title} - {badge}</div>
+vi.mock("../../components/execution/ExecutionCanvas.js", () => ({
+  ExecutionCanvas: ({ data }: { data: unknown }) => (
+    <div data-testid="canvas">{data ? "has-data" : "no-data"}</div>
   ),
 }));
 
@@ -46,6 +46,9 @@ describe("ExecutionPhase", () => {
       readCosts: vi.fn(),
       openDirectory: vi.fn(),
       openFile: vi.fn(),
+      saveFile: vi.fn(),
+      cloneRepo: vi.fn(),
+      updateProject: vi.fn(),
     } as unknown as ElectronAPI;
   });
 
@@ -85,6 +88,54 @@ describe("ExecutionPhase", () => {
       expect(screen.getByText("backend")).toBeDefined();
       expect(screen.getByText("frontend")).toBeDefined();
     });
+  });
+
+  it("loads session artifacts on mount when execute stage is complete", async () => {
+    const session = {
+      status: "completed",
+      sessionId: "sess-123",
+      startedAt: "2026-02-19T15:36:00Z",
+      completedAt: "2026-02-19T15:57:00Z",
+      progress: { totalTasks: 14, completed: 14, failed: 0 },
+    };
+    mockReadArtifacts
+      .mockImplementation(async (_target: string, stage: string) => {
+        if (stage === "execute") return { session };
+        return null;
+      });
+
+    setProjectState({
+      stageStatuses: [
+        { stage: "execute", complete: true, artifactPath: "/p" },
+      ] as never,
+    });
+
+    const { ExecutionPhase } = await import("../../components/execution/ExecutionPhase.js");
+    render(<ExecutionPhase />);
+
+    await waitFor(() => {
+      expect(mockReadArtifacts).toHaveBeenCalledWith("/tgt", "execute");
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("canvas").textContent).toBe("has-data");
+    });
+  });
+
+  it("does not load session artifacts when execute stage is incomplete", async () => {
+    setProjectState({
+      stageStatuses: [{ stage: "execute", complete: false, artifactPath: "/p" }] as never,
+    });
+
+    const { ExecutionPhase } = await import("../../components/execution/ExecutionPhase.js");
+    render(<ExecutionPhase />);
+
+    await new Promise((r) => setTimeout(r, 50));
+    // readArtifacts should not be called with "execute"
+    const executeCalls = mockReadArtifacts.mock.calls.filter(
+      (c: unknown[]) => c[1] === "execute"
+    );
+    expect(executeCalls.length).toBe(0);
   });
 
   it("renders track entries with task counts", async () => {
@@ -152,8 +203,33 @@ describe("ExecutionPhase", () => {
     });
   });
 
+  it("shows canvas with no data when session artifacts are not available", async () => {
+    setProjectState({ stageStatuses: [] });
+
+    const { ExecutionPhase } = await import("../../components/execution/ExecutionPhase.js");
+    render(<ExecutionPhase />);
+
+    expect(screen.getByTestId("canvas").textContent).toBe("no-data");
+  });
+
   describe("handleBuildCandidate", () => {
-    it("calls runStage with execute stage on button click", async () => {
+    it("calls runStage and loads session artifacts on success", async () => {
+      const session = {
+        status: "completed",
+        sessionId: "sess-1",
+        startedAt: "2026-02-19T15:36:00Z",
+        completedAt: "2026-02-19T15:57:00Z",
+        progress: { totalTasks: 14, completed: 14, failed: 0 },
+      };
+      mockRunStage.mockResolvedValue({
+        success: true,
+        sessionId: "s1",
+        cost: { estimatedCost: 5.0, duration: "15m 30s" },
+      });
+      mockReadArtifacts
+        .mockResolvedValueOnce(null)  // initial split load
+        .mockResolvedValueOnce({ session });  // after run execute load
+
       setProjectState({ stageStatuses: [] });
 
       const { ExecutionPhase } = await import("../../components/execution/ExecutionPhase.js");
@@ -170,9 +246,10 @@ describe("ExecutionPhase", () => {
         });
       });
 
-      const session = useSessionStore.getState();
-      expect(session.isRunning).toBe(false);
-      expect(session.cost).toBe(5.0);
+      const sess = useSessionStore.getState();
+      expect(sess.isRunning).toBe(false);
+      expect(sess.cost).toBe(5.0);
+      expect(sess.duration).toBe("15m 30s");
 
       const messages = useChatStore.getState().messages;
       expect(messages.some((m) => m.text === "Execution complete.")).toBe(true);
@@ -218,6 +295,23 @@ describe("ExecutionPhase", () => {
 
       const messages = useChatStore.getState().messages;
       expect(messages.some((m) => m.text.includes("session crashed"))).toBe(true);
+    });
+
+    it("calls abortStage when stop button is clicked during run", async () => {
+      useSessionStore.setState({ isRunning: true, currentStage: "execute" });
+      setProjectState({});
+
+      const { ExecutionPhase } = await import("../../components/execution/ExecutionPhase.js");
+      render(<ExecutionPhase />);
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: /STOP/i }));
+      });
+
+      expect(window.electronAPI.abortStage).toHaveBeenCalled();
+      expect(useSessionStore.getState().isRunning).toBe(false);
+      const messages = useChatStore.getState().messages;
+      expect(messages.some((m) => m.text.includes("aborted"))).toBe(true);
     });
 
     it("does nothing when no active project name", async () => {

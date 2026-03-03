@@ -5,10 +5,11 @@ import { FileDropZone } from "../shared/FileDropZone.js";
 
 interface IngestSidebarProps {
   onRunInspection(options: { excludeStyle?: boolean }): void;
+  onAbort(): void;
 }
 
-export function IngestSidebar({ onRunInspection }: IngestSidebarProps): React.JSX.Element {
-  const { activeEntry } = useProjectStore();
+export function IngestSidebar({ onRunInspection, onAbort }: IngestSidebarProps): React.JSX.Element {
+  const { activeEntry, activeProjectName, updateProject } = useProjectStore();
   const { isRunning } = useSessionStore();
   const [ingestMethod, setIngestMethod] = useState<"upload" | "github">("upload");
   const [pocPath, setPocPath] = useState(activeEntry?.source ?? "");
@@ -18,14 +19,41 @@ export function IngestSidebar({ onRunInspection }: IngestSidebarProps): React.JS
   const [cloning, setCloning] = useState(false);
   const [cloneError, setCloneError] = useState("");
 
+  async function persistPaths(updates: { source?: string; target?: string }): Promise<void> {
+    if (!activeProjectName) return;
+    try {
+      await updateProject(activeProjectName, updates);
+    } catch {
+      // Silent — user sees correct paths locally, can retry
+    }
+  }
+
+  function handlePocBlur(): void {
+    if (pocPath !== (activeEntry?.source ?? "")) {
+      persistPaths({ source: pocPath });
+    }
+  }
+
+  function handleTargetBlur(): void {
+    if (targetPath !== (activeEntry?.target ?? "")) {
+      persistPaths({ target: targetPath });
+    }
+  }
+
   async function handleBrowsePoc(): Promise<void> {
     const dir = await window.electronAPI.openDirectory();
-    if (dir) setPocPath(dir);
+    if (dir) {
+      setPocPath(dir);
+      await persistPaths({ source: dir });
+    }
   }
 
   async function handleBrowseTarget(): Promise<void> {
     const dir = await window.electronAPI.openDirectory();
-    if (dir) setTargetPath(dir);
+    if (dir) {
+      setTargetPath(dir);
+      await persistPaths({ target: dir });
+    }
   }
 
   async function handleCloneRepo(): Promise<void> {
@@ -36,6 +64,7 @@ export function IngestSidebar({ onRunInspection }: IngestSidebarProps): React.JS
       const clonedPath = await window.electronAPI.cloneRepo(githubUrl.trim());
       setPocPath(clonedPath);
       setIngestMethod("upload");
+      await persistPaths({ source: clonedPath });
     } catch (err) {
       setCloneError((err as Error).message);
     } finally {
@@ -124,6 +153,7 @@ export function IngestSidebar({ onRunInspection }: IngestSidebarProps): React.JS
               className="flex-1 bg-bg text-fg text-xs font-mono px-2 py-1.5 rounded border border-border-2 outline-none focus:border-green/50"
               value={pocPath}
               onChange={(e) => setPocPath(e.target.value)}
+              onBlur={handlePocBlur}
               placeholder="/projects/my-poc"
             />
             <button
@@ -143,6 +173,7 @@ export function IngestSidebar({ onRunInspection }: IngestSidebarProps): React.JS
               className="flex-1 bg-bg text-fg text-xs font-mono px-2 py-1.5 rounded border border-border-2 outline-none focus:border-green/50"
               value={targetPath}
               onChange={(e) => setTargetPath(e.target.value)}
+              onBlur={handleTargetBlur}
               placeholder="/projects/my-prod"
             />
             <button
@@ -180,19 +211,23 @@ export function IngestSidebar({ onRunInspection }: IngestSidebarProps): React.JS
       {/* Spacer */}
       <div className="flex-1" />
 
-      {/* Run button */}
+      {/* Run / Stop button */}
       <div className="p-4">
-        <button
-          onClick={() => onRunInspection({ excludeStyle })}
-          disabled={isRunning}
-          className={`w-full py-2.5 rounded font-bold text-sm transition-colors ${
-            isRunning
-              ? "bg-bg-3 text-fg-muted cursor-not-allowed"
-              : "bg-green text-bg hover:bg-green-dim"
-          }`}
-        >
-          {isRunning ? "Running..." : "\u25b6 RUN INSPECTION"}
-        </button>
+        {isRunning ? (
+          <button
+            onClick={onAbort}
+            className="w-full py-2.5 rounded font-bold text-sm bg-red text-bg hover:bg-red/80 transition-colors"
+          >
+            ⏹ STOP
+          </button>
+        ) : (
+          <button
+            onClick={() => onRunInspection({ excludeStyle })}
+            className="w-full py-2.5 rounded font-bold text-sm bg-green text-bg hover:bg-green-dim transition-colors"
+          >
+            ▶ RUN INSPECTION
+          </button>
+        )}
       </div>
     </div>
   );

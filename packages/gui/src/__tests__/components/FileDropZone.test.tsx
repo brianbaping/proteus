@@ -30,6 +30,7 @@ describe("FileDropZone", () => {
       readCosts: vi.fn(),
       saveFile: vi.fn(),
       cloneRepo: vi.fn(),
+      updateProject: vi.fn(),
     } as unknown as ElectronAPI;
   });
 

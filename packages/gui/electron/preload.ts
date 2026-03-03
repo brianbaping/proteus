@@ -11,6 +11,7 @@ export interface ElectronAPI {
   destroyProject(name: string): Promise<void>;
   getProjectStatus(targetPath: string): Promise<{ statuses: StageStatus[]; staleness: Array<{ stage: string; staleReason: string }> }>;
   readArtifacts(targetPath: string, stage: StageName): Promise<Record<string, unknown> | null>;
+  updateProject(name: string, updates: { source?: string; target?: string }): Promise<void>;
 
   // Config
   readGlobalConfig(): Promise<GlobalConfig | null>;
@@ -49,6 +50,7 @@ const electronAPI: ElectronAPI = {
   destroyProject: (name) => ipcRenderer.invoke("project:destroy" satisfies IpcChannel, name),
   getProjectStatus: (targetPath) => ipcRenderer.invoke("project:status" satisfies IpcChannel, targetPath),
   readArtifacts: (targetPath, stage) => ipcRenderer.invoke("project:read-artifacts" satisfies IpcChannel, targetPath, stage),
+  updateProject: (name, updates) => ipcRenderer.invoke("project:update" satisfies IpcChannel, name, updates),
 
   // Config
   readGlobalConfig: () => ipcRenderer.invoke("config:read-global" satisfies IpcChannel),

@@ -8,6 +8,7 @@ vi.mock("@proteus-forge/cli/api", () => ({
   registerProject: vi.fn(),
   unregisterProject: vi.fn(),
   getProject: vi.fn(),
+  updateProject: vi.fn(),
   getStageStatuses: vi.fn(),
   checkStaleness: vi.fn(),
   createProjectConfig: vi.fn(),
@@ -83,7 +84,26 @@ describe("project IPC handlers", () => {
       expect(result.manifest).toEqual(manifest);
     });
 
-    it("returns null for stages with no artifact files (design)", async () => {
+    it("returns parsed design-meta.json and design.md for design stage", async () => {
+      const stageDir = join(tempDir, ".proteus-forge", "02-design");
+      await mkdir(stageDir, { recursive: true });
+      const designMeta = {
+        architectureStyle: "modular-monolith",
+        targetStack: { runtime: "Node.js 22", language: "TypeScript" },
+        services: [{ id: "svc-auth", name: "Auth Service", discipline: "backend" }],
+      };
+      await writeFile(join(stageDir, "design-meta.json"), JSON.stringify(designMeta));
+      await writeFile(join(stageDir, "design.md"), "# Architecture Design");
+
+      const handler = handlers.get("project:read-artifacts")!;
+      const result = await handler({}, tempDir, "design") as Record<string, unknown>;
+
+      expect(result).not.toBeNull();
+      expect(result.designMeta).toEqual(designMeta);
+      expect(result.designMd).toBe("# Architecture Design");
+    });
+
+    it("returns null for design stage when no artifact files exist", async () => {
       const stageDir = join(tempDir, ".proteus-forge", "02-design");
       await mkdir(stageDir, { recursive: true });
 
@@ -93,7 +113,26 @@ describe("project IPC handlers", () => {
       expect(result).toBeNull();
     });
 
-    it("returns null for stages with no artifact files (plan)", async () => {
+    it("returns parsed plan.json and plan.md for plan stage", async () => {
+      const stageDir = join(tempDir, ".proteus-forge", "03-plan");
+      await mkdir(stageDir, { recursive: true });
+      const plan = {
+        tasks: [{ id: "task-001", title: "Setup", discipline: "shared" }],
+        executionWaves: [{ wave: 1, tasks: ["task-001"], rationale: "Foundation" }],
+        criticalPath: ["task-001"],
+      };
+      await writeFile(join(stageDir, "plan.json"), JSON.stringify(plan));
+      await writeFile(join(stageDir, "plan.md"), "# Execution Plan");
+
+      const handler = handlers.get("project:read-artifacts")!;
+      const result = await handler({}, tempDir, "plan") as Record<string, unknown>;
+
+      expect(result).not.toBeNull();
+      expect(result.plan).toEqual(plan);
+      expect(result.planMd).toBe("# Execution Plan");
+    });
+
+    it("returns null for plan stage when no artifact files exist", async () => {
       const stageDir = join(tempDir, ".proteus-forge", "03-plan");
       await mkdir(stageDir, { recursive: true });
 
@@ -103,7 +142,26 @@ describe("project IPC handlers", () => {
       expect(result).toBeNull();
     });
 
-    it("returns null for stages with no artifact files (execute)", async () => {
+    it("returns parsed session.json for execute stage", async () => {
+      const stageDir = join(tempDir, ".proteus-forge", "05-execute");
+      await mkdir(stageDir, { recursive: true });
+      const session = {
+        status: "completed",
+        sessionId: "sess-123",
+        startedAt: "2026-02-19T15:36:00Z",
+        completedAt: "2026-02-19T15:57:00Z",
+        progress: { totalTasks: 14, completed: 14, failed: 0 },
+      };
+      await writeFile(join(stageDir, "session.json"), JSON.stringify(session));
+
+      const handler = handlers.get("project:read-artifacts")!;
+      const result = await handler({}, tempDir, "execute") as Record<string, unknown>;
+
+      expect(result).not.toBeNull();
+      expect(result.session).toEqual(session);
+    });
+
+    it("returns null for execute stage when no artifact files exist", async () => {
       const stageDir = join(tempDir, ".proteus-forge", "05-execute");
       await mkdir(stageDir, { recursive: true });
 
@@ -242,4 +300,31 @@ describe("project IPC handlers", () => {
     });
   });
 
+  describe("project:update", () => {
+    it("calls updateProject with name and updates", async () => {
+      const { updateProject } = await import("@proteus-forge/cli/api");
+
+      const handler = handlers.get("project:update")!;
+      await handler({}, "my-project", { source: "/new-source" });
+
+      expect(updateProject).toHaveBeenCalledWith("my-project", { source: "/new-source" });
+    });
+
+    it("passes both source and target updates", async () => {
+      const { updateProject } = await import("@proteus-forge/cli/api");
+
+      const handler = handlers.get("project:update")!;
+      await handler({}, "my-project", { source: "/s", target: "/t" });
+
+      expect(updateProject).toHaveBeenCalledWith("my-project", { source: "/s", target: "/t" });
+    });
+
+    it("propagates errors from updateProject", async () => {
+      const { updateProject } = await import("@proteus-forge/cli/api");
+      vi.mocked(updateProject).mockRejectedValue(new Error('Project "bad" not found'));
+
+      const handler = handlers.get("project:update")!;
+      await expect(handler({}, "bad", { source: "/x" })).rejects.toThrow('Project "bad" not found');
+    });
+  });
 });
