@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from "electron";
-import type { IpcChannel, StageRunOptions, StageName } from "@proteus-forge/shared";
-import type { ProjectRegistry, GlobalConfig, StageStatus, CostTracking } from "@proteus-forge/shared";
+import type { IpcChannel, StageRunOptions } from "@proteus-forge/shared";
+import type { ProjectRegistry, GlobalConfig, StageStatus, CostTracking, StageName } from "@proteus-forge/shared";
 
 export interface ElectronAPI {
   // Project management
@@ -15,6 +15,7 @@ export interface ElectronAPI {
 
   // Config
   readGlobalConfig(): Promise<GlobalConfig | null>;
+  writeGlobalConfig(config: GlobalConfig): Promise<void>;
 
   // Pipeline
   runStage(options: StageRunOptions): Promise<{ success: boolean; sessionId: string; cost: { estimatedCost: number; duration: string } }>;
@@ -58,6 +59,7 @@ const electronAPI: ElectronAPI = {
 
   // Config
   readGlobalConfig: () => ipcRenderer.invoke("config:read-global" satisfies IpcChannel),
+  writeGlobalConfig: (config) => ipcRenderer.invoke("config:write-global" satisfies IpcChannel, config),
 
   // Pipeline
   runStage: (options) => ipcRenderer.invoke("stage:run" satisfies IpcChannel, options),

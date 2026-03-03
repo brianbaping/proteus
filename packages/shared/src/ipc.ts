@@ -20,6 +20,7 @@ export type IpcChannel =
   | "project:destroy"
   | "project:status"
   | "config:read-global"
+  | "config:write-global"
   | "stage:run"
   | "stage:abort"
   | "stage:revert"

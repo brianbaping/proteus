@@ -1,5 +1,5 @@
 import type { IpcMain, BrowserWindow } from "electron";
-import type { ProgressReporter, StageRunOptions } from "@proteus-forge/shared";
+import type { ProgressReporter, StageRunOptions, GlobalConfig } from "@proteus-forge/shared";
 import type { StageName } from "@proteus-forge/shared";
 import {
   runInspect,
@@ -8,6 +8,7 @@ import {
   runSplit,
   runExecute,
   readGlobalConfig,
+  writeGlobalConfig,
   readCosts,
   writeInboxMessage,
   getInboxDir,
@@ -127,6 +128,10 @@ export function registerPipelineHandlers(
 
   ipcMain.handle("config:read-global", async () => {
     return readGlobalConfig();
+  });
+
+  ipcMain.handle("config:write-global", async (_event, config: GlobalConfig) => {
+    await writeGlobalConfig(config);
   });
 
   ipcMain.handle("costs:read", async (_event, targetPath: string) => {

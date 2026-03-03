@@ -10,6 +10,7 @@ vi.mock("@proteus-forge/cli/api", () => ({
   runSplit: vi.fn(),
   runExecute: vi.fn(),
   readGlobalConfig: vi.fn(),
+  writeGlobalConfig: vi.fn(),
   readCosts: vi.fn(),
   writeInboxMessage: vi.fn(),
   getInboxDir: vi.fn(),
@@ -288,6 +289,25 @@ describe("pipeline IPC handlers", () => {
       const result = await handler({});
 
       expect(result).toBe(mockConfig);
+    });
+  });
+
+  describe("config:write-global", () => {
+    it("calls writeGlobalConfig with the provided config", async () => {
+      const { writeGlobalConfig } = await import("@proteus-forge/cli/api");
+      vi.mocked(writeGlobalConfig).mockResolvedValue(undefined);
+
+      const mockConfig = {
+        forgeVersion: "1.0.0",
+        providers: { anthropic: { type: "anthropic", apiKey: "$ANTHROPIC_API_KEY" } },
+        tiers: { fast: { provider: "anthropic", model: "claude-haiku-4-5-20251001" } },
+        roles: { lead: "fast" },
+      };
+
+      const handler = handlers.get("config:write-global")!;
+      await handler({}, mockConfig);
+
+      expect(writeGlobalConfig).toHaveBeenCalledWith(mockConfig);
     });
   });
 

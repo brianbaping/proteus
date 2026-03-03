@@ -8,6 +8,7 @@ import { PhaseTabStrip } from "./components/chrome/PhaseTabStrip.js";
 import { CompleteBar } from "./components/chrome/CompleteBar.js";
 import { AIChatPanel } from "./components/chrome/AIChatPanel.js";
 import { NewProjectDialog } from "./components/dialogs/NewProjectDialog.js";
+import { SettingsDialog } from "./components/dialogs/SettingsDialog.js";
 import { InspectionPhase } from "./components/inspection/InspectionPhase.js";
 import { DesignPhase } from "./components/design/DesignPhase.js";
 import { PlanningPhase } from "./components/planning/PlanningPhase.js";
@@ -33,6 +34,7 @@ export function App(): React.JSX.Element {
   const { addMessage } = useChatStore();
   const [activePhase, setActivePhase] = useState<StageName>("inspect");
   const [showNewDialog, setShowNewDialog] = useState(false);
+  const [showSettingsDialog, setShowSettingsDialog] = useState(false);
 
   // Load projects on mount
   useEffect(() => {
@@ -130,7 +132,7 @@ export function App(): React.JSX.Element {
 
   return (
     <div className="flex flex-col h-screen">
-      <TopBar onStartNew={() => setShowNewDialog(true)} />
+      <TopBar onStartNew={() => setShowNewDialog(true)} onOpenSettings={() => setShowSettingsDialog(true)} />
       <ProgressBar />
       <PhaseTabStrip activePhase={activePhase} onPhaseClick={setActivePhase} />
 
@@ -163,6 +165,10 @@ export function App(): React.JSX.Element {
       <NewProjectDialog
         open={showNewDialog}
         onClose={() => setShowNewDialog(false)}
+      />
+      <SettingsDialog
+        open={showSettingsDialog}
+        onClose={() => setShowSettingsDialog(false)}
       />
     </div>
   );
