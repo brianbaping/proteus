@@ -40,6 +40,9 @@ export interface ElectronAPI {
 
   // Git
   cloneRepo(url: string): Promise<string>;
+
+  // Archive extraction
+  extractArchive(archivePath: string): Promise<string>;
 }
 
 const electronAPI: ElectronAPI = {
@@ -96,6 +99,9 @@ const electronAPI: ElectronAPI = {
 
   // Git
   cloneRepo: (url) => ipcRenderer.invoke("project:clone-repo" satisfies IpcChannel, url),
+
+  // Archive extraction
+  extractArchive: (archivePath) => ipcRenderer.invoke("project:extract-archive" satisfies IpcChannel, archivePath),
 };
 
 contextBridge.exposeInMainWorld("electronAPI", electronAPI);

@@ -32,6 +32,7 @@ export type IpcChannel =
   | "dialog:save-file"
   | "project:update"
   | "project:clone-repo"
+  | "project:extract-archive"
   | "reporter:log"
   | "reporter:warn"
   | "reporter:error";

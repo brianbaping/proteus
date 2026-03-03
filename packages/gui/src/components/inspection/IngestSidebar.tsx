@@ -18,6 +18,8 @@ export function IngestSidebar({ onRunInspection, onAbort }: IngestSidebarProps):
   const [githubUrl, setGithubUrl] = useState("");
   const [cloning, setCloning] = useState(false);
   const [cloneError, setCloneError] = useState("");
+  const [extracting, setExtracting] = useState(false);
+  const [extractError, setExtractError] = useState("");
 
   async function persistPaths(updates: { source?: string; target?: string }): Promise<void> {
     if (!activeProjectName) return;
@@ -72,6 +74,31 @@ export function IngestSidebar({ onRunInspection, onAbort }: IngestSidebarProps):
     }
   }
 
+  function isArchivePath(path: string): boolean {
+    const lower = path.toLowerCase();
+    return lower.endsWith(".zip") || lower.endsWith(".tar.gz") || lower.endsWith(".tgz");
+  }
+
+  async function handleFileDrop(path: string): Promise<void> {
+    if (!isArchivePath(path)) {
+      setPocPath(path);
+      await persistPaths({ source: path });
+      return;
+    }
+
+    setExtracting(true);
+    setExtractError("");
+    try {
+      const extractedPath = await window.electronAPI.extractArchive(path);
+      setPocPath(extractedPath);
+      await persistPaths({ source: extractedPath });
+    } catch (err) {
+      setExtractError((err as Error).message);
+    } finally {
+      setExtracting(false);
+    }
+  }
+
   return (
     <div className="w-80 flex flex-col bg-bg-2 border-r border-border overflow-y-auto">
       {/* Ingest method selection */}
@@ -105,11 +132,19 @@ export function IngestSidebar({ onRunInspection, onAbort }: IngestSidebarProps):
         </button>
 
         {ingestMethod === "upload" && (
-          <FileDropZone
-            onFilePath={(path) => setPocPath(path)}
-            accept=".zip or .tar.gz"
-            label="Drop archive or click to browse POC folder"
-          />
+          <>
+            <FileDropZone
+              onFilePath={handleFileDrop}
+              accept=".zip or .tar.gz"
+              label="Drop archive or click to browse POC folder"
+            />
+            {extracting && (
+              <div className="text-2xs text-amber">Extracting archive...</div>
+            )}
+            {extractError && (
+              <div className="text-2xs text-red">{extractError}</div>
+            )}
+          </>
         )}
 
         {ingestMethod === "github" && (

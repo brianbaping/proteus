@@ -13,10 +13,13 @@ import { getStageStatuses, checkStaleness } from "@proteus-forge/cli/api";
 import { createProjectConfig, writeProjectConfig } from "@proteus-forge/cli/api";
 import { STAGE_DIRS } from "@proteus-forge/shared";
 import { join } from "node:path";
-import { mkdir, readFile, mkdtemp } from "node:fs/promises";
+import { mkdir, readFile, readdir, lstat, mkdtemp } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { execFile } from "node:child_process";
+import { execFile as execFileCb } from "node:child_process";
+import { promisify } from "node:util";
+
+const execFileAsync = promisify(execFileCb);
 
 export function registerProjectHandlers(ipcMain: IpcMain): void {
   ipcMain.handle("project:list", async () => {
@@ -107,11 +110,45 @@ export function registerProjectHandlers(ipcMain: IpcMain): void {
 
   ipcMain.handle("project:clone-repo", async (_event, url: string) => {
     const targetDir = await mkdtemp(join(tmpdir(), "proteus-clone-"));
-    return new Promise<string>((resolve, reject) => {
-      execFile("git", ["clone", "--depth", "1", url, targetDir], (error) => {
-        if (error) reject(new Error(`git clone failed: ${error.message}`));
-        else resolve(targetDir);
-      });
-    });
+    try {
+      await execFileAsync("git", ["clone", "--depth", "1", url, targetDir]);
+    } catch (err) {
+      throw new Error(`git clone failed: ${(err as Error).message}`);
+    }
+    return targetDir;
+  });
+
+  ipcMain.handle("project:extract-archive", async (_event, archivePath: string) => {
+    const extractDir = await mkdtemp(join(tmpdir(), "proteus-extract-"));
+    const lower = archivePath.toLowerCase();
+
+    if (lower.endsWith(".tar.gz") || lower.endsWith(".tgz")) {
+      try {
+        await execFileAsync("tar", ["xzf", archivePath, "-C", extractDir]);
+      } catch (err) {
+        throw new Error(`tar extraction failed: ${(err as Error).message}`);
+      }
+    } else if (lower.endsWith(".zip")) {
+      try {
+        await execFileAsync("unzip", ["-q", archivePath, "-d", extractDir]);
+      } catch (err) {
+        throw new Error(`unzip extraction failed: ${(err as Error).message}`);
+      }
+    } else {
+      throw new Error(`Unsupported archive format: ${archivePath}`);
+    }
+
+    // Single-directory unwrap: if the archive contains exactly one top-level
+    // directory (common for GitHub downloads), return that directory instead
+    const entries = await readdir(extractDir);
+    if (entries.length === 1) {
+      const singleEntry = join(extractDir, entries[0]);
+      const stat = await lstat(singleEntry);
+      if (stat.isDirectory()) {
+        return singleEntry;
+      }
+    }
+
+    return extractDir;
   });
 }

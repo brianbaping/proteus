@@ -1,6 +1,10 @@
-import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
+import { mkdtemp, rm, mkdir, writeFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+
+const execFileAsync = promisify(execFile);
 vi.mock("@proteus-forge/cli/api", () => ({
   readRegistry: vi.fn(),
   getActiveProject: vi.fn(),
@@ -325,6 +329,122 @@ describe("project IPC handlers", () => {
 
       const handler = handlers.get("project:update")!;
       await expect(handler({}, "bad", { source: "/x" })).rejects.toThrow('Project "bad" not found');
+    });
+  });
+
+  describe("project:extract-archive", () => {
+    let tempDir: string;
+
+    beforeEach(async () => {
+      tempDir = await mkdtemp(join(tmpdir(), "extract-test-"));
+    });
+
+    afterEach(async () => {
+      await rm(tempDir, { recursive: true, force: true });
+    });
+
+    it("extracts a .tar.gz archive and returns the path", async () => {
+      // Create a directory with a file, then tar it
+      const sourceDir = join(tempDir, "myproject");
+      await mkdir(sourceDir, { recursive: true });
+      await writeFile(join(sourceDir, "index.ts"), "console.log('hello');");
+
+      const archivePath = join(tempDir, "archive.tar.gz");
+      await execFileAsync("tar", ["czf", archivePath, "-C", tempDir, "myproject"]);
+
+      const handler = handlers.get("project:extract-archive")!;
+      const result = (await handler({}, archivePath)) as string;
+
+      // Should unwrap single top-level directory
+      const entries = await readdir(result);
+      expect(entries).toContain("index.ts");
+    });
+
+    it("extracts a .tgz archive and returns the path", async () => {
+      const sourceDir = join(tempDir, "proj");
+      await mkdir(sourceDir, { recursive: true });
+      await writeFile(join(sourceDir, "app.js"), "module.exports = {};");
+
+      const archivePath = join(tempDir, "archive.tgz");
+      await execFileAsync("tar", ["czf", archivePath, "-C", tempDir, "proj"]);
+
+      const handler = handlers.get("project:extract-archive")!;
+      const result = (await handler({}, archivePath)) as string;
+
+      const entries = await readdir(result);
+      expect(entries).toContain("app.js");
+    });
+
+    it("extracts a .zip archive and returns the path", async () => {
+      const sourceDir = join(tempDir, "zipped");
+      await mkdir(sourceDir, { recursive: true });
+      await writeFile(join(sourceDir, "main.py"), "print('hello')");
+
+      const archivePath = join(tempDir, "archive.zip");
+      await execFileAsync("zip", ["-rq", archivePath, "zipped"], { cwd: tempDir });
+
+      const handler = handlers.get("project:extract-archive")!;
+      const result = (await handler({}, archivePath)) as string;
+
+      // Should unwrap single top-level directory
+      const entries = await readdir(result);
+      expect(entries).toContain("main.py");
+    });
+
+    it("unwraps single top-level directory", async () => {
+      const sourceDir = join(tempDir, "repo-main");
+      const nestedDir = join(sourceDir, "src");
+      await mkdir(nestedDir, { recursive: true });
+      await writeFile(join(sourceDir, "README.md"), "# Readme");
+      await writeFile(join(nestedDir, "index.ts"), "export {}");
+
+      const archivePath = join(tempDir, "single-dir.tar.gz");
+      await execFileAsync("tar", ["czf", archivePath, "-C", tempDir, "repo-main"]);
+
+      const handler = handlers.get("project:extract-archive")!;
+      const result = (await handler({}, archivePath)) as string;
+
+      // Result should point to the unwrapped "repo-main" directory
+      expect(result).toContain("repo-main");
+      const entries = await readdir(result);
+      expect(entries).toContain("README.md");
+      expect(entries).toContain("src");
+    });
+
+    it("does not unwrap when archive has multiple top-level entries", async () => {
+      const dir1 = join(tempDir, "content", "dir1");
+      const dir2 = join(tempDir, "content", "dir2");
+      await mkdir(dir1, { recursive: true });
+      await mkdir(dir2, { recursive: true });
+      await writeFile(join(dir1, "a.txt"), "a");
+      await writeFile(join(dir2, "b.txt"), "b");
+
+      const archivePath = join(tempDir, "multi.tar.gz");
+      await execFileAsync("tar", ["czf", archivePath, "-C", join(tempDir, "content"), "dir1", "dir2"]);
+
+      const handler = handlers.get("project:extract-archive")!;
+      const result = (await handler({}, archivePath)) as string;
+
+      // Should NOT unwrap — has two top-level dirs
+      const entries = await readdir(result);
+      expect(entries).toContain("dir1");
+      expect(entries).toContain("dir2");
+    });
+
+    it("throws on unsupported archive format", async () => {
+      const fakePath = join(tempDir, "archive.rar");
+      await writeFile(fakePath, "not a real archive");
+
+      const handler = handlers.get("project:extract-archive")!;
+      await expect(handler({}, fakePath)).rejects.toThrow("Unsupported archive format");
+    });
+
+    it("throws on tar extraction failure", async () => {
+      const fakePath = join(tempDir, "bad.tar.gz");
+      await writeFile(fakePath, "not a real tarball");
+
+      const handler = handlers.get("project:extract-archive")!;
+      await expect(handler({}, fakePath)).rejects.toThrow("tar extraction failed");
     });
   });
 });

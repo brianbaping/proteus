@@ -4,9 +4,11 @@ import type { ElectronAPI } from "#electron/preload.js";
 import { useProjectStore } from "../../stores/project-store.js";
 import { useSessionStore } from "../../stores/session-store.js";
 
+let dropZonePath = "/dropped/path";
+
 vi.mock("../../components/shared/FileDropZone.js", () => ({
   FileDropZone: ({ onFilePath }: { onFilePath: (p: string) => void }) => (
-    <button data-testid="file-drop-zone" onClick={() => onFilePath("/dropped/path")}>
+    <button data-testid="file-drop-zone" onClick={() => onFilePath(dropZonePath)}>
       DropZone
     </button>
   ),
@@ -16,14 +18,17 @@ describe("IngestSidebar", () => {
   let mockUpdateProject: ReturnType<typeof vi.fn>;
   let mockOpenDirectory: ReturnType<typeof vi.fn>;
   let mockCloneRepo: ReturnType<typeof vi.fn>;
+  let mockExtractArchive: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
     useSessionStore.getState().reset();
+    dropZonePath = "/dropped/path";
 
     mockUpdateProject = vi.fn().mockResolvedValue(undefined);
     mockOpenDirectory = vi.fn().mockResolvedValue("/browsed/dir");
     mockCloneRepo = vi.fn().mockResolvedValue("/cloned/path");
+    mockExtractArchive = vi.fn().mockResolvedValue("/extracted/path");
 
     window.electronAPI = {
       runStage: vi.fn(),
@@ -50,6 +55,7 @@ describe("IngestSidebar", () => {
       saveFile: vi.fn(),
       cloneRepo: mockCloneRepo,
       updateProject: mockUpdateProject,
+      extractArchive: mockExtractArchive,
     } as unknown as ElectronAPI;
 
     useProjectStore.setState({
@@ -175,6 +181,94 @@ describe("IngestSidebar", () => {
       await waitFor(() => {
         expect(mockCloneRepo).toHaveBeenCalledWith("https://github.com/test/repo");
         expect(mockUpdateProject).toHaveBeenCalledWith("test-project", { source: "/cloned/path" });
+      });
+    });
+  });
+
+  describe("archive extraction", () => {
+    it("calls extractArchive when drop zone returns a .zip path", async () => {
+      dropZonePath = "/home/user/downloads/project.zip";
+      await renderSidebar();
+
+      const dropZone = screen.getByTestId("file-drop-zone");
+      await act(async () => {
+        fireEvent.click(dropZone);
+      });
+
+      await waitFor(() => {
+        expect(mockExtractArchive).toHaveBeenCalledWith("/home/user/downloads/project.zip");
+      });
+    });
+
+    it("calls extractArchive when drop zone returns a .tar.gz path", async () => {
+      dropZonePath = "/home/user/downloads/project.tar.gz";
+      await renderSidebar();
+
+      const dropZone = screen.getByTestId("file-drop-zone");
+      await act(async () => {
+        fireEvent.click(dropZone);
+      });
+
+      await waitFor(() => {
+        expect(mockExtractArchive).toHaveBeenCalledWith("/home/user/downloads/project.tar.gz");
+      });
+    });
+
+    it("calls extractArchive when drop zone returns a .tgz path", async () => {
+      dropZonePath = "/home/user/downloads/project.tgz";
+      await renderSidebar();
+
+      const dropZone = screen.getByTestId("file-drop-zone");
+      await act(async () => {
+        fireEvent.click(dropZone);
+      });
+
+      await waitFor(() => {
+        expect(mockExtractArchive).toHaveBeenCalledWith("/home/user/downloads/project.tgz");
+      });
+    });
+
+    it("persists extracted path as source after archive extraction", async () => {
+      dropZonePath = "/home/user/downloads/project.zip";
+      await renderSidebar();
+
+      const dropZone = screen.getByTestId("file-drop-zone");
+      await act(async () => {
+        fireEvent.click(dropZone);
+      });
+
+      await waitFor(() => {
+        expect(mockUpdateProject).toHaveBeenCalledWith("test-project", { source: "/extracted/path" });
+      });
+    });
+
+    it("shows error on extraction failure", async () => {
+      dropZonePath = "/home/user/downloads/bad.zip";
+      mockExtractArchive.mockRejectedValue(new Error("unzip extraction failed"));
+      await renderSidebar();
+
+      const dropZone = screen.getByTestId("file-drop-zone");
+      await act(async () => {
+        fireEvent.click(dropZone);
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText("unzip extraction failed")).toBeTruthy();
+      });
+    });
+
+    it("passes non-archive paths through directly (backward compat)", async () => {
+      dropZonePath = "/home/user/projects/my-poc";
+      await renderSidebar();
+
+      const dropZone = screen.getByTestId("file-drop-zone");
+      await act(async () => {
+        fireEvent.click(dropZone);
+      });
+
+      await waitFor(() => {
+        expect(mockExtractArchive).not.toHaveBeenCalled();
+        expect(mockUpdateProject).toHaveBeenCalledWith("test-project", { source: "/home/user/projects/my-poc" });
       });
     });
   });
