@@ -8,14 +8,20 @@ Proteus Forge is a TypeScript CLI that transforms POC codebases into production-
 
 ## Build & Test
 
+**Build order matters**: shared → cli → gui. The CLI and GUI depend on shared types.
+
 From the repo root:
 ```bash
-npm install              # install all workspace dependencies
-npm run build -w @proteus-forge/shared   # build shared types
+npm install                              # install all workspace dependencies
+npm run build -w @proteus-forge/shared   # build shared types (must run first)
 npm run build -w @proteus-forge/cli      # lint → typecheck → test → bundle
 npm run dev -w @proteus-forge/gui        # Vite + Electron dev mode
 npm run test -w @proteus-forge/cli       # vitest run (CLI tests)
 npm run test -w @proteus-forge/gui       # vitest run (GUI tests)
+npm run lint -w @proteus-forge/cli       # ESLint
+npm run lint:fix -w @proteus-forge/cli   # ESLint with auto-fix
+npm run typecheck -w @proteus-forge/cli  # TypeScript strict checking
+npx vitest run --coverage                # coverage report (run from package dir)
 ```
 
 Per-package commands remain the same when run from within the package directory.
@@ -30,8 +36,9 @@ Requires Node.js >= 22.0.0.
 
 ## Architecture
 
-- **TypeScript CLI** using Commander (30 commands). Entry point: `src/index.ts`
-- **Agent SDK integration** via `query()` in `src/session/launcher.ts`. Each stage composes a Lead prompt and launches a Claude Code session with `cwd` set to the target repo and `additionalDirectories` pointing to the source POC (read-only). Requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in `~/.claude/settings.json` (handled by `proteus-forge setup` via `claude-settings.ts`).
+- **TypeScript CLI** using Commander (30 commands). Entry point: `packages/cli/src/index.ts`
+- **Electron GUI** — desktop app wrapping the CLI via IPC. Entry: `packages/gui/electron/main.ts` (main process), `packages/gui/src/main.tsx` (renderer)
+- **Agent SDK integration** via `query()` in `packages/cli/src/session/launcher.ts`. Each stage composes a Lead prompt and launches a Claude Code session with `cwd` set to the target repo and `additionalDirectories` pointing to the source POC (read-only). Requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in `~/.claude/settings.json` (handled by `proteus-forge setup` via `claude-settings.ts`).
 - **Three-repo separation**: Proteus Forge config at `~/.proteus-forge/`, source POC (never modified), target production repo (agents write here)
 - **Provider-agnostic tiers**: `fast`/`standard`/`advanced` mapped to any provider in `~/.proteus-forge/config.json`
 
@@ -61,6 +68,8 @@ Requires Node.js >= 22.0.0.
 
 ## Key Patterns
 
+All `src/` paths below are relative to `packages/cli/` unless otherwise noted.
+
 - **Prompt generators** (`src/prompts/*.ts` — inspect, design, plan, split, execute, style, verify-fix) compose the Lead prompt with full artifact schemas embedded inline (not imported). The prompt quality determines output quality — these are the most important files.
 - **Session launcher** (`src/session/launcher.ts`) wraps `query()`, captures session ID from `init` system messages, extracts cost/tokens from result messages. **Never throws** — always returns a `SessionResult` struct with `success: boolean`. Uses `permissionMode: "acceptEdits"` for pipeline stages and `"plan"` for read-only commands like `explain`.
 - **Dual-export convention** — pipeline command files export both a `run<Stage>(name, options): Promise<boolean>` function (used by `run.ts` to chain stages) and a Commander `Command` object (used by `index.ts`). All handlers return `boolean`, never throw.
@@ -85,13 +94,15 @@ Requires Node.js >= 22.0.0.
 
 ## Test Patterns
 
-- Tests live in `src/__tests__/` mirroring the source structure (25 test files across config/, commands/, prompts/, utils/).
+- Tests live in `packages/cli/src/__tests__/` and `packages/gui/src/__tests__/`, mirroring source structure.
 - **Integration-style**: tests create real temp directories via `mkdtemp()`, exercise functions end-to-end, then clean up with `rm(tempDir, { recursive: true, force: true })` in `afterEach`.
 - **Mocking**: `vi.spyOn()` for function mocks, no custom test utilities or shared fixtures.
 - **Commander command tests** use `vi.mock(...)` at the module level, then dynamic `await import(...)` inside the test to get the mocked version (required because Commander parses arguments at import time).
 - **Vitest globals** enabled (`describe`, `it`, `expect` available without imports).
 
 ## Adding a New Command
+
+All paths below are relative to `packages/cli/`.
 
 1. Create `src/commands/mycommand.ts` exporting a Commander `Command`
 2. For pipeline stages: also export a `run<Stage>(name, options): Promise<boolean>` function
@@ -147,11 +158,20 @@ Within a package, imports still use relative paths with `.js` extensions.
 - **shadcn/ui** for base components (Button, Badge, Card, Dialog, etc.)
 - **Zustand** for state management (one store per domain: project, session, chat)
 - **Electron** main process built with tsup (CJS format for Electron compatibility)
-- **IPC** typed via `@proteus-forge/shared` `IpcChannel` type union
 - Components live in `packages/gui/src/components/` organized by feature area
 - Electron main process code lives in `packages/gui/electron/`
 - ESLint extends the shared config with React-specific rules (`eslint-plugin-react-hooks`, `eslint-plugin-react-refresh`)
 - Fonts bundled locally (JetBrains Mono, Syne) — no CDN dependencies
+
+### GUI ↔ CLI Integration (IPC)
+
+The GUI calls CLI functions through Electron IPC. The integration boundary:
+
+1. **IPC channel types** defined in `packages/shared/src/ipc.ts` (`IpcChannel` union, `SessionEvent`, `StageRunOptions`)
+2. **Preload** (`packages/gui/electron/preload.ts`) exposes `window.electronAPI` via `contextBridge`. Channel names use `satisfies IpcChannel` for type safety.
+3. **IPC handlers** live in `packages/gui/electron/ipc/` organized by domain (project, pipeline, config, dialog). Pipeline handlers use `GuiDashboard` to adapt CLI session events into IPC events.
+4. **CLI public API** (`packages/cli/src/api.ts`) is the sole barrel export — the only permitted `index.ts`-style re-export. All GUI→CLI calls go through this surface.
+5. **Window type** — `packages/gui/src/global.d.ts` declares `Window.electronAPI` from the preload interface.
 
 ## GUI Test Patterns (`packages/gui`)
 
@@ -162,6 +182,18 @@ Within a package, imports still use relative paths with `.js` extensions.
 - E2E tests live in `packages/gui/e2e/`
 - Same conventions as CLI: `mkdtemp()` for filesystem tests, `vi.spyOn()` for mocks, vitest globals enabled
 - Playwright config at `packages/gui/playwright.config.ts`
+
+## Key Dependencies
+
+| Package | Purpose |
+|---------|---------|
+| `@anthropic-ai/claude-agent-sdk` | Claude Code Agent Teams integration |
+| `commander` | CLI framework |
+| `tsup` | Bundler (CLI + Electron main process) |
+| `vitest` | Test framework |
+| `vite` | GUI bundler |
+| `zustand` | GUI state management |
+| `@testing-library/react` | GUI component tests |
 
 ## Code Coverage
 
