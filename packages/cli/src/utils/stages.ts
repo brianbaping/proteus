@@ -54,19 +54,21 @@ export function checkStaleness(
 
   for (let i = 1; i < statuses.length; i++) {
     const current = statuses[i];
-    const upstream = statuses[i - 1];
+    if (!current.complete || !current.modifiedAt) continue;
 
-    if (
-      current.complete &&
-      upstream.complete &&
-      upstream.modifiedAt &&
-      current.modifiedAt &&
-      upstream.modifiedAt > current.modifiedAt
-    ) {
-      warnings.push({
-        stage: current.stage,
-        staleReason: `${upstream.stage} was modified after ${current.stage} was generated`,
-      });
+    for (let j = 0; j < i; j++) {
+      const upstream = statuses[j];
+      if (
+        upstream.complete &&
+        upstream.modifiedAt &&
+        upstream.modifiedAt > current.modifiedAt
+      ) {
+        warnings.push({
+          stage: current.stage,
+          staleReason: `${upstream.stage} was modified after ${current.stage} was generated`,
+        });
+        break;
+      }
     }
   }
 

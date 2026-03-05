@@ -171,5 +171,28 @@ describe("stages", () => {
       expect(warnings.length).toBeGreaterThanOrEqual(1);
       expect(warnings[0].stage).toBe("design");
     });
+
+    it("flags all downstream stages when an early stage is modified", async () => {
+      await mkdir(join(tempDir, ".proteus-forge", "01-inspect"), { recursive: true });
+      await mkdir(join(tempDir, ".proteus-forge", "02-design"), { recursive: true });
+      await mkdir(join(tempDir, ".proteus-forge", "03-plan"), { recursive: true });
+      await mkdir(join(tempDir, ".proteus-forge", "04-tracks"), { recursive: true });
+
+      // Create downstream stages first (older)
+      await writeFile(join(tempDir, ".proteus-forge", "02-design", "design.md"), "#");
+      await writeFile(join(tempDir, ".proteus-forge", "03-plan", "plan.json"), "{}");
+      await writeFile(join(tempDir, ".proteus-forge", "04-tracks", "manifest.json"), "{}");
+
+      await new Promise((r) => setTimeout(r, 50));
+
+      // Then modify inspect (newer)
+      await writeFile(join(tempDir, ".proteus-forge", "01-inspect", "features.json"), "{}");
+
+      const warnings = checkStaleness(tempDir);
+      const staleStages = warnings.map((w) => w.stage);
+      expect(staleStages).toContain("design");
+      expect(staleStages).toContain("plan");
+      expect(staleStages).toContain("split");
+    });
   });
 });
