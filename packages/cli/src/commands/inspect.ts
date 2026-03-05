@@ -13,6 +13,7 @@ import { launchSession } from "../session/launcher.js";
 import { gitStageAndCommit } from "../utils/git.js";
 import { appendCostEntry } from "../utils/costs.js";
 import { appendLogEntry } from "../utils/log.js";
+import { updateProject } from "../config/registry.js";
 import { printInspectTeamSummary } from "../utils/team-summary.js";
 import { createDashboard } from "../utils/progress.js";
 import { terminalReporter } from "../utils/terminal-reporter.js";
@@ -113,6 +114,7 @@ export async function runInspect(
       duration: result.cost.duration,
       cost: result.cost.estimatedCost,
     });
+    await updateProject(name, { lastCompletedStage: "inspect" });
 
     reporter.log(`\n  Output: ${join(inspectDir, "inspect.md")}`);
     reporter.log(`          ${featuresPath}`);

@@ -2,6 +2,7 @@ import React from "react";
 import { STAGE_ORDER } from "@proteus-forge/shared";
 import type { StageName } from "@proteus-forge/shared";
 import { useProjectStore } from "../../stores/project-store.js";
+import { useSessionStore } from "../../stores/session-store.js";
 
 const PHASE_LABELS: Record<StageName, string> = {
   inspect: "Inspection",
@@ -18,11 +19,24 @@ interface PhaseTabStripProps {
 
 export function PhaseTabStrip({ activePhase, onPhaseClick }: PhaseTabStripProps): React.JSX.Element {
   const stageStatuses = useProjectStore((s) => s.stageStatuses);
+  const completedStages = useSessionStore((s) => s.completedStages);
 
-  function getTabState(stage: StageName): "active" | "completed" | "locked" {
+  function getTabState(stage: StageName): "active" | "completed" | "unlocked" | "locked" {
     if (stage === activePhase) return "active";
-    const status = stageStatuses.find((s) => s.stage === stage);
-    if (status?.complete) return "completed";
+
+    // "completed" — user has explicitly completed this stage
+    if (completedStages.includes(stage)) return "completed";
+
+    // "unlocked" — all prior stages are user-completed AND complete on disk
+    const stageIdx = STAGE_ORDER.indexOf(stage);
+    const allPriorUserCompleted = STAGE_ORDER.slice(0, stageIdx).every(
+      (s) => completedStages.includes(s)
+    );
+    const allPriorDiskComplete = STAGE_ORDER.slice(0, stageIdx).every(
+      (s) => stageStatuses.find((st) => st.stage === s)?.complete
+    );
+    if (stageIdx === 0 || (allPriorUserCompleted && allPriorDiskComplete)) return "unlocked";
+
     return "locked";
   }
 
@@ -45,7 +59,9 @@ export function PhaseTabStrip({ activePhase, onPhaseClick }: PhaseTabStripProps)
                   ? "text-green"
                   : state === "completed"
                     ? "text-green-dim cursor-pointer hover:text-green"
-                    : "text-fg-muted cursor-not-allowed"
+                    : state === "unlocked"
+                      ? "text-fg-dim cursor-pointer hover:text-green"
+                      : "text-fg-muted cursor-not-allowed"
               }`}
             >
               <span
@@ -54,7 +70,9 @@ export function PhaseTabStrip({ activePhase, onPhaseClick }: PhaseTabStripProps)
                     ? "bg-green text-bg"
                     : state === "completed"
                       ? "border border-green-dim text-green-dim"
-                      : "bg-bg-3 text-fg-muted"
+                      : state === "unlocked"
+                        ? "border border-fg-muted text-fg-dim"
+                        : "bg-bg-3 text-fg-muted"
                 }`}
               >
                 {phaseNum}

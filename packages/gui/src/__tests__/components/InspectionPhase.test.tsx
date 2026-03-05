@@ -70,7 +70,7 @@ describe("InspectionPhase", () => {
   function setProjectStoreState(overrides: Partial<ReturnType<typeof useProjectStore.getState>>) {
     useProjectStore.setState({
       activeProjectName: "test-project",
-      activeEntry: { source: "/src", target: "/tgt", createdAt: "", currentStage: "inspect" },
+      activeEntry: { source: "/src", target: "/tgt", createdAt: "", lastCompletedStage: "inspect" },
       stageStatuses: [],
       staleness: [],
       loading: false,

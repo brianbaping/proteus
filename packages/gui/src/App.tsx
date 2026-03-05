@@ -1,5 +1,5 @@
 import React from "react";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import type { StageName, SessionEvent } from "@proteus-forge/shared";
 import { STAGE_ORDER } from "@proteus-forge/shared";
 import { TopBar } from "./components/chrome/TopBar.js";
@@ -30,9 +30,10 @@ function PhaseContent({ phase }: { phase: StageName }): React.JSX.Element {
 
 export function App(): React.JSX.Element {
   const { loadRegistry, stageStatuses, activeProjectName } = useProjectStore();
-  const _isRunning = useSessionStore((s) => s.isRunning);
   const { addMessage } = useChatStore();
+  const { completeStage, initCompletedStages } = useSessionStore();
   const [activePhase, setActivePhase] = useState<StageName>("inspect");
+  const prevProjectRef = useRef<string | null>(null);
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
 
@@ -41,9 +42,17 @@ export function App(): React.JSX.Element {
     loadRegistry();
   }, [loadRegistry]);
 
-  // Determine initial phase from stage statuses
+  // On project switch: init completed stages from disk and navigate to first incomplete
   useEffect(() => {
+    if (activeProjectName === prevProjectRef.current) return;
     if (stageStatuses.length === 0) return;
+    prevProjectRef.current = activeProjectName;
+
+    const completedNames = stageStatuses
+      .filter((s) => s.complete)
+      .map((s) => s.stage);
+    initCompletedStages(completedNames);
+
     const lastComplete = [...stageStatuses].reverse().find((s) => s.complete);
     if (lastComplete) {
       const idx = STAGE_ORDER.indexOf(lastComplete.stage);
@@ -52,8 +61,10 @@ export function App(): React.JSX.Element {
       } else {
         setActivePhase(lastComplete.stage);
       }
+    } else {
+      setActivePhase("inspect");
     }
-  }, [stageStatuses]);
+  }, [activeProjectName, stageStatuses, initCompletedStages]);
 
   // Subscribe to IPC events
   useEffect(() => {
@@ -104,12 +115,16 @@ export function App(): React.JSX.Element {
   }, [addMessage]);
 
   const handleComplete = useCallback(() => {
+    completeStage(activePhase);
+    if (activeProjectName) {
+      window.electronAPI.updateProject(activeProjectName, { lastCompletedStage: activePhase });
+    }
     const idx = STAGE_ORDER.indexOf(activePhase);
     if (idx < STAGE_ORDER.length - 1) {
       setActivePhase(STAGE_ORDER[idx + 1]);
     }
     useProjectStore.getState().refreshStatus();
-  }, [activePhase]);
+  }, [activePhase, activeProjectName, completeStage]);
 
   const handleDestroy = useCallback(async () => {
     const confirmed = window.confirm(

@@ -60,7 +60,7 @@ export function registerProjectHandlers(ipcMain: IpcMain): void {
       source,
       target: targetPath,
       createdAt: new Date().toISOString(),
-      currentStage: "new",
+      lastCompletedStage: "new",
     });
   });
 

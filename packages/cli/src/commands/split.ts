@@ -12,6 +12,7 @@ import { launchSession } from "../session/launcher.js";
 import { gitStageAndCommit } from "../utils/git.js";
 import { appendCostEntry } from "../utils/costs.js";
 import { appendLogEntry } from "../utils/log.js";
+import { updateProject } from "../config/registry.js";
 import { checkStaleness } from "../utils/stages.js";
 import { createDashboard } from "../utils/progress.js";
 import { terminalReporter } from "../utils/terminal-reporter.js";
@@ -122,6 +123,7 @@ export async function runSplit(
       duration: result.cost.duration,
       cost: result.cost.estimatedCost,
     });
+    await updateProject(name, { lastCompletedStage: "split" });
 
     reporter.log(`\n  Output: ${join(tracksDir, "split.md")}`);
     reporter.log(`          ${manifestPath}`);

@@ -1,5 +1,6 @@
 import type { ElectronAPI } from "#electron/preload.js";
 import { useProjectStore } from "../../stores/project-store.js";
+import { useSessionStore } from "../../stores/session-store.js";
 
 describe("useProjectStore", () => {
   let mockElectronAPI: Record<string, ReturnType<typeof vi.fn>>;
@@ -40,8 +41,8 @@ describe("useProjectStore", () => {
 
   describe("loadRegistry", () => {
     it("fetches registry and active project from IPC", async () => {
-      const registry = { activeProject: "proj", projects: { proj: { source: "/s", target: "/t", createdAt: "", currentStage: "new" } } };
-      const active = { name: "proj", entry: { source: "/s", target: "/t", createdAt: "", currentStage: "new" } };
+      const registry = { activeProject: "proj", projects: { proj: { source: "/s", target: "/t", createdAt: "", lastCompletedStage: "new" } } };
+      const active = { name: "proj", entry: { source: "/s", target: "/t", createdAt: "", lastCompletedStage: "new" } };
       mockElectronAPI.listProjects.mockResolvedValue(registry);
       mockElectronAPI.getActiveProject.mockResolvedValue(active);
       mockElectronAPI.getProjectStatus.mockResolvedValue({ statuses: [{ stage: "inspect", complete: true }], staleness: [] });
@@ -56,7 +57,7 @@ describe("useProjectStore", () => {
     });
 
     it("calls refreshStatus when an active project exists", async () => {
-      const active = { name: "proj", entry: { source: "/s", target: "/t", createdAt: "", currentStage: "new" } };
+      const active = { name: "proj", entry: { source: "/s", target: "/t", createdAt: "", lastCompletedStage: "new" } };
       mockElectronAPI.getActiveProject.mockResolvedValue(active);
       mockElectronAPI.getProjectStatus.mockResolvedValue({
         statuses: [{ stage: "inspect", complete: true }],
@@ -79,6 +80,26 @@ describe("useProjectStore", () => {
       expect(mockElectronAPI.getProjectStatus).not.toHaveBeenCalled();
     });
 
+    it("clears stale state and completedStages when loading a new project", async () => {
+      // Simulate stale state from a previous project
+      useProjectStore.setState({
+        stageStatuses: [{ stage: "inspect", complete: true }] as never,
+        staleness: [{ stage: "design", staleReason: "stale" }],
+        costs: { stages: {}, totalCost: 1.0 },
+      });
+      useSessionStore.getState().initCompletedStages(["inspect"]);
+
+      const active = { name: "new-proj", entry: { source: "/s", target: "/t", createdAt: "", lastCompletedStage: "new" } };
+      mockElectronAPI.getActiveProject.mockResolvedValue(active);
+      mockElectronAPI.getProjectStatus.mockResolvedValue({ statuses: [], staleness: [] });
+
+      await useProjectStore.getState().loadRegistry();
+
+      // After loadRegistry sets the new project, stale state is cleared
+      // (refreshStatus may repopulate, but the clearing happened atomically with the name change)
+      expect(useSessionStore.getState().completedStages).toEqual([]);
+    });
+
     it("sets loading false on error", async () => {
       mockElectronAPI.listProjects.mockRejectedValue(new Error("network"));
 
@@ -90,7 +111,7 @@ describe("useProjectStore", () => {
 
   describe("setActiveProject", () => {
     it("calls IPC setActiveProject then reloads registry", async () => {
-      const active = { name: "other", entry: { source: "/s2", target: "/t2", createdAt: "", currentStage: "new" } };
+      const active = { name: "other", entry: { source: "/s2", target: "/t2", createdAt: "", lastCompletedStage: "new" } };
       mockElectronAPI.getActiveProject.mockResolvedValue(active);
 
       await useProjectStore.getState().setActiveProject("other");
@@ -104,7 +125,7 @@ describe("useProjectStore", () => {
   describe("refreshStatus", () => {
     it("fetches statuses for the active entry target", async () => {
       useProjectStore.setState({
-        activeEntry: { source: "/s", target: "/t", createdAt: "", currentStage: "plan" },
+        activeEntry: { source: "/s", target: "/t", createdAt: "", lastCompletedStage: "plan" },
       });
       mockElectronAPI.getProjectStatus.mockResolvedValue({
         statuses: [{ stage: "plan", complete: true }],
@@ -125,7 +146,7 @@ describe("useProjectStore", () => {
 
     it("keeps existing state on error", async () => {
       useProjectStore.setState({
-        activeEntry: { source: "/s", target: "/t", createdAt: "", currentStage: "plan" },
+        activeEntry: { source: "/s", target: "/t", createdAt: "", lastCompletedStage: "plan" },
         stageStatuses: [{ stage: "inspect", complete: true }] as never,
       });
       mockElectronAPI.getProjectStatus.mockRejectedValue(new Error("fail"));

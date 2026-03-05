@@ -21,7 +21,14 @@ export function CompleteBar({ currentPhase, onDestroy, onComplete }: CompleteBar
   const sessionCost = useSessionStore((s) => s.cost);
   const sessionDuration = useSessionStore((s) => s.duration);
   const sessionSessionId = useSessionStore((s) => s.sessionId);
+  const isRunning = useSessionStore((s) => s.isRunning);
+  const completedStages = useSessionStore((s) => s.completedStages);
+  const stageStatuses = useProjectStore((s) => s.stageStatuses);
   const stageCosts = useProjectStore((s) => s.costs);
+
+  const isDiskComplete = stageStatuses.find((s) => s.stage === currentPhase)?.complete ?? false;
+  const alreadyCompleted = completedStages.includes(currentPhase);
+  const completeDisabled = isRunning || !isDiskComplete || alreadyCompleted;
 
   const historicalStage = stageCosts?.stages[currentPhase];
   const cost = sessionCost > 0 ? sessionCost : (historicalStage?.estimatedCost ?? 0);
@@ -61,7 +68,12 @@ export function CompleteBar({ currentPhase, onDestroy, onComplete }: CompleteBar
         </span>
         <button
           onClick={onComplete}
-          className="px-4 py-1.5 text-sm bg-amber text-bg font-bold rounded hover:bg-amber-dim transition-colors"
+          disabled={completeDisabled}
+          className={`px-4 py-1.5 text-sm font-bold rounded transition-colors ${
+            completeDisabled
+              ? "bg-amber text-bg opacity-50 cursor-not-allowed"
+              : "bg-amber text-bg hover:bg-amber-dim"
+          }`}
         >
           Complete Phase &amp; Unlock Next &rarr;
         </button>

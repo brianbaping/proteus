@@ -59,7 +59,7 @@ describe("PlanningPhase", () => {
   function setProjectStoreState(overrides: Partial<ReturnType<typeof useProjectStore.getState>>) {
     useProjectStore.setState({
       activeProjectName: "test-project",
-      activeEntry: { source: "/src", target: "/tgt", createdAt: "", currentStage: "plan" },
+      activeEntry: { source: "/src", target: "/tgt", createdAt: "", lastCompletedStage: "plan" },
       stageStatuses: [],
       staleness: [],
       loading: false,
@@ -260,5 +260,16 @@ describe("PlanningPhase", () => {
 
     const messages = useChatStore.getState().messages;
     expect(messages.some((m) => m.text.includes("plan generation failed"))).toBe(true);
+  });
+
+  it("disables Run button when phase is already completed", async () => {
+    useSessionStore.setState({ completedStages: ["plan"] });
+
+    const { PlanningPhase } = await import("../../components/planning/PlanningPhase.js");
+    render(<PlanningPhase />);
+
+    const button = screen.getByRole("button", { name: /APPROVE PLAN/i });
+    expect(button.disabled).toBe(true);
+    expect(button.className).toContain("opacity-50");
   });
 });

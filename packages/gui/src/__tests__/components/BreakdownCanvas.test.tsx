@@ -53,7 +53,7 @@ describe("BreakdownCanvas", () => {
 
     useProjectStore.setState({
       activeProjectName: "test",
-      activeEntry: { source: "/s", target: "/t", createdAt: "", currentStage: "split" },
+      activeEntry: { source: "/s", target: "/t", createdAt: "", lastCompletedStage: "split" },
       stageStatuses: [],
       staleness: [],
       loading: false,

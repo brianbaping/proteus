@@ -12,6 +12,7 @@ import { launchSession } from "../session/launcher.js";
 import { gitStageAndCommit } from "../utils/git.js";
 import { appendCostEntry } from "../utils/costs.js";
 import { appendLogEntry } from "../utils/log.js";
+import { updateProject } from "../config/registry.js";
 import { checkStaleness } from "../utils/stages.js";
 import { createDashboard } from "../utils/progress.js";
 import { terminalReporter } from "../utils/terminal-reporter.js";
@@ -155,6 +156,7 @@ export async function runExecute(
       teammates: nonSharedTracks.length,
       details: verifySummary,
     });
+    await updateProject(name, { lastCompletedStage: "execute" });
 
     reporter.log(`\n  Output: ${join(executeDir, "execute.md")}`);
     reporter.log(`          ${join(executeDir, "session.json")}`);

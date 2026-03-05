@@ -220,7 +220,7 @@ describe("project IPC handlers", () => {
   describe("project:destroy", () => {
     it("unregisters an existing project", async () => {
       const { getProject, unregisterProject } = await import("@proteus-forge/cli/api");
-      vi.mocked(getProject).mockResolvedValue({ source: "/s", target: "/t", createdAt: "", currentStage: "new" } as never);
+      vi.mocked(getProject).mockResolvedValue({ source: "/s", target: "/t", createdAt: "", lastCompletedStage: "new" } as never);
 
       const handler = handlers.get("project:destroy")!;
       await handler({}, "my-project");
@@ -240,7 +240,7 @@ describe("project IPC handlers", () => {
   describe("project:get-active", () => {
     it("returns the active project", async () => {
       const { getActiveProject } = await import("@proteus-forge/cli/api");
-      const active = { name: "proj", entry: { source: "/s", target: "/t", createdAt: "", currentStage: "new" } };
+      const active = { name: "proj", entry: { source: "/s", target: "/t", createdAt: "", lastCompletedStage: "new" } };
       vi.mocked(getActiveProject).mockResolvedValue(active as never);
 
       const handler = handlers.get("project:get-active")!;
@@ -286,7 +286,7 @@ describe("project IPC handlers", () => {
       expect(registerProject).toHaveBeenCalledWith("test-proj", expect.objectContaining({
         source: "/source",
         target: targetPath,
-        currentStage: "new",
+        lastCompletedStage: "new",
       }));
     });
 

@@ -77,7 +77,7 @@ export const newCommand = new Command("new")
       source: sourcePath,
       target: targetPath,
       createdAt: new Date().toISOString(),
-      currentStage: "new",
+      lastCompletedStage: "new",
     });
     console.log("  \u2713 Registered project (set as active)");
 

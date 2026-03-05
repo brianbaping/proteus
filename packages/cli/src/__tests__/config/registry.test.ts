@@ -26,7 +26,7 @@ describe("registry data logic", () => {
           source: "/tmp/source",
           target: "/tmp/target",
           createdAt: "2026-02-19T10:00:00Z",
-          currentStage: "new",
+          lastCompletedStage: "new",
         },
       },
     };
@@ -60,13 +60,13 @@ describe("registry data logic", () => {
           source: "/a/source",
           target: "/a/target",
           createdAt: "2026-01-01T00:00:00Z",
-          currentStage: "inspect",
+          lastCompletedStage: "inspect",
         },
         "project-b": {
           source: "/b/source",
           target: "/b/target",
           createdAt: "2026-02-01T00:00:00Z",
-          currentStage: "design",
+          lastCompletedStage: "design",
         },
       },
     };
@@ -83,13 +83,13 @@ describe("registry data logic", () => {
           source: "/a",
           target: "/b",
           createdAt: "2026-01-01T00:00:00Z",
-          currentStage: "new",
+          lastCompletedStage: "new",
         },
         "keep-this": {
           source: "/c",
           target: "/d",
           createdAt: "2026-01-01T00:00:00Z",
-          currentStage: "new",
+          lastCompletedStage: "new",
         },
       },
     };

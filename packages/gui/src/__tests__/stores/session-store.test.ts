@@ -14,6 +14,7 @@ describe("useSessionStore", () => {
     expect(state.cost).toBe(0);
     expect(state.duration).toBe("");
     expect(state.sessionId).toBe("");
+    expect(state.completedStages).toEqual([]);
   });
 
   it("startStage sets isRunning and currentStage, clears logs and errors", () => {
@@ -85,11 +86,12 @@ describe("useSessionStore", () => {
   });
 
   it("reset returns all state to initial values", () => {
-    const { startStage, addLog, addError, endSession, reset } = useSessionStore.getState();
+    const { startStage, addLog, addError, endSession, completeStage, reset } = useSessionStore.getState();
     startStage("execute");
     addLog("some log");
     addError("some error");
     endSession(true, 5.0, "10m 3s", "sess-xyz");
+    completeStage("inspect");
 
     reset();
 
@@ -101,5 +103,39 @@ describe("useSessionStore", () => {
     expect(state.cost).toBe(0);
     expect(state.duration).toBe("");
     expect(state.sessionId).toBe("");
+    expect(state.completedStages).toEqual([]);
+  });
+
+  it("completeStage adds stage to completedStages", () => {
+    const { completeStage } = useSessionStore.getState();
+    completeStage("inspect");
+    expect(useSessionStore.getState().completedStages).toEqual(["inspect"]);
+  });
+
+  it("completeStage is idempotent", () => {
+    const { completeStage } = useSessionStore.getState();
+    completeStage("inspect");
+    completeStage("inspect");
+    expect(useSessionStore.getState().completedStages).toEqual(["inspect"]);
+  });
+
+  it("completeStage accumulates multiple stages", () => {
+    const { completeStage } = useSessionStore.getState();
+    completeStage("inspect");
+    completeStage("design");
+    expect(useSessionStore.getState().completedStages).toEqual(["inspect", "design"]);
+  });
+
+  it("initCompletedStages bulk-sets completed stages", () => {
+    const { initCompletedStages } = useSessionStore.getState();
+    initCompletedStages(["inspect", "design", "plan"]);
+    expect(useSessionStore.getState().completedStages).toEqual(["inspect", "design", "plan"]);
+  });
+
+  it("initCompletedStages replaces existing completed stages", () => {
+    const { completeStage, initCompletedStages } = useSessionStore.getState();
+    completeStage("execute");
+    initCompletedStages(["inspect"]);
+    expect(useSessionStore.getState().completedStages).toEqual(["inspect"]);
   });
 });

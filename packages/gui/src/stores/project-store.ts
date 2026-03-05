@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { ProjectRegistry, ProjectEntry, StageStatus, CostTracking } from "@proteus-forge/shared";
+import { useSessionStore } from "./session-store.js";
 
 interface ProjectState {
   registry: ProjectRegistry | null;
@@ -35,8 +36,12 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         registry,
         activeProjectName: active?.name ?? null,
         activeEntry: active?.entry ?? null,
+        stageStatuses: [],
+        staleness: [],
+        costs: null,
         loading: false,
       });
+      useSessionStore.getState().initCompletedStages([]);
       if (active) {
         await get().refreshStatus();
       }

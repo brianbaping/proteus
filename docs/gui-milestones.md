@@ -42,11 +42,24 @@ Verify create, destroy, settings, and revert workflows.
 - [ ] Settings dialog saves config changes
 - [ ] Project selector dropdown works with multiple projects
 
-## Milestone 4: Windows Sanity Check — NOT STARTED
+## Milestone 4: Windows Sanity Check — UNDERWAY
 
 Native Windows testing at milestone completion. Items accumulate during Milestones 1-3.
 
-- [ ] Double-click artifact opens in system default editor (`shell.openPath()`)
+Setup: `robocopy` from WSL2 → `C:\repos\proteus`, then `npm install && npm run build -w @proteus-forge/shared && npm run dev -w @proteus-forge/gui`
+
+### Post-Milestone 1 check
+- [x] App builds and launches on native Windows
+- [x] UI renders correctly
+- [x] Project creation works
+- [ ] Double-click artifact opens in system default editor (`shell.openPath()`) — deferred, no project data on Windows copy yet
+
+### Post-Milestone 2 check (pending)
+- [ ] Artifacts display after running a stage
+- [ ] Double-click artifact opens in system default editor
+- [ ] Session streaming displays in AI Chat panel
+
+### Post-Milestone 3 check (pending)
 - [ ] Packaged `.exe` launches and functions (`npm run dist`)
-- [ ] General visual/rendering check on native Windows
 - [ ] File paths resolve correctly (no `/` vs `\` issues)
+- [ ] Full visual/rendering check

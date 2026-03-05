@@ -36,7 +36,7 @@ describe("IngestSidebar", () => {
       listProjects: vi.fn().mockResolvedValue({ projects: {} }),
       getActiveProject: vi.fn().mockResolvedValue({
         name: "test-project",
-        entry: { source: "/original/src", target: "/original/tgt", createdAt: "", currentStage: "inspect" },
+        entry: { source: "/original/src", target: "/original/tgt", createdAt: "", lastCompletedStage: "inspect" },
       }),
       setActiveProject: vi.fn(),
       createProject: vi.fn(),
@@ -60,7 +60,7 @@ describe("IngestSidebar", () => {
 
     useProjectStore.setState({
       activeProjectName: "test-project",
-      activeEntry: { source: "/original/src", target: "/original/tgt", createdAt: "", currentStage: "inspect" },
+      activeEntry: { source: "/original/src", target: "/original/tgt", createdAt: "", lastCompletedStage: "inspect" },
       stageStatuses: [],
       staleness: [],
       loading: false,
@@ -302,5 +302,16 @@ describe("IngestSidebar", () => {
         expect(mockUpdateProject).toHaveBeenCalled();
       });
     });
+  });
+
+  it("disables Run button when phase is already completed", async () => {
+    useSessionStore.setState({ completedStages: ["inspect"] });
+
+    const { IngestSidebar } = await import("../../components/inspection/IngestSidebar.js");
+    render(<IngestSidebar onRunInspection={vi.fn()} onAbort={vi.fn()} />);
+
+    const button = screen.getByRole("button", { name: /RUN INSPECTION/i });
+    expect(button.disabled).toBe(true);
+    expect(button.className).toContain("opacity-50");
   });
 });

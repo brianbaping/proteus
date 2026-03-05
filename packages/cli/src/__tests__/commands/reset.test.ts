@@ -33,7 +33,7 @@ describe("reset command", () => {
         source: "/tmp/source",
         target: tempDir,
         createdAt: "2026-01-01T00:00:00Z",
-        currentStage: "plan",
+        lastCompletedStage: "plan",
       },
     });
     vi.mocked(confirm).mockResolvedValue(true);

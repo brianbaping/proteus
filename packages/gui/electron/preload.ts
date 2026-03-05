@@ -5,14 +5,14 @@ import type { ProjectRegistry, GlobalConfig, StageStatus, CostTracking, StageNam
 export interface ElectronAPI {
   // Project management
   listProjects(): Promise<ProjectRegistry>;
-  getActiveProject(): Promise<{ name: string; entry: { source: string; target: string; createdAt: string; currentStage: string } } | null>;
+  getActiveProject(): Promise<{ name: string; entry: { source: string; target: string; createdAt: string; lastCompletedStage: string } } | null>;
   setActiveProject(name: string): Promise<void>;
   createProject(name: string, source: string, target?: string): Promise<void>;
   destroyProject(name: string): Promise<void>;
   getProjectStatus(targetPath: string): Promise<{ statuses: StageStatus[]; staleness: Array<{ stage: string; staleReason: string }> }>;
   readArtifacts(targetPath: string, stage: StageName): Promise<Record<string, unknown> | null>;
   openArtifact(filePath: string): Promise<void>;
-  updateProject(name: string, updates: { source?: string; target?: string }): Promise<void>;
+  updateProject(name: string, updates: { source?: string; target?: string; lastCompletedStage?: string }): Promise<void>;
 
   // Config
   readGlobalConfig(): Promise<GlobalConfig | null>;

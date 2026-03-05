@@ -10,7 +10,8 @@ interface IngestSidebarProps {
 
 export function IngestSidebar({ onRunInspection, onAbort }: IngestSidebarProps): React.JSX.Element {
   const { activeEntry, activeProjectName, updateProject } = useProjectStore();
-  const { isRunning } = useSessionStore();
+  const { isRunning, completedStages } = useSessionStore();
+  const phaseCompleted = completedStages.includes("inspect");
   const [ingestMethod, setIngestMethod] = useState<"upload" | "github">("upload");
   const [pocPath, setPocPath] = useState(activeEntry?.source ?? "");
   const [targetPath, setTargetPath] = useState(activeEntry?.target ?? "");
@@ -258,7 +259,12 @@ export function IngestSidebar({ onRunInspection, onAbort }: IngestSidebarProps):
         ) : (
           <button
             onClick={() => onRunInspection({ excludeStyle })}
-            className="w-full py-2.5 rounded font-bold text-sm bg-green text-bg hover:bg-green-dim transition-colors"
+            disabled={phaseCompleted}
+            className={`w-full py-2.5 rounded font-bold text-sm transition-colors ${
+              phaseCompleted
+                ? "bg-green text-bg opacity-50 cursor-not-allowed"
+                : "bg-green text-bg hover:bg-green-dim"
+            }`}
           >
             ▶ RUN INSPECTION
           </button>

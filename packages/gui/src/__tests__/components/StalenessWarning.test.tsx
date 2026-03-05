@@ -33,7 +33,7 @@ describe("StalenessWarning", () => {
 
     useProjectStore.setState({
       activeProjectName: "test",
-      activeEntry: { source: "/s", target: "/t", createdAt: "", currentStage: "design" },
+      activeEntry: { source: "/s", target: "/t", createdAt: "", lastCompletedStage: "design" },
       stageStatuses: [],
       staleness: [],
       loading: false,

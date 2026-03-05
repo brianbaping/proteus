@@ -157,6 +157,55 @@ describe("CompleteBar", () => {
     expect(sessionIdEl.textContent).toBe("sess-live");
   });
 
+  it("disables Complete button when session is running", () => {
+    useSessionStore.setState({ isRunning: true });
+    useProjectStore.setState({
+      stageStatuses: [{ stage: "inspect", complete: true, artifactPath: "/p" }] as never,
+    });
+
+    render(<CompleteBar {...defaults} />);
+
+    const btn = screen.getByText(/Complete Phase/).closest("button");
+    expect(btn?.disabled).toBe(true);
+    expect(btn?.className).toContain("opacity-50");
+  });
+
+  it("disables Complete button when phase is not complete on disk", () => {
+    useProjectStore.setState({
+      stageStatuses: [{ stage: "inspect", complete: false, artifactPath: "" }] as never,
+    });
+
+    render(<CompleteBar {...defaults} />);
+
+    const btn = screen.getByText(/Complete Phase/).closest("button");
+    expect(btn?.disabled).toBe(true);
+  });
+
+  it("disables Complete button when phase is already user-completed", () => {
+    useSessionStore.setState({ completedStages: ["inspect"] });
+    useProjectStore.setState({
+      stageStatuses: [{ stage: "inspect", complete: true, artifactPath: "/p" }] as never,
+    });
+
+    render(<CompleteBar {...defaults} />);
+
+    const btn = screen.getByText(/Complete Phase/).closest("button");
+    expect(btn?.disabled).toBe(true);
+  });
+
+  it("enables Complete button when phase is disk-complete, not running, not user-completed", () => {
+    useSessionStore.setState({ isRunning: false, completedStages: [] });
+    useProjectStore.setState({
+      stageStatuses: [{ stage: "inspect", complete: true, artifactPath: "/p" }] as never,
+    });
+
+    render(<CompleteBar {...defaults} />);
+
+    const btn = screen.getByText(/Complete Phase/).closest("button");
+    expect(btn?.disabled).toBe(false);
+    expect(btn?.className).not.toContain("opacity-50");
+  });
+
   it("shows no cost when phase has no historical entry and session is empty", () => {
     useProjectStore.setState({
       costs: {

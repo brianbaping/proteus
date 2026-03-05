@@ -55,7 +55,7 @@ describe("ExecutionPhase", () => {
   function setProjectState(overrides: Partial<ReturnType<typeof useProjectStore.getState>>) {
     useProjectStore.setState({
       activeProjectName: "test-project",
-      activeEntry: { source: "/src", target: "/tgt", createdAt: "", currentStage: "execute" },
+      activeEntry: { source: "/src", target: "/tgt", createdAt: "", lastCompletedStage: "execute" },
       stageStatuses: [],
       staleness: [],
       loading: false,
@@ -326,6 +326,17 @@ describe("ExecutionPhase", () => {
       });
 
       expect(mockRunStage).not.toHaveBeenCalled();
+    });
+
+    it("disables Run button when phase is already completed", async () => {
+      useSessionStore.setState({ completedStages: ["execute"] });
+
+      const { ExecutionPhase } = await import("../../components/execution/ExecutionPhase.js");
+      render(<ExecutionPhase />);
+
+      const button = screen.getByRole("button", { name: /BUILD CANDIDATE/i });
+      expect(button.disabled).toBe(true);
+      expect(button.className).toContain("opacity-50");
     });
   });
 });

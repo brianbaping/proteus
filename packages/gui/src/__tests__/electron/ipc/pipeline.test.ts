@@ -58,7 +58,7 @@ describe("pipeline IPC handlers", () => {
       });
       vi.mocked(getActiveProject).mockResolvedValue({
         name: "test",
-        entry: { source: "/src", target: "/tgt", createdAt: "", currentStage: "inspect" },
+        entry: { source: "/src", target: "/tgt", createdAt: "", lastCompletedStage: "inspect" },
       });
       const { readCosts } = await import("@proteus-forge/cli/api");
       vi.mocked(readCosts).mockResolvedValue({
@@ -144,7 +144,7 @@ describe("pipeline IPC handlers", () => {
       vi.mocked(runPlan).mockResolvedValue(true);
       vi.mocked(getActiveProject).mockResolvedValue({
         name: "proj",
-        entry: { source: "/s", target: "/t", createdAt: "", currentStage: "plan" },
+        entry: { source: "/s", target: "/t", createdAt: "", lastCompletedStage: "plan" },
       });
       vi.mocked(readCosts).mockResolvedValue({
         stages: { plan: { estimatedCost: 2.5, timestamp: "", teammates: 1, tier: "standard", duration: "3m", inputTokens: 5000, outputTokens: 2000 } },
@@ -166,7 +166,7 @@ describe("pipeline IPC handlers", () => {
       vi.mocked(runInspect).mockResolvedValue(true);
       vi.mocked(getActiveProject).mockResolvedValue({
         name: "proj",
-        entry: { source: "/s", target: "/t", createdAt: "", currentStage: "inspect" },
+        entry: { source: "/s", target: "/t", createdAt: "", lastCompletedStage: "inspect" },
       });
       vi.mocked(readCosts).mockResolvedValue({
         stages: { inspect: { estimatedCost: 0.5, timestamp: "", teammates: 1, tier: "fast", duration: "1s", inputTokens: 100, outputTokens: 50, sessionId: "sess-abc-123" } },
@@ -188,7 +188,7 @@ describe("pipeline IPC handlers", () => {
       vi.mocked(runPlan).mockResolvedValue(true);
       vi.mocked(getActiveProject).mockResolvedValue({
         name: "proj",
-        entry: { source: "/s", target: "/t", createdAt: "", currentStage: "plan" },
+        entry: { source: "/s", target: "/t", createdAt: "", lastCompletedStage: "plan" },
       });
       vi.mocked(readCosts).mockResolvedValue({
         stages: { plan: { estimatedCost: 1.0, timestamp: "", teammates: 1, tier: "standard", duration: "2m", inputTokens: 1000, outputTokens: 500 } },
@@ -258,7 +258,7 @@ describe("pipeline IPC handlers", () => {
 
       vi.mocked(getActiveProject).mockResolvedValue({
         name: "proj",
-        entry: { source: "/s", target: tempDir, createdAt: "", currentStage: "execute" },
+        entry: { source: "/s", target: tempDir, createdAt: "", lastCompletedStage: "execute" },
       });
       vi.mocked(getInboxDir).mockReturnValue(inboxDir);
 
@@ -289,7 +289,7 @@ describe("pipeline IPC handlers", () => {
 
       vi.mocked(getActiveProject).mockResolvedValue({
         name: "proj",
-        entry: { source: "/s", target: tempDir, createdAt: "", currentStage: "execute" },
+        entry: { source: "/s", target: tempDir, createdAt: "", lastCompletedStage: "execute" },
       });
       vi.mocked(getInboxDir).mockReturnValue(inboxDir);
 
@@ -303,7 +303,7 @@ describe("pipeline IPC handlers", () => {
       const { getActiveProject, writeInboxMessage } = await import("@proteus-forge/cli/api");
       vi.mocked(getActiveProject).mockResolvedValue({
         name: "proj",
-        entry: { source: "/s", target: "/t", createdAt: "", currentStage: "execute" },
+        entry: { source: "/s", target: "/t", createdAt: "", lastCompletedStage: "execute" },
       });
 
       const handler = handlers.get("session:send-message")!;
@@ -372,7 +372,7 @@ describe("pipeline IPC handlers", () => {
       const { getActiveProject, revertStage } = await import("@proteus-forge/cli/api");
       vi.mocked(getActiveProject).mockResolvedValue({
         name: "proj",
-        entry: { source: "/s", target: "/t", createdAt: "", currentStage: "plan" },
+        entry: { source: "/s", target: "/t", createdAt: "", lastCompletedStage: "plan" },
       });
       vi.mocked(revertStage).mockResolvedValue({ removed: ["plan", "split", "execute"] });
 

@@ -9,11 +9,14 @@ interface SessionState {
   cost: number;
   duration: string;
   sessionId: string;
+  completedStages: StageName[];
 
   startStage(stage: StageName): void;
   addLog(message: string): void;
   addError(message: string): void;
   endSession(success: boolean, cost: number, duration: string, sessionId: string): void;
+  completeStage(stage: StageName): void;
+  initCompletedStages(stages: StageName[]): void;
   reset(): void;
 }
 
@@ -25,6 +28,7 @@ export const useSessionStore = create<SessionState>((set) => ({
   cost: 0,
   duration: "",
   sessionId: "",
+  completedStages: [],
 
   startStage: (stage) => set({
     isRunning: true,
@@ -51,6 +55,14 @@ export const useSessionStore = create<SessionState>((set) => ({
     sessionId,
   }),
 
+  completeStage: (stage) => set((state) => ({
+    completedStages: state.completedStages.includes(stage)
+      ? state.completedStages
+      : [...state.completedStages, stage],
+  })),
+
+  initCompletedStages: (stages) => set({ completedStages: stages }),
+
   reset: () => set({
     isRunning: false,
     currentStage: null,
@@ -59,5 +71,6 @@ export const useSessionStore = create<SessionState>((set) => ({
     cost: 0,
     duration: "",
     sessionId: "",
+    completedStages: [],
   }),
 }));

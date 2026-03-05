@@ -63,7 +63,7 @@ describe("DesignPhase", () => {
   function setProjectStoreState(overrides: Partial<ReturnType<typeof useProjectStore.getState>>) {
     useProjectStore.setState({
       activeProjectName: "test-project",
-      activeEntry: { source: "/src", target: "/tgt", createdAt: "", currentStage: "design" },
+      activeEntry: { source: "/src", target: "/tgt", createdAt: "", lastCompletedStage: "design" },
       stageStatuses: [],
       staleness: [],
       loading: false,
@@ -245,5 +245,16 @@ describe("DesignPhase", () => {
 
     const messages = useChatStore.getState().messages;
     expect(messages.some((m) => m.text.includes("design generation failed"))).toBe(true);
+  });
+
+  it("disables Run button when phase is already completed", async () => {
+    useSessionStore.setState({ completedStages: ["design"] });
+
+    const { DesignPhase } = await import("../../components/design/DesignPhase.js");
+    render(<DesignPhase />);
+
+    const button = screen.getByRole("button", { name: /RUN DESIGN/i });
+    expect(button.disabled).toBe(true);
+    expect(button.className).toContain("opacity-50");
   });
 });

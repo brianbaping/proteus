@@ -12,6 +12,7 @@ import { launchSession } from "../session/launcher.js";
 import { gitStageAndCommit } from "../utils/git.js";
 import { appendCostEntry } from "../utils/costs.js";
 import { appendLogEntry } from "../utils/log.js";
+import { updateProject } from "../config/registry.js";
 import { checkStaleness } from "../utils/stages.js";
 import { printDesignTeamSummary } from "../utils/team-summary.js";
 import { createDashboard } from "../utils/progress.js";
@@ -128,6 +129,7 @@ export async function runDesign(
       duration: result.cost.duration,
       cost: result.cost.estimatedCost,
     });
+    await updateProject(name, { lastCompletedStage: "design" });
 
     reporter.log(`\n  Output: ${join(designDir, "design.md")}`);
     reporter.log(`          ${join(designDir, "design-meta.json")}`);

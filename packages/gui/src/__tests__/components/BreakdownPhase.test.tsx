@@ -59,7 +59,7 @@ describe("BreakdownPhase", () => {
   function setProjectStoreState(overrides: Partial<ReturnType<typeof useProjectStore.getState>>) {
     useProjectStore.setState({
       activeProjectName: "test-project",
-      activeEntry: { source: "/src", target: "/tgt", createdAt: "", currentStage: "split" },
+      activeEntry: { source: "/src", target: "/tgt", createdAt: "", lastCompletedStage: "split" },
       stageStatuses: [],
       staleness: [],
       loading: false,
@@ -258,5 +258,16 @@ describe("BreakdownPhase", () => {
 
     const messages = useChatStore.getState().messages;
     expect(messages.some((m) => m.text.includes("breakdown failed"))).toBe(true);
+  });
+
+  it("disables Run button when phase is already completed", async () => {
+    useSessionStore.setState({ completedStages: ["split"] });
+
+    const { BreakdownPhase } = await import("../../components/breakdown/BreakdownPhase.js");
+    render(<BreakdownPhase />);
+
+    const button = screen.getByRole("button", { name: /APPROVE BREAKDOWN/i });
+    expect(button.disabled).toBe(true);
+    expect(button.className).toContain("opacity-50");
   });
 });

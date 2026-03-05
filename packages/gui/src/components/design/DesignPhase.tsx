@@ -48,7 +48,8 @@ function designMetaToDesignData(meta: DesignMetaJson): DesignData {
 
 export function DesignPhase(): React.JSX.Element {
   const { activeEntry, activeProjectName, stageStatuses, refreshStatus } = useProjectStore();
-  const { isRunning, startStage, endSession } = useSessionStore();
+  const { isRunning, startStage, endSession, completedStages } = useSessionStore();
+  const phaseCompleted = completedStages.includes("design");
   const { addMessage, clearMessages } = useChatStore();
   const [brief, setBrief] = useState("");
   const [briefFile, setBriefFile] = useState("");
@@ -176,7 +177,12 @@ export function DesignPhase(): React.JSX.Element {
           ) : (
             <button
               onClick={handleRunDesign}
-              className="w-full py-2.5 rounded font-bold text-sm bg-green text-bg hover:bg-green-dim transition-colors"
+              disabled={phaseCompleted}
+              className={`w-full py-2.5 rounded font-bold text-sm transition-colors ${
+                phaseCompleted
+                  ? "bg-green text-bg opacity-50 cursor-not-allowed"
+                  : "bg-green text-bg hover:bg-green-dim"
+              }`}
             >
               ▶ RUN DESIGN
             </button>

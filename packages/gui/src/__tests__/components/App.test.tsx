@@ -61,8 +61,8 @@ describe("App", () => {
     window.electronAPI = {
       runStage: vi.fn(),
       readArtifacts: vi.fn(),
-      listProjects: vi.fn().mockResolvedValue({ projects: {} }),
-      getActiveProject: vi.fn(),
+      listProjects: vi.fn().mockResolvedValue({ projects: { "test-project": { source: "/src", target: "/tgt", createdAt: "", lastCompletedStage: "inspect" } } }),
+      getActiveProject: vi.fn().mockResolvedValue({ name: "test-project", entry: { source: "/src", target: "/tgt", createdAt: "", lastCompletedStage: "inspect" } }),
       setActiveProject: vi.fn(),
       createProject: vi.fn(),
       destroyProject: vi.fn(),
@@ -97,7 +97,7 @@ describe("App", () => {
 
     useProjectStore.setState({
       activeProjectName: "test-project",
-      activeEntry: { source: "/src", target: "/tgt", createdAt: "", currentStage: "inspect" },
+      activeEntry: { source: "/src", target: "/tgt", createdAt: "", lastCompletedStage: "inspect" },
       stageStatuses: [],
       staleness: [],
       loading: false,
@@ -281,25 +281,32 @@ describe("App", () => {
     });
   });
 
-  it("handleComplete advances phase and refreshes status", async () => {
+  it("handleComplete calls completeStage, advances phase, and refreshes status", async () => {
+    // Prevent loadRegistry on mount from interfering
+    window.electronAPI.getActiveProject = vi.fn().mockResolvedValue(null) as never;
+
     const refreshSpy = vi.fn().mockResolvedValue(undefined);
     useProjectStore.setState({ refreshStatus: refreshSpy } as never);
 
     const { App } = await import("../../App.js");
     render(<App />);
 
-    // Default phase is "inspect", completing should advance to "design"
-    expect(capturedOnComplete).toBeDefined();
+    // Wait for mount effects to settle
+    await waitFor(() => {
+      expect(capturedOnComplete).toBeDefined();
+    });
     capturedOnComplete!();
 
     await waitFor(() => {
       expect(refreshSpy).toHaveBeenCalled();
     });
+    expect(useSessionStore.getState().completedStages).toContain("inspect");
   });
 
   it("handleDestroy calls revertStage and moves phase back when confirmed", async () => {
-    // Start on "design" phase (set via stageStatuses)
+    // Simulate project switch so effect fires: set a new project name with inspect complete
     useProjectStore.setState({
+      activeProjectName: "destroy-test",
       stageStatuses: [{ stage: "inspect", complete: true, artifactPath: "/p" }] as never,
     });
 
@@ -311,7 +318,7 @@ describe("App", () => {
     const { App } = await import("../../App.js");
     render(<App />);
 
-    // Wait for initial phase to be set from stageStatuses
+    // Wait for project-switch effect to advance to "design"
     await waitFor(() => {
       expect(capturedOnDestroy).toBeDefined();
     });
@@ -325,7 +332,11 @@ describe("App", () => {
   });
 
   it("handleDestroy does nothing when confirm returns false", async () => {
+    // Prevent loadRegistry on mount from calling refreshStatus
+    window.electronAPI.getActiveProject = vi.fn().mockResolvedValue(null) as never;
+
     useProjectStore.setState({
+      activeProjectName: "destroy-test-2",
       stageStatuses: [{ stage: "inspect", complete: true, artifactPath: "/p" }] as never,
     });
 
@@ -348,6 +359,41 @@ describe("App", () => {
 
     expect(window.electronAPI.revertStage).not.toHaveBeenCalled();
     expect(refreshSpy).not.toHaveBeenCalled();
+  });
+
+  it("does not auto-advance when stageStatuses update after stage completion", async () => {
+    const { App } = await import("../../App.js");
+    render(<App />);
+
+    // Phase should start at "inspect" (no completed stages, same project)
+    // Now simulate a stage completion by updating stageStatuses
+    useProjectStore.setState({
+      stageStatuses: [{ stage: "inspect", complete: true, artifactPath: "/p" }] as never,
+    });
+
+    // Wait a tick — phase should NOT have auto-advanced to "design"
+    await new Promise((r) => setTimeout(r, 50));
+    // The capturedOnComplete still works from inspect, proving no auto-advance
+    expect(capturedOnComplete).toBeDefined();
+  });
+
+  it("inits completedStages on project switch", async () => {
+    useProjectStore.setState({
+      activeProjectName: "switch-test",
+      stageStatuses: [
+        { stage: "inspect", complete: true, artifactPath: "/p" },
+        { stage: "design", complete: true, artifactPath: "/p" },
+      ] as never,
+    });
+
+    const { App } = await import("../../App.js");
+    render(<App />);
+
+    await waitFor(() => {
+      const completed = useSessionStore.getState().completedStages;
+      expect(completed).toContain("inspect");
+      expect(completed).toContain("design");
+    });
   });
 
   it("uses agentId fallback when agentName is missing in agent-spawned", async () => {

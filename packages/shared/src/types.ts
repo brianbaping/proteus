@@ -34,7 +34,7 @@ export interface ProjectEntry {
   source: string;
   target: string;
   createdAt: string;
-  currentStage: string;
+  lastCompletedStage: string;
 }
 
 // Project registry (~/.proteus-forge/projects.json)

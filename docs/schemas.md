@@ -112,7 +112,7 @@ Project registry managed by `proteus-forge new`, `proteus-forge use`, and `prote
       "source": "/tmp/demo-poc",
       "target": "/tmp/demo-poc-prod",
       "createdAt": "2026-02-19T21:30:00Z",
-      "currentStage": "new"
+      "lastCompletedStage": "new"
     }
   }
 }

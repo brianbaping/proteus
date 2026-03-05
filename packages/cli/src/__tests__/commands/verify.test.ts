@@ -57,7 +57,7 @@ describe("verify command", () => {
         source: "/tmp/source",
         target: tempDir,
         createdAt: "2026-01-01T00:00:00Z",
-        currentStage: "execute",
+        lastCompletedStage: "execute",
       },
     });
   });

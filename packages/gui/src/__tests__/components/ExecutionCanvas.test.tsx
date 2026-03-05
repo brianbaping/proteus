@@ -53,7 +53,7 @@ describe("ExecutionCanvas", () => {
 
     useProjectStore.setState({
       activeProjectName: "test",
-      activeEntry: { source: "/s", target: "/t", createdAt: "", currentStage: "execute" },
+      activeEntry: { source: "/s", target: "/t", createdAt: "", lastCompletedStage: "execute" },
       stageStatuses: [],
       staleness: [],
       loading: false,

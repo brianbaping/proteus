@@ -50,7 +50,7 @@ describe("retarget command", () => {
         source: "/tmp/source",
         target: oldTarget,
         createdAt: "2026-01-01T00:00:00Z",
-        currentStage: "design",
+        lastCompletedStage: "design",
       },
     });
     vi.mocked(readRegistry).mockResolvedValue({
@@ -60,7 +60,7 @@ describe("retarget command", () => {
           source: "/tmp/source",
           target: oldTarget,
           createdAt: "2026-01-01T00:00:00Z",
-          currentStage: "design",
+          lastCompletedStage: "design",
         },
       },
     });
@@ -126,13 +126,13 @@ describe("retarget command", () => {
           source: "/tmp/source",
           target: oldTarget,
           createdAt: "2026-01-01T00:00:00Z",
-          currentStage: "design",
+          lastCompletedStage: "design",
         },
         "other-project": {
           source: "/tmp/other",
           target: newTarget,
           createdAt: "2026-01-01T00:00:00Z",
-          currentStage: "new",
+          lastCompletedStage: "new",
         },
       },
     });
