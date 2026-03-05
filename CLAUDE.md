@@ -141,13 +141,6 @@ Three workspace packages under `packages/`:
 - **`@proteus-forge/shared`** — types and pure functions shared between CLI and GUI (no Node/filesystem APIs)
 - **`@proteus-forge/gui`** — Electron + React desktop application
 
-Root `package.json` uses npm workspaces. Build/test commands target individual workspaces:
-```bash
-npm run build -w @proteus-forge/cli
-npm run build -w @proteus-forge/shared
-npm run dev -w @proteus-forge/gui
-```
-
 Cross-package imports use workspace package names (e.g., `import { StageName } from "@proteus-forge/shared"`).
 Within a package, imports still use relative paths with `.js` extensions.
 
@@ -175,25 +168,16 @@ The GUI calls CLI functions through Electron IPC. The integration boundary:
 
 ## GUI Test Patterns (`packages/gui`)
 
-- **Component tests**: Vitest + React Testing Library (`@testing-library/react`)
+- **Component tests**: Vitest + React Testing Library (`@testing-library/react`) in `jsdom` environment
 - **E2E tests**: Playwright with `electron-playwright` for full application testing
 - **IPC handler tests**: Vitest, same integration-style as CLI (mock Electron APIs, exercise real CLI functions)
 - Tests live in `packages/gui/src/__tests__/` mirroring source structure
 - E2E tests live in `packages/gui/e2e/`
 - Same conventions as CLI: `mkdtemp()` for filesystem tests, `vi.spyOn()` for mocks, vitest globals enabled
 - Playwright config at `packages/gui/playwright.config.ts`
-
-## Key Dependencies
-
-| Package | Purpose |
-|---------|---------|
-| `@anthropic-ai/claude-agent-sdk` | Claude Code Agent Teams integration |
-| `commander` | CLI framework |
-| `tsup` | Bundler (CLI + Electron main process) |
-| `vitest` | Test framework |
-| `vite` | GUI bundler |
-| `zustand` | GUI state management |
-| `@testing-library/react` | GUI component tests |
+- **`#electron` path alias** — tests import from `electron/` dir via `#electron` (configured in vitest/tsconfig)
+- **Mock `window.electronAPI`** in `beforeEach` with all methods before importing components (components access it at module load)
+- **Mock child components** with `vi.mock()` at module level, then use dynamic `await import(...)` inside the test body
 
 ## Code Coverage
 
