@@ -1,10 +1,38 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, Menu, ipcMain } from "electron";
 import path from "node:path";
 import { registerProjectHandlers } from "./ipc/project.js";
 import { registerPipelineHandlers } from "./ipc/pipeline.js";
 import { registerDialogHandlers } from "./ipc/dialog.js";
 
 let mainWindow: BrowserWindow | null = null;
+
+function buildMenu(): void {
+  const template: Electron.MenuItemConstructorOptions[] = [
+    { role: "fileMenu" },
+    { role: "editMenu" },
+    {
+      label: "View",
+      submenu: [
+        { role: "reload" },
+        { role: "forceReload" },
+        {
+          label: "Toggle Developer Tools",
+          accelerator: "CmdOrCtrl+Shift+I",
+          click: () => mainWindow?.webContents.toggleDevTools(),
+        },
+        { type: "separator" },
+        { role: "resetZoom" },
+        { role: "zoomIn" },
+        { role: "zoomOut" },
+        { type: "separator" },
+        { role: "togglefullscreen" },
+      ],
+    },
+    { role: "windowMenu" },
+  ];
+
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+}
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -22,7 +50,6 @@ function createWindow(): void {
 
   if (process.env.VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
-    mainWindow.webContents.openDevTools();
   } else {
     mainWindow.loadFile(path.join(__dirname, "../renderer/index.html"));
   }
@@ -41,6 +68,7 @@ app.whenReady().then(() => {
   registerPipelineHandlers(ipcMain, getMainWindow);
   registerDialogHandlers(ipcMain);
 
+  buildMenu();
   createWindow();
 
   app.on("activate", () => {
