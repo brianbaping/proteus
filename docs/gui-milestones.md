@@ -16,18 +16,21 @@ Verify that the GUI correctly reads and renders existing project data.
 - [x] Cost data displays correctly (CompleteBar, costs:read)
 - [x] Empty states render correctly for projects with no completed stages (covered by unit tests, no empty project available to test manually)
 
-## Milestone 2: Pipeline Operations (write) — NOT STARTED
+## Milestone 2: Pipeline Operations (write) — COMPLETE
 
 Verify running stages, streaming, and abort from the GUI. Costs real API dollars.
 
-- [ ] Run inspect stage from the GUI
-- [ ] Session streaming — agent activity appears in AI Chat panel
-- [ ] Progress indicators update during execution
-- [ ] Abort a running stage
-- [ ] Stage completion triggers status refresh and artifact load
-- [ ] Run design stage with brief text
-- [ ] Run design stage with uploaded brief file
-- [ ] Complete Phase & Unlock Next advances to next tab
+- [x] Run inspect stage from the GUI
+- [x] Session streaming — agent activity appears in AI Chat panel
+- [x] Progress indicators update during execution
+- [x] Abort a running stage
+- [x] Stage completion triggers status refresh and artifact load
+- [x] Run design stage with brief text
+- [x] Run design stage with uploaded brief file
+- [x] Complete Phase & Unlock Next advances to next tab
+- [x] Phase state machine: Run/Complete buttons follow correct enabled/disabled states
+- [x] Tabs lock/unlock based on user-explicit completion (not auto-advance)
+- [x] Project switching navigates to correct tab and reflects correct completed state
 
 ## Milestone 3: Project Management — NOT STARTED
 
