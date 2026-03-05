@@ -1,6 +1,7 @@
 import React from "react";
 import type { StageName } from "@proteus-forge/shared";
 import { useSessionStore } from "../../stores/session-store.js";
+import { useProjectStore } from "../../stores/project-store.js";
 
 interface CompleteBarProps {
   currentPhase: StageName;
@@ -17,9 +18,15 @@ const COMPLETE_HINTS: Record<StageName, string> = {
 };
 
 export function CompleteBar({ currentPhase, onDestroy, onComplete }: CompleteBarProps): React.JSX.Element {
-  const cost = useSessionStore((s) => s.cost);
-  const duration = useSessionStore((s) => s.duration);
-  const sessionId = useSessionStore((s) => s.sessionId);
+  const sessionCost = useSessionStore((s) => s.cost);
+  const sessionDuration = useSessionStore((s) => s.duration);
+  const sessionSessionId = useSessionStore((s) => s.sessionId);
+  const stageCosts = useProjectStore((s) => s.costs);
+
+  const historicalStage = stageCosts?.stages[currentPhase];
+  const cost = sessionCost > 0 ? sessionCost : (historicalStage?.estimatedCost ?? 0);
+  const duration = sessionDuration || (historicalStage?.duration ?? "");
+  const sessionId = sessionSessionId || (historicalStage?.sessionId ?? "");
 
   return (
     <div className="flex items-center justify-between h-12 px-4 bg-bg-2 border-t border-border">
@@ -30,12 +37,11 @@ export function CompleteBar({ currentPhase, onDestroy, onComplete }: CompleteBar
         >
           &larr; Destroy Phase &amp; Revert
         </button>
-        {cost > 0 && (
+        {(cost > 0 || duration) && (
           <span className="text-xs" data-testid="cost-duration">
-            <span className="text-green">${cost.toFixed(2)}</span>
-            {duration && (
-              <span className="text-fg-muted"> · {duration}</span>
-            )}
+            {cost > 0 && <span className="text-green">${cost.toFixed(2)}</span>}
+            {cost > 0 && duration && <span className="text-fg-muted"> · </span>}
+            {duration && <span className="text-fg-muted">{duration}</span>}
           </span>
         )}
         {sessionId && (

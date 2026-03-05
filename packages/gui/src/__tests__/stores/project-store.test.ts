@@ -13,6 +13,7 @@ describe("useProjectStore", () => {
       setActiveProject: vi.fn().mockResolvedValue(undefined),
       createProject: vi.fn().mockResolvedValue(undefined),
       getProjectStatus: vi.fn().mockResolvedValue({ statuses: [], staleness: [] }),
+      readCosts: vi.fn().mockResolvedValue({ stages: {}, totalCost: 0 }),
     };
     window.electronAPI = mockElectronAPI as unknown as ElectronAPI;
 
@@ -22,6 +23,7 @@ describe("useProjectStore", () => {
       activeEntry: null,
       stageStatuses: [],
       staleness: [],
+      costs: null,
       loading: false,
     });
   });

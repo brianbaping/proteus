@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { ProjectRegistry, ProjectEntry, StageStatus, StageName } from "@proteus-forge/shared";
+import type { ProjectRegistry, ProjectEntry, StageStatus, CostTracking } from "@proteus-forge/shared";
 
 interface ProjectState {
   registry: ProjectRegistry | null;
@@ -7,6 +7,7 @@ interface ProjectState {
   activeEntry: ProjectEntry | null;
   stageStatuses: StageStatus[];
   staleness: Array<{ stage: string; staleReason: string }>;
+  costs: CostTracking | null;
   loading: boolean;
 
   loadRegistry(): Promise<void>;
@@ -22,6 +23,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   activeEntry: null,
   stageStatuses: [],
   staleness: [],
+  costs: null,
   loading: false,
 
   loadRegistry: async () => {
@@ -53,9 +55,16 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     if (!activeEntry) return;
     try {
       const result = await window.electronAPI.getProjectStatus(activeEntry.target);
+      let costs: CostTracking | null = null;
+      try {
+        costs = await window.electronAPI.readCosts(activeEntry.target);
+      } catch {
+        // costs.json may not exist yet
+      }
       set({
         stageStatuses: result.statuses,
         staleness: result.staleness,
+        costs,
       });
     } catch {
       // Status refresh failed — keep existing state

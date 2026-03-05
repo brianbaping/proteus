@@ -1,6 +1,7 @@
 import React from "react";
 import { render, screen } from "@testing-library/react";
 import { useSessionStore } from "../../stores/session-store.js";
+import { useProjectStore } from "../../stores/project-store.js";
 import { CompleteBar } from "../../components/chrome/CompleteBar.js";
 
 describe("CompleteBar", () => {
@@ -13,6 +14,7 @@ describe("CompleteBar", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useSessionStore.getState().reset();
+    useProjectStore.setState({ costs: null });
   });
 
   it("renders hint text and both buttons", () => {
@@ -33,12 +35,22 @@ describe("CompleteBar", () => {
     expect(costDuration.textContent).toContain("1m 30s");
   });
 
-  it("does not render cost section when cost is 0", () => {
+  it("does not render cost section when cost is 0 and no duration", () => {
     useSessionStore.setState({ cost: 0, duration: "" });
 
     render(<CompleteBar {...defaults} />);
 
     expect(screen.queryByTestId("cost-duration")).toBeNull();
+  });
+
+  it("renders duration alone when cost is 0 but duration exists", () => {
+    useSessionStore.setState({ cost: 0, duration: "12m 18s" });
+
+    render(<CompleteBar {...defaults} />);
+
+    const costDuration = screen.getByTestId("cost-duration");
+    expect(costDuration.textContent).toContain("12m 18s");
+    expect(costDuration.textContent).not.toContain("$");
   });
 
   it("formats dollar amount correctly", () => {
@@ -84,5 +96,87 @@ describe("CompleteBar", () => {
     render(<CompleteBar {...defaults} />);
 
     expect(screen.queryByTestId("session-id")).toBeNull();
+  });
+
+  it("shows historical cost from costs.json when session store is empty", () => {
+    useProjectStore.setState({
+      costs: {
+        stages: {
+          inspect: {
+            timestamp: "2026-02-25T17:10:14.955Z",
+            teammates: 0,
+            tier: "claude-haiku-4-5",
+            duration: "12m 18s",
+            inputTokens: 0,
+            outputTokens: 0,
+            estimatedCost: 1.25,
+            sessionId: "sess-hist-001",
+          },
+        },
+        totalCost: 1.25,
+      },
+    });
+
+    render(<CompleteBar {...defaults} currentPhase="inspect" />);
+
+    const costDuration = screen.getByTestId("cost-duration");
+    expect(costDuration.textContent).toContain("$1.25");
+    expect(costDuration.textContent).toContain("12m 18s");
+
+    const sessionIdEl = screen.getByTestId("session-id");
+    expect(sessionIdEl.textContent).toBe("sess-hist-001");
+  });
+
+  it("prefers session store values over historical costs", () => {
+    useSessionStore.setState({ cost: 2.50, duration: "5m", sessionId: "sess-live" });
+    useProjectStore.setState({
+      costs: {
+        stages: {
+          inspect: {
+            timestamp: "2026-02-25T17:10:14.955Z",
+            teammates: 0,
+            tier: "claude-haiku-4-5",
+            duration: "12m 18s",
+            inputTokens: 0,
+            outputTokens: 0,
+            estimatedCost: 1.25,
+            sessionId: "sess-hist-001",
+          },
+        },
+        totalCost: 1.25,
+      },
+    });
+
+    render(<CompleteBar {...defaults} currentPhase="inspect" />);
+
+    const costDuration = screen.getByTestId("cost-duration");
+    expect(costDuration.textContent).toContain("$2.50");
+    expect(costDuration.textContent).toContain("5m");
+
+    const sessionIdEl = screen.getByTestId("session-id");
+    expect(sessionIdEl.textContent).toBe("sess-live");
+  });
+
+  it("shows no cost when phase has no historical entry and session is empty", () => {
+    useProjectStore.setState({
+      costs: {
+        stages: {
+          design: {
+            timestamp: "2026-02-25T17:43:55.991Z",
+            teammates: 0,
+            tier: "claude-opus-4-6",
+            duration: "18m 33s",
+            inputTokens: 0,
+            outputTokens: 0,
+            estimatedCost: 3.00,
+          },
+        },
+        totalCost: 3.00,
+      },
+    });
+
+    render(<CompleteBar {...defaults} currentPhase="inspect" />);
+
+    expect(screen.queryByTestId("cost-duration")).toBeNull();
   });
 });
