@@ -5,14 +5,20 @@ import { useSessionStore } from "../../stores/session-store.js";
 import type { ElectronAPI } from "#electron/preload.js";
 
 vi.mock("../../components/shared/ArtifactHeader.js", () => ({
-  ArtifactHeader: ({ title, badge, actions }: { title: string; badge: string; actions?: React.ReactNode }) => (
-    <div data-testid="artifact-header">{title} - {badge}{actions}</div>
+  ArtifactHeader: ({ title, badge }: { title: string; badge: string }) => (
+    <div data-testid="artifact-header">{title} - {badge}</div>
   ),
 }));
 
 vi.mock("../../components/shared/StatCard.js", () => ({
   StatCard: ({ label, value }: { label: string; value: string | number }) => (
     <div data-testid={`stat-${label}`}>{value}</div>
+  ),
+}));
+
+vi.mock("../../components/shared/ArtifactList.js", () => ({
+  ArtifactList: ({ title, files }: { title: string; files: Array<{ name: string }> }) => (
+    <div data-testid="artifact-list">{title}: {files.map((f) => f.name).join(", ")}</div>
   ),
 }));
 
@@ -57,7 +63,7 @@ describe("DesignCanvas", () => {
 
   it("renders empty state when no data and not running", async () => {
     const { DesignCanvas } = await import("../../components/design/DesignCanvas.js");
-    render(<DesignCanvas data={null} />);
+    render(<DesignCanvas data={null} files={[]} />);
 
     expect(screen.getByText("Run design to generate architecture decisions")).toBeDefined();
   });
@@ -66,7 +72,7 @@ describe("DesignCanvas", () => {
     useSessionStore.setState({ isRunning: true, currentStage: "design" });
 
     const { DesignCanvas } = await import("../../components/design/DesignCanvas.js");
-    render(<DesignCanvas data={null} />);
+    render(<DesignCanvas data={null} files={[]} />);
 
     expect(screen.getByText("Designing production architecture...")).toBeDefined();
   });
@@ -93,11 +99,12 @@ describe("DesignCanvas", () => {
           ownedEntities: ["User"],
         },
       ],
-      artifacts: [{ name: "design-meta.json", size: "3 services", icon: "\u{1f4cb}" }],
     };
 
+    const files = [{ name: "design-meta.json", size: 1024 }];
+
     const { DesignCanvas } = await import("../../components/design/DesignCanvas.js");
-    render(<DesignCanvas data={data} />);
+    render(<DesignCanvas data={data} files={files} />);
 
     expect(screen.getByText("Auth Service")).toBeDefined();
     expect(screen.getByText("Handles authentication")).toBeDefined();
@@ -105,19 +112,21 @@ describe("DesignCanvas", () => {
     expect(screen.getByText("1 interfaces")).toBeDefined();
     expect(screen.getByText("1 entities")).toBeDefined();
     expect(screen.getByText("Node.js 22")).toBeDefined();
-    expect(screen.getByText("design-meta.json")).toBeDefined();
+    expect(screen.getByTestId("artifact-list")).toBeDefined();
   });
 
-  it("renders export buttons when design is complete", async () => {
+  it("renders artifact list when design is complete", async () => {
     useProjectStore.setState({
       stageStatuses: [{ stage: "design", complete: true, artifactPath: "/p" }] as never,
     });
 
-    const { DesignCanvas } = await import("../../components/design/DesignCanvas.js");
-    render(<DesignCanvas data={null} />);
+    const files = [{ name: "design-meta.json", size: 512 }, { name: "design.md", size: 2048 }];
 
-    expect(screen.getByText("Export JSON")).toBeDefined();
-    expect(screen.getByText("Export MD")).toBeDefined();
+    const { DesignCanvas } = await import("../../components/design/DesignCanvas.js");
+    render(<DesignCanvas data={null} files={files} />);
+
+    expect(screen.getByText(/design-meta\.json/)).toBeDefined();
+    expect(screen.getByText(/design\.md/)).toBeDefined();
   });
 
   it("renders service without optional fields", async () => {
@@ -128,11 +137,10 @@ describe("DesignCanvas", () => {
       featuresMapped: 0,
       targetStack: {},
       services: [{ id: "svc-1", name: "Minimal" }],
-      artifacts: [],
     };
 
     const { DesignCanvas } = await import("../../components/design/DesignCanvas.js");
-    render(<DesignCanvas data={data} />);
+    render(<DesignCanvas data={data} files={[]} />);
 
     expect(screen.getByText("Minimal")).toBeDefined();
   });

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { IngestSidebar } from "./IngestSidebar.js";
 import { InspectionCanvas, type InspectionData } from "./InspectionCanvas.js";
+import type { ArtifactFile } from "../shared/ArtifactList.js";
 import { useProjectStore } from "../../stores/project-store.js";
 import { useSessionStore } from "../../stores/session-store.js";
 import { useChatStore } from "../../stores/chat-store.js";
@@ -22,7 +23,7 @@ interface FeaturesJson {
     sourceFiles: string[];
     complexity: string;
   }>;
-  knownIssues?: string[];
+  knownIssues?: Array<string | { severity?: string; category?: string; description?: string }>;
   integrations?: Array<{ name: string; type: string; status: string }>;
   summary?: string;
 }
@@ -41,7 +42,14 @@ export function featuresJsonToInspectionData(features: FeaturesJson): Inspection
 
   const findings: InspectionData["findings"] = [];
   for (const issue of features.knownIssues ?? []) {
-    findings.push({ severity: "warning", text: issue });
+    if (typeof issue === "string") {
+      findings.push({ severity: "warning", text: issue });
+    } else {
+      const severity = issue.severity === "high" ? "critical"
+        : issue.severity === "low" ? "info"
+        : "warning";
+      findings.push({ severity, text: issue.description ?? "Unknown issue" });
+    }
   }
 
   const fileTree: InspectionData["fileTree"] = (features.source?.fileTree ?? []).map((entry) => {
@@ -61,10 +69,6 @@ export function featuresJsonToInspectionData(features: FeaturesJson): Inspection
     stackDetected: stack,
     findings,
     fileTree,
-    artifacts: [
-      { name: "features.json", size: `${(features.features ?? []).length} features`, icon: "\u{1f4cb}" },
-      { name: "inspect.md", size: "—", icon: "\u{1f4dd}" },
-    ],
   };
 }
 
@@ -73,6 +77,7 @@ export function InspectionPhase(): React.JSX.Element {
   const { startStage, endSession } = useSessionStore();
   const { addMessage, clearMessages } = useChatStore();
   const [inspectionData, setInspectionData] = useState<InspectionData | null>(null);
+  const [artifactFiles, setArtifactFiles] = useState<ArtifactFile[]>([]);
 
   const inspectComplete = stageStatuses.find((s) => s.stage === "inspect")?.complete ?? false;
 
@@ -82,6 +87,9 @@ export function InspectionPhase(): React.JSX.Element {
       const result = await window.electronAPI.readArtifacts(activeEntry.target, "inspect");
       if (result?.features) {
         setInspectionData(featuresJsonToInspectionData(result.features as FeaturesJson));
+      }
+      if (result?.files) {
+        setArtifactFiles(result.files as ArtifactFile[]);
       }
     } catch {
       // Artifacts not available yet
@@ -137,7 +145,7 @@ export function InspectionPhase(): React.JSX.Element {
   return (
     <div className="flex h-full">
       <IngestSidebar onRunInspection={handleRunInspection} onAbort={handleAbort} />
-      <InspectionCanvas data={inspectionData} />
+      <InspectionCanvas data={inspectionData} files={artifactFiles} />
     </div>
   );
 }

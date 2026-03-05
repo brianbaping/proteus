@@ -1,4 +1,5 @@
 import type { IpcMain } from "electron";
+import { shell } from "electron";
 import type { StageName } from "@proteus-forge/shared";
 import {
   readRegistry,
@@ -20,6 +21,21 @@ import { execFile as execFileCb } from "node:child_process";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFileCb);
+
+async function listFilesRecursive(dir: string, base: string = ""): Promise<Array<{ name: string; size: number }>> {
+  const entries = await readdir(dir, { withFileTypes: true });
+  const files: Array<{ name: string; size: number }> = [];
+  for (const entry of entries) {
+    const relativePath = base ? `${base}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) {
+      files.push(...await listFilesRecursive(join(dir, entry.name), relativePath));
+    } else {
+      const stat = await lstat(join(dir, entry.name));
+      files.push({ name: relativePath, size: stat.size });
+    }
+  }
+  return files;
+}
 
 export function registerProjectHandlers(ipcMain: IpcMain): void {
   ipcMain.handle("project:list", async () => {
@@ -101,7 +117,14 @@ export function registerProjectHandlers(ipcMain: IpcMain): void {
       }
     }
 
-    return Object.keys(artifacts).length > 0 ? artifacts : null;
+    const files = await listFilesRecursive(stageDir);
+    artifacts.files = files;
+
+    return Object.keys(artifacts).length > 1 || files.length > 0 ? artifacts : null;
+  });
+
+  ipcMain.handle("project:open-artifact", async (_event, filePath: string) => {
+    await shell.openPath(filePath);
   });
 
   ipcMain.handle("project:update", async (_event, name: string, updates: { source?: string; target?: string }) => {
@@ -113,7 +136,7 @@ export function registerProjectHandlers(ipcMain: IpcMain): void {
     try {
       await execFileAsync("git", ["clone", "--depth", "1", url, targetDir]);
     } catch (err) {
-      throw new Error(`git clone failed: ${(err as Error).message}`);
+      throw new Error(`git clone failed: ${(err as Error).message}`, { cause: err });
     }
     return targetDir;
   });
@@ -126,13 +149,13 @@ export function registerProjectHandlers(ipcMain: IpcMain): void {
       try {
         await execFileAsync("tar", ["xzf", archivePath, "-C", extractDir]);
       } catch (err) {
-        throw new Error(`tar extraction failed: ${(err as Error).message}`);
+        throw new Error(`tar extraction failed: ${(err as Error).message}`, { cause: err });
       }
     } else if (lower.endsWith(".zip")) {
       try {
         await execFileAsync("unzip", ["-q", archivePath, "-d", extractDir]);
       } catch (err) {
-        throw new Error(`unzip extraction failed: ${(err as Error).message}`);
+        throw new Error(`unzip extraction failed: ${(err as Error).message}`, { cause: err });
       }
     } else {
       throw new Error(`Unsupported archive format: ${archivePath}`);

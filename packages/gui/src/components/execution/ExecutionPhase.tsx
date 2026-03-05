@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { ExecutionCanvas } from "./ExecutionCanvas.js";
 import type { ExecutionData } from "./ExecutionCanvas.js";
+import type { ArtifactFile } from "../shared/ArtifactList.js";
 import { useProjectStore } from "../../stores/project-store.js";
 import { useSessionStore } from "../../stores/session-store.js";
 import { useChatStore } from "../../stores/chat-store.js";
@@ -57,9 +58,6 @@ function sessionJsonToExecutionData(session: SessionJson): ExecutionData {
     startedAt: session.startedAt ?? "",
     completedAt: session.completedAt ?? "",
     duration,
-    artifacts: [
-      { name: "session.json", size: `${progress.totalTasks} tasks`, icon: "\u{1f4cb}" },
-    ],
   };
 }
 
@@ -69,6 +67,7 @@ export function ExecutionPhase(): React.JSX.Element {
   const { addMessage, clearMessages } = useChatStore();
   const [tracks, setTracks] = useState<TrackEntry[]>([]);
   const [executionData, setExecutionData] = useState<ExecutionData | null>(null);
+  const [artifactFiles, setArtifactFiles] = useState<ArtifactFile[]>([]);
 
   const splitComplete = stageStatuses.find((s) => s.stage === "split")?.complete ?? false;
   const executeComplete = stageStatuses.find((s) => s.stage === "execute")?.complete ?? false;
@@ -92,6 +91,9 @@ export function ExecutionPhase(): React.JSX.Element {
       const result = await window.electronAPI.readArtifacts(activeEntry.target, "execute");
       if (result?.session) {
         setExecutionData(sessionJsonToExecutionData(result.session as SessionJson));
+      }
+      if (result?.files) {
+        setArtifactFiles(result.files as ArtifactFile[]);
       }
     } catch {
       // Session artifacts not available
@@ -200,7 +202,7 @@ export function ExecutionPhase(): React.JSX.Element {
         </div>
       </div>
 
-      <ExecutionCanvas data={executionData} />
+      <ExecutionCanvas data={executionData} files={artifactFiles} />
     </div>
   );
 }

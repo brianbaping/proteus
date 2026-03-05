@@ -291,7 +291,7 @@ describe("project IPC handlers", () => {
     });
 
     it("derives target path from source when not provided", async () => {
-      const { registerProject, createProjectConfig, writeProjectConfig } = await import("@proteus-forge/cli/api");
+      const { registerProject, createProjectConfig, writeProjectConfig: _writeProjectConfig } = await import("@proteus-forge/cli/api");
       vi.mocked(createProjectConfig).mockReturnValue({} as never);
 
       const handler = handlers.get("project:create")!;

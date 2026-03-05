@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { FileDropZone } from "../shared/FileDropZone.js";
 import { BreakdownCanvas } from "./BreakdownCanvas.js";
 import type { BreakdownData, TrackDisplay } from "./BreakdownCanvas.js";
+import type { ArtifactFile } from "../shared/ArtifactList.js";
 import { useProjectStore } from "../../stores/project-store.js";
 import { useSessionStore } from "../../stores/session-store.js";
 import { useChatStore } from "../../stores/chat-store.js";
@@ -34,9 +35,6 @@ function manifestToBreakdownData(manifest: ManifestJson): BreakdownData {
     totalTasks,
     disciplines,
     tracks,
-    artifacts: [
-      { name: "manifest.json", size: `${tracks.length} tracks`, icon: "\u{1f4cb}" },
-    ],
   };
 }
 
@@ -47,6 +45,7 @@ export function BreakdownPhase(): React.JSX.Element {
   const [notes, setNotes] = useState("");
   const [briefFile, setBriefFile] = useState("");
   const [breakdownData, setBreakdownData] = useState<BreakdownData | null>(null);
+  const [artifactFiles, setArtifactFiles] = useState<ArtifactFile[]>([]);
 
   const splitComplete = stageStatuses.find((s) => s.stage === "split")?.complete ?? false;
 
@@ -56,6 +55,9 @@ export function BreakdownPhase(): React.JSX.Element {
       const result = await window.electronAPI.readArtifacts(activeEntry.target, "split");
       if (result?.manifest) {
         setBreakdownData(manifestToBreakdownData(result.manifest as ManifestJson));
+      }
+      if (result?.files) {
+        setArtifactFiles(result.files as ArtifactFile[]);
       }
     } catch {
       // Artifacts not available yet
@@ -154,7 +156,7 @@ export function BreakdownPhase(): React.JSX.Element {
         </div>
       </div>
 
-      <BreakdownCanvas data={breakdownData} />
+      <BreakdownCanvas data={breakdownData} files={artifactFiles} />
     </div>
   );
 }

@@ -5,14 +5,20 @@ import { useSessionStore } from "../../stores/session-store.js";
 import type { ElectronAPI } from "#electron/preload.js";
 
 vi.mock("../../components/shared/ArtifactHeader.js", () => ({
-  ArtifactHeader: ({ title, badge, actions }: { title: string; badge: string; actions?: React.ReactNode }) => (
-    <div data-testid="artifact-header">{title} - {badge}{actions}</div>
+  ArtifactHeader: ({ title, badge }: { title: string; badge: string }) => (
+    <div data-testid="artifact-header">{title} - {badge}</div>
   ),
 }));
 
 vi.mock("../../components/shared/StatCard.js", () => ({
   StatCard: ({ label, value }: { label: string; value: string | number }) => (
     <div data-testid={`stat-${label}`}>{value}</div>
+  ),
+}));
+
+vi.mock("../../components/shared/ArtifactList.js", () => ({
+  ArtifactList: ({ title, files }: { title: string; files: Array<{ name: string }> }) => (
+    <div data-testid="artifact-list">{title}: {files.map((f) => f.name).join(", ")}</div>
   ),
 }));
 
@@ -57,7 +63,7 @@ describe("BreakdownCanvas", () => {
 
   it("renders empty state when no data and not running", async () => {
     const { BreakdownCanvas } = await import("../../components/breakdown/BreakdownCanvas.js");
-    render(<BreakdownCanvas data={null} />);
+    render(<BreakdownCanvas data={null} files={[]} />);
 
     expect(screen.getByText("Approve breakdown to partition plan into discipline-specific tracks")).toBeDefined();
   });
@@ -66,7 +72,7 @@ describe("BreakdownCanvas", () => {
     useSessionStore.setState({ isRunning: true, currentStage: "split" });
 
     const { BreakdownCanvas } = await import("../../components/breakdown/BreakdownCanvas.js");
-    render(<BreakdownCanvas data={null} />);
+    render(<BreakdownCanvas data={null} files={[]} />);
 
     expect(screen.getByText("Splitting into tracks...")).toBeDefined();
   });
@@ -85,11 +91,12 @@ describe("BreakdownCanvas", () => {
         { id: "t2", discipline: "backend", taskCount: 5, dependsOnTracks: ["t1"], requiredByTracks: ["t3"] },
         { id: "t3", discipline: "frontend", taskCount: 4, dependsOnTracks: ["t1", "t2"], requiredByTracks: [] },
       ],
-      artifacts: [{ name: "manifest.json", size: "3 tracks", icon: "\u{1f4cb}" }],
     };
 
+    const files = [{ name: "manifest.json", size: 512 }];
+
     const { BreakdownCanvas } = await import("../../components/breakdown/BreakdownCanvas.js");
-    render(<BreakdownCanvas data={data} />);
+    render(<BreakdownCanvas data={data} files={files} />);
 
     expect(screen.getByText("2 tasks")).toBeDefined();
     expect(screen.getByText("5 tasks")).toBeDefined();
@@ -97,18 +104,20 @@ describe("BreakdownCanvas", () => {
     expect(screen.getByText("depends on: t1")).toBeDefined();
     expect(screen.getByText("depends on: t1, t2")).toBeDefined();
     expect(screen.getByText("required by: t2, t3")).toBeDefined();
-    expect(screen.getByText("manifest.json")).toBeDefined();
+    expect(screen.getByTestId("artifact-list")).toBeDefined();
   });
 
-  it("renders export button when split is complete", async () => {
+  it("renders artifact list when split is complete", async () => {
     useProjectStore.setState({
       stageStatuses: [{ stage: "split", complete: true, artifactPath: "/p" }] as never,
     });
 
-    const { BreakdownCanvas } = await import("../../components/breakdown/BreakdownCanvas.js");
-    render(<BreakdownCanvas data={null} />);
+    const files = [{ name: "manifest.json", size: 1024 }];
 
-    expect(screen.getByText("Export JSON")).toBeDefined();
+    const { BreakdownCanvas } = await import("../../components/breakdown/BreakdownCanvas.js");
+    render(<BreakdownCanvas data={null} files={files} />);
+
+    expect(screen.getByText(/manifest\.json/)).toBeDefined();
   });
 
   it("renders track with unknown discipline color gracefully", async () => {
@@ -119,11 +128,10 @@ describe("BreakdownCanvas", () => {
       tracks: [
         { id: "t1", discipline: "ml-ops", taskCount: 3, dependsOnTracks: [], requiredByTracks: [] },
       ],
-      artifacts: [],
     };
 
     const { BreakdownCanvas } = await import("../../components/breakdown/BreakdownCanvas.js");
-    render(<BreakdownCanvas data={data} />);
+    render(<BreakdownCanvas data={data} files={[]} />);
 
     expect(screen.getByText("3 tasks")).toBeDefined();
   });

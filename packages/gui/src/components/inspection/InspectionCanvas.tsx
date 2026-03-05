@@ -1,6 +1,7 @@
-import React, { useCallback } from "react";
-import { STAGE_DIRS } from "@proteus-forge/shared";
+import React from "react";
 import { ArtifactHeader } from "../shared/ArtifactHeader.js";
+import { ArtifactList } from "../shared/ArtifactList.js";
+import type { ArtifactFile } from "../shared/ArtifactList.js";
 import { StatCard } from "../shared/StatCard.js";
 import { useSessionStore } from "../../stores/session-store.js";
 import { useProjectStore } from "../../stores/project-store.js";
@@ -12,50 +13,25 @@ export interface InspectionData {
   stackDetected: string;
   findings: Array<{ severity: "critical" | "warning" | "info"; text: string }>;
   fileTree: Array<{ name: string; type: "file" | "dir"; highlight?: boolean; indent: number }>;
-  artifacts: Array<{ name: string; size: string; icon: string }>;
 }
 
 interface InspectionCanvasProps {
   data: InspectionData | null;
+  files: ArtifactFile[];
 }
 
-export function InspectionCanvas({ data }: InspectionCanvasProps): React.JSX.Element {
+export function InspectionCanvas({ data, files }: InspectionCanvasProps): React.JSX.Element {
   const isRunning = useSessionStore((s) => s.isRunning && s.currentStage === "inspect");
   const stageStatuses = useProjectStore((s) => s.stageStatuses);
-  const activeEntry = useProjectStore((s) => s.activeEntry);
   const inspectComplete = stageStatuses.find((s) => s.stage === "inspect")?.complete ?? false;
 
   const badge = isRunning ? "analyzing" : inspectComplete ? "complete" : "idle";
-
-  const handleExport = useCallback(async (filename: string) => {
-    if (!activeEntry?.target) return;
-    const sourcePath = `${activeEntry.target}/.proteus-forge/${STAGE_DIRS.inspect}/${filename}`;
-    await window.electronAPI.saveFile(sourcePath, filename);
-  }, [activeEntry]);
 
   return (
     <div className="flex-1 overflow-y-auto bg-bg">
       <ArtifactHeader
         title="Code Inspection"
         badge={badge}
-        actions={
-          inspectComplete ? (
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleExport("features.json")}
-                className="px-3 py-1 text-xs border border-border-2 text-fg-dim rounded hover:text-amber transition-colors"
-              >
-                Export JSON
-              </button>
-              <button
-                onClick={() => handleExport("inspect.md")}
-                className="px-3 py-1 text-xs border border-border-2 text-fg-dim rounded hover:text-amber transition-colors"
-              >
-                Export MD
-              </button>
-            </div>
-          ) : undefined
-        }
       />
 
       <div className="p-4 space-y-4">
@@ -112,23 +88,7 @@ export function InspectionCanvas({ data }: InspectionCanvasProps): React.JSX.Ele
         )}
 
         {/* Artifacts */}
-        {data?.artifacts && data.artifacts.length > 0 && (
-          <div className="bg-bg-3 rounded-lg border border-border p-4">
-            <div className="text-2xs uppercase tracking-wider text-fg-muted mb-3">Inspection Artifacts</div>
-            <div className="grid grid-cols-3 gap-2">
-              {data.artifacts.map((a, i) => (
-                <div
-                  key={i}
-                  className="flex flex-col items-center p-3 bg-bg rounded-lg border border-border hover:border-green/30 cursor-pointer transition-colors"
-                >
-                  <span className="text-2xl mb-1">{a.icon}</span>
-                  <span className="text-xs text-fg truncate w-full text-center">{a.name}</span>
-                  <span className="text-2xs text-fg-muted">{a.size}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        <ArtifactList stage="inspect" files={files} title="Inspection Artifacts" />
 
         {/* Empty state */}
         {!data && !isRunning && (

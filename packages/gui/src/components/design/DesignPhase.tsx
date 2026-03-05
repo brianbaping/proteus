@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { FileDropZone } from "../shared/FileDropZone.js";
 import { DesignCanvas } from "./DesignCanvas.js";
 import type { DesignData, ServiceEntry } from "./DesignCanvas.js";
+import type { ArtifactFile } from "../shared/ArtifactList.js";
 import { useProjectStore } from "../../stores/project-store.js";
 import { useSessionStore } from "../../stores/session-store.js";
 import { useChatStore } from "../../stores/chat-store.js";
@@ -21,7 +22,7 @@ interface DesignMetaJson {
   featureToServiceMap?: Record<string, string>;
 }
 
-function designMetaToDesignData(meta: DesignMetaJson, hasMd: boolean): DesignData {
+function designMetaToDesignData(meta: DesignMetaJson): DesignData {
   const services: ServiceEntry[] = (meta.services ?? []).map((s) => ({
     id: s.id,
     name: s.name,
@@ -35,13 +36,6 @@ function designMetaToDesignData(meta: DesignMetaJson, hasMd: boolean): DesignDat
   const featureCount = Object.keys(meta.featureToServiceMap ?? {}).length;
   const stack = meta.targetStack ?? {};
 
-  const artifacts = [
-    { name: "design-meta.json", size: `${services.length} services`, icon: "\u{1f4cb}" },
-  ];
-  if (hasMd) {
-    artifacts.push({ name: "design.md", size: "—", icon: "\u{1f4dd}" });
-  }
-
   return {
     architectureStyle: meta.architectureStyle ?? "Unknown",
     framework: stack.framework ?? "—",
@@ -49,7 +43,6 @@ function designMetaToDesignData(meta: DesignMetaJson, hasMd: boolean): DesignDat
     featuresMapped: featureCount,
     targetStack: stack,
     services,
-    artifacts,
   };
 }
 
@@ -61,6 +54,7 @@ export function DesignPhase(): React.JSX.Element {
   const [briefFile, setBriefFile] = useState("");
   const [excludeStyle, setExcludeStyle] = useState(false);
   const [designData, setDesignData] = useState<DesignData | null>(null);
+  const [artifactFiles, setArtifactFiles] = useState<ArtifactFile[]>([]);
 
   const designComplete = stageStatuses.find((s) => s.stage === "design")?.complete ?? false;
 
@@ -69,10 +63,10 @@ export function DesignPhase(): React.JSX.Element {
     try {
       const result = await window.electronAPI.readArtifacts(activeEntry.target, "design");
       if (result?.designMeta) {
-        setDesignData(designMetaToDesignData(
-          result.designMeta as DesignMetaJson,
-          typeof result.designMd === "string",
-        ));
+        setDesignData(designMetaToDesignData(result.designMeta as DesignMetaJson));
+      }
+      if (result?.files) {
+        setArtifactFiles(result.files as ArtifactFile[]);
       }
     } catch {
       // Artifacts not available yet
@@ -190,7 +184,7 @@ export function DesignPhase(): React.JSX.Element {
         </div>
       </div>
 
-      <DesignCanvas data={designData} />
+      <DesignCanvas data={designData} files={artifactFiles} />
     </div>
   );
 }

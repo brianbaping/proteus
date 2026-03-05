@@ -1,6 +1,7 @@
-import React, { useCallback } from "react";
-import { STAGE_DIRS } from "@proteus-forge/shared";
+import React from "react";
 import { ArtifactHeader } from "../shared/ArtifactHeader.js";
+import { ArtifactList } from "../shared/ArtifactList.js";
+import type { ArtifactFile } from "../shared/ArtifactList.js";
 import { StalenessWarning } from "../shared/StalenessWarning.js";
 import { StatCard } from "../shared/StatCard.js";
 import { useSessionStore } from "../../stores/session-store.js";
@@ -16,11 +17,11 @@ interface ExecutionData {
   startedAt: string;
   completedAt: string;
   duration: string;
-  artifacts: Array<{ name: string; size: string; icon: string }>;
 }
 
 interface ExecutionCanvasProps {
   data: ExecutionData | null;
+  files: ArtifactFile[];
 }
 
 export type { ExecutionData };
@@ -31,19 +32,12 @@ const STATUS_STYLES: Record<string, string> = {
   partial: "bg-amber-dark text-amber border-amber/30",
 };
 
-export function ExecutionCanvas({ data }: ExecutionCanvasProps): React.JSX.Element {
+export function ExecutionCanvas({ data, files }: ExecutionCanvasProps): React.JSX.Element {
   const isRunning = useSessionStore((s) => s.isRunning && s.currentStage === "execute");
   const stageStatuses = useProjectStore((s) => s.stageStatuses);
-  const activeEntry = useProjectStore((s) => s.activeEntry);
   const executeComplete = stageStatuses.find((s) => s.stage === "execute")?.complete ?? false;
 
   const badge = isRunning ? "analyzing" : executeComplete ? "complete" : "idle";
-
-  const handleExport = useCallback(async (filename: string) => {
-    if (!activeEntry?.target) return;
-    const sourcePath = `${activeEntry.target}/.proteus-forge/${STAGE_DIRS.execute}/${filename}`;
-    await window.electronAPI.saveFile(sourcePath, filename);
-  }, [activeEntry]);
 
   const progressPercent = data
     ? data.totalTasks > 0
@@ -61,18 +55,6 @@ export function ExecutionCanvas({ data }: ExecutionCanvasProps): React.JSX.Eleme
       <ArtifactHeader
         title="Execution"
         badge={badge}
-        actions={
-          executeComplete ? (
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleExport("session.json")}
-                className="px-3 py-1 text-xs border border-border-2 text-fg-dim rounded hover:text-amber transition-colors"
-              >
-                Export JSON
-              </button>
-            </div>
-          ) : undefined
-        }
       />
       <StalenessWarning stage="execute" />
 
@@ -153,23 +135,7 @@ export function ExecutionCanvas({ data }: ExecutionCanvasProps): React.JSX.Eleme
         )}
 
         {/* Artifacts */}
-        {data?.artifacts && data.artifacts.length > 0 && (
-          <div className="bg-bg-3 rounded-lg border border-border p-4">
-            <div className="text-2xs uppercase tracking-wider text-fg-muted mb-3">Execution Artifacts</div>
-            <div className="grid grid-cols-3 gap-2">
-              {data.artifacts.map((a, i) => (
-                <div
-                  key={i}
-                  className="flex flex-col items-center p-3 bg-bg rounded-lg border border-border hover:border-green/30 cursor-pointer transition-colors"
-                >
-                  <span className="text-2xl mb-1">{a.icon}</span>
-                  <span className="text-xs text-fg truncate w-full text-center">{a.name}</span>
-                  <span className="text-2xs text-fg-muted">{a.size}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        <ArtifactList stage="execute" files={files} title="Execution Artifacts" />
 
         {/* Empty state */}
         {!data && !isRunning && (

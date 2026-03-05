@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { FileDropZone } from "../shared/FileDropZone.js";
 import { PlanningCanvas } from "./PlanningCanvas.js";
-import type { PlanData, TaskEntry, WaveEntry } from "./PlanningCanvas.js";
+import type { PlanData, TaskEntry } from "./PlanningCanvas.js";
+import type { ArtifactFile } from "../shared/ArtifactList.js";
 import { useProjectStore } from "../../stores/project-store.js";
 import { useSessionStore } from "../../stores/session-store.js";
 import { useChatStore } from "../../stores/chat-store.js";
@@ -23,7 +24,7 @@ interface PlanJson {
   criticalPath?: string[];
 }
 
-function planJsonToPlanData(plan: PlanJson, hasMd: boolean): PlanData {
+function planJsonToPlanData(plan: PlanJson): PlanData {
   const tasks = plan.tasks ?? [];
   const waves = plan.executionWaves ?? [];
   const criticalPath = plan.criticalPath ?? [];
@@ -43,13 +44,6 @@ function planJsonToPlanData(plan: PlanJson, hasMd: boolean): PlanData {
     })),
   }));
 
-  const artifacts = [
-    { name: "plan.json", size: `${tasks.length} tasks`, icon: "\u{1f4cb}" },
-  ];
-  if (hasMd) {
-    artifacts.push({ name: "plan.md", size: "—", icon: "\u{1f4dd}" });
-  }
-
   return {
     totalTasks: tasks.length,
     waveCount: waves.length,
@@ -57,7 +51,6 @@ function planJsonToPlanData(plan: PlanJson, hasMd: boolean): PlanData {
     disciplines,
     waves: waveDetails,
     criticalPath,
-    artifacts,
   };
 }
 
@@ -68,6 +61,7 @@ export function PlanningPhase(): React.JSX.Element {
   const [notes, setNotes] = useState("");
   const [briefFile, setBriefFile] = useState("");
   const [planData, setPlanData] = useState<PlanData | null>(null);
+  const [artifactFiles, setArtifactFiles] = useState<ArtifactFile[]>([]);
 
   const planComplete = stageStatuses.find((s) => s.stage === "plan")?.complete ?? false;
 
@@ -76,10 +70,10 @@ export function PlanningPhase(): React.JSX.Element {
     try {
       const result = await window.electronAPI.readArtifacts(activeEntry.target, "plan");
       if (result?.plan) {
-        setPlanData(planJsonToPlanData(
-          result.plan as PlanJson,
-          typeof result.planMd === "string",
-        ));
+        setPlanData(planJsonToPlanData(result.plan as PlanJson));
+      }
+      if (result?.files) {
+        setArtifactFiles(result.files as ArtifactFile[]);
       }
     } catch {
       // Artifacts not available yet
@@ -178,7 +172,7 @@ export function PlanningPhase(): React.JSX.Element {
         </div>
       </div>
 
-      <PlanningCanvas data={planData} />
+      <PlanningCanvas data={planData} files={artifactFiles} />
     </div>
   );
 }

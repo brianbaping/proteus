@@ -1,6 +1,7 @@
-import React, { useCallback } from "react";
-import { STAGE_DIRS } from "@proteus-forge/shared";
+import React from "react";
 import { ArtifactHeader } from "../shared/ArtifactHeader.js";
+import { ArtifactList } from "../shared/ArtifactList.js";
+import type { ArtifactFile } from "../shared/ArtifactList.js";
 import { StalenessWarning } from "../shared/StalenessWarning.js";
 import { StatCard } from "../shared/StatCard.js";
 import { useSessionStore } from "../../stores/session-store.js";
@@ -28,11 +29,11 @@ interface PlanData {
   disciplines: string[];
   waves: Array<WaveEntry & { taskDetails: TaskEntry[] }>;
   criticalPath: string[];
-  artifacts: Array<{ name: string; size: string; icon: string }>;
 }
 
 interface PlanningCanvasProps {
   data: PlanData | null;
+  files: ArtifactFile[];
 }
 
 export type { PlanData, TaskEntry, WaveEntry };
@@ -49,43 +50,18 @@ const TESTING_STYLES: Record<string, string> = {
   none: "bg-bg-3 text-fg-muted border-border",
 };
 
-export function PlanningCanvas({ data }: PlanningCanvasProps): React.JSX.Element {
+export function PlanningCanvas({ data, files }: PlanningCanvasProps): React.JSX.Element {
   const isRunning = useSessionStore((s) => s.isRunning && s.currentStage === "plan");
   const stageStatuses = useProjectStore((s) => s.stageStatuses);
-  const activeEntry = useProjectStore((s) => s.activeEntry);
   const planComplete = stageStatuses.find((s) => s.stage === "plan")?.complete ?? false;
 
   const badge = isRunning ? "analyzing" : planComplete ? "complete" : "idle";
-
-  const handleExport = useCallback(async (filename: string) => {
-    if (!activeEntry?.target) return;
-    const sourcePath = `${activeEntry.target}/.proteus-forge/${STAGE_DIRS.plan}/${filename}`;
-    await window.electronAPI.saveFile(sourcePath, filename);
-  }, [activeEntry]);
 
   return (
     <div className="flex-1 overflow-y-auto bg-bg">
       <ArtifactHeader
         title="Milestone Roadmap"
         badge={badge}
-        actions={
-          planComplete ? (
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleExport("plan.json")}
-                className="px-3 py-1 text-xs border border-border-2 text-fg-dim rounded hover:text-amber transition-colors"
-              >
-                Export JSON
-              </button>
-              <button
-                onClick={() => handleExport("plan.md")}
-                className="px-3 py-1 text-xs border border-border-2 text-fg-dim rounded hover:text-amber transition-colors"
-              >
-                Export MD
-              </button>
-            </div>
-          ) : undefined
-        }
       />
       <StalenessWarning stage="plan" />
 
@@ -163,23 +139,7 @@ export function PlanningCanvas({ data }: PlanningCanvasProps): React.JSX.Element
         )}
 
         {/* Artifacts */}
-        {data?.artifacts && data.artifacts.length > 0 && (
-          <div className="bg-bg-3 rounded-lg border border-border p-4">
-            <div className="text-2xs uppercase tracking-wider text-fg-muted mb-3">Plan Artifacts</div>
-            <div className="grid grid-cols-3 gap-2">
-              {data.artifacts.map((a, i) => (
-                <div
-                  key={i}
-                  className="flex flex-col items-center p-3 bg-bg rounded-lg border border-border hover:border-green/30 cursor-pointer transition-colors"
-                >
-                  <span className="text-2xl mb-1">{a.icon}</span>
-                  <span className="text-xs text-fg truncate w-full text-center">{a.name}</span>
-                  <span className="text-2xs text-fg-muted">{a.size}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        <ArtifactList stage="plan" files={files} title="Plan Artifacts" />
 
         {/* Empty state */}
         {!data && !isRunning && (

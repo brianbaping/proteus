@@ -5,14 +5,20 @@ import { useSessionStore } from "../../stores/session-store.js";
 import type { ElectronAPI } from "#electron/preload.js";
 
 vi.mock("../../components/shared/ArtifactHeader.js", () => ({
-  ArtifactHeader: ({ title, badge, actions }: { title: string; badge: string; actions?: React.ReactNode }) => (
-    <div data-testid="artifact-header">{title} - {badge}{actions}</div>
+  ArtifactHeader: ({ title, badge }: { title: string; badge: string }) => (
+    <div data-testid="artifact-header">{title} - {badge}</div>
   ),
 }));
 
 vi.mock("../../components/shared/StatCard.js", () => ({
   StatCard: ({ label, value }: { label: string; value: string | number }) => (
     <div data-testid={`stat-${label}`}>{value}</div>
+  ),
+}));
+
+vi.mock("../../components/shared/ArtifactList.js", () => ({
+  ArtifactList: ({ title, files }: { title: string; files: Array<{ name: string }> }) => (
+    <div data-testid="artifact-list">{title}: {files.map((f) => f.name).join(", ")}</div>
   ),
 }));
 
@@ -57,7 +63,7 @@ describe("PlanningCanvas", () => {
 
   it("renders empty state when no data and not running", async () => {
     const { PlanningCanvas } = await import("../../components/planning/PlanningCanvas.js");
-    render(<PlanningCanvas data={null} />);
+    render(<PlanningCanvas data={null} files={[]} />);
 
     expect(screen.getByText("Approve plan to generate task DAG with execution waves")).toBeDefined();
   });
@@ -66,7 +72,7 @@ describe("PlanningCanvas", () => {
     useSessionStore.setState({ isRunning: true, currentStage: "plan" });
 
     const { PlanningCanvas } = await import("../../components/planning/PlanningCanvas.js");
-    render(<PlanningCanvas data={null} />);
+    render(<PlanningCanvas data={null} files={[]} />);
 
     expect(screen.getByText("Generating execution plan...")).toBeDefined();
   });
@@ -100,11 +106,12 @@ describe("PlanningCanvas", () => {
         },
       ],
       criticalPath: ["task-001", "task-002", "task-003"],
-      artifacts: [{ name: "plan.json", size: "5 tasks", icon: "\u{1f4cb}" }],
     };
 
+    const files = [{ name: "plan.json", size: 2048 }];
+
     const { PlanningCanvas } = await import("../../components/planning/PlanningCanvas.js");
-    render(<PlanningCanvas data={data} />);
+    render(<PlanningCanvas data={data} files={files} />);
 
     expect(screen.getByText("Wave 1")).toBeDefined();
     expect(screen.getByText("Wave 2")).toBeDefined();
@@ -112,19 +119,21 @@ describe("PlanningCanvas", () => {
     expect(screen.getByText("Setup project")).toBeDefined();
     expect(screen.getByText("Implement auth")).toBeDefined();
     expect(screen.getAllByText("task-001").length).toBeGreaterThan(0);
-    expect(screen.getByText("plan.json")).toBeDefined();
+    expect(screen.getByTestId("artifact-list")).toBeDefined();
   });
 
-  it("renders export buttons when plan is complete", async () => {
+  it("renders artifact list when plan is complete", async () => {
     useProjectStore.setState({
       stageStatuses: [{ stage: "plan", complete: true, artifactPath: "/p" }] as never,
     });
 
-    const { PlanningCanvas } = await import("../../components/planning/PlanningCanvas.js");
-    render(<PlanningCanvas data={null} />);
+    const files = [{ name: "plan.json", size: 1024 }, { name: "plan.md", size: 4096 }];
 
-    expect(screen.getByText("Export JSON")).toBeDefined();
-    expect(screen.getByText("Export MD")).toBeDefined();
+    const { PlanningCanvas } = await import("../../components/planning/PlanningCanvas.js");
+    render(<PlanningCanvas data={null} files={files} />);
+
+    expect(screen.getByText(/plan\.json/)).toBeDefined();
+    expect(screen.getByText(/plan\.md/)).toBeDefined();
   });
 
   it("renders task with unknown complexity/testing gracefully", async () => {
@@ -143,11 +152,10 @@ describe("PlanningCanvas", () => {
         },
       ],
       criticalPath: [],
-      artifacts: [],
     };
 
     const { PlanningCanvas } = await import("../../components/planning/PlanningCanvas.js");
-    render(<PlanningCanvas data={data} />);
+    render(<PlanningCanvas data={data} files={[]} />);
 
     expect(screen.getByText("Task")).toBeDefined();
   });
