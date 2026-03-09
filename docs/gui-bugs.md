@@ -8,7 +8,7 @@ Bug log for GUI manual validation. See [`docs/gui-testing-guide.md`](gui-testing
 |----------|------|-------|-----------|
 | Blocker  | 0    | 3     | 0         |
 | Bug      | 0    | 1     | 1         |
-| Cosmetic | 6    | 0     | 0         |
+| Cosmetic | 7    | 0     | 0         |
 
 ## Bugs
 
@@ -156,5 +156,17 @@ Bug log for GUI manual validation. See [`docs/gui-testing-guide.md`](gui-testing
 - **Root cause:** AIChatPanel has no export/copy mechanism and text selection may be limited.
 - **Fix:** Add either a "Save Log" toggle/button that writes chat content to a file, or enable select-all (Ctrl+A) within the chat panel.
 
-<!-- Next ID: BUG-012 -->
+### BUG-012: No way to increase or decrease GUI font size
+
+- **Layer:** UI
+- **Severity:** Cosmetic
+- **Status:** Open
+- **Steps to reproduce:**
+  1. Open the app
+  2. No way to increase or decrease the font size of the GUI
+  3. Expected: user should be able to adjust font size (e.g., Ctrl+/Ctrl- or a settings control)
+- **Root cause:** No font size scaling mechanism is implemented.
+- **Fix:** Add font size controls — either keyboard shortcuts (Ctrl+Plus/Ctrl+Minus/Ctrl+0) that adjust a base font scale, a View menu option, or a setting in the Settings dialog.
+
+<!-- Next ID: BUG-013 -->
 
