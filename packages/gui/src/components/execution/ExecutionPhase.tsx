@@ -63,8 +63,10 @@ function sessionJsonToExecutionData(session: SessionJson): ExecutionData {
 
 export function ExecutionPhase(): React.JSX.Element {
   const { activeEntry, activeProjectName, stageStatuses, refreshStatus } = useProjectStore();
-  const { isRunning, startStage, endSession, completedStages } = useSessionStore();
-  const phaseCompleted = completedStages.includes("execute");
+  const { isRunning, startStage, endSession } = useSessionStore();
+  const hasArtifacts = stageStatuses.find((s) => s.stage === "execute")?.complete ?? false;
+  const prevHasArtifacts = stageStatuses.find((s) => s.stage === "split")?.complete ?? false;
+  const runDisabled = hasArtifacts || !prevHasArtifacts;
   const { addMessage, clearMessages } = useChatStore();
   const [tracks, setTracks] = useState<TrackEntry[]>([]);
   const [executionData, setExecutionData] = useState<ExecutionData | null>(null);
@@ -104,12 +106,17 @@ export function ExecutionPhase(): React.JSX.Element {
   useEffect(() => {
     if (splitComplete) {
       loadManifest();
+    } else {
+      setTracks([]);
     }
   }, [splitComplete, loadManifest]);
 
   useEffect(() => {
     if (executeComplete) {
       loadSessionArtifacts();
+    } else {
+      setExecutionData(null);
+      setArtifactFiles([]);
     }
   }, [executeComplete, loadSessionArtifacts]);
 
@@ -195,9 +202,9 @@ export function ExecutionPhase(): React.JSX.Element {
           ) : (
             <button
               onClick={handleBuildCandidate}
-              disabled={phaseCompleted}
+              disabled={runDisabled}
               className={`w-full py-2.5 rounded font-bold text-sm transition-colors ${
-                phaseCompleted
+                runDisabled
                   ? "bg-green text-bg opacity-50 cursor-not-allowed"
                   : "bg-green text-bg hover:bg-green-dim"
               }`}

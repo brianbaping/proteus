@@ -16,6 +16,7 @@ interface SessionState {
   addError(message: string): void;
   endSession(success: boolean, cost: number, duration: string, sessionId: string): void;
   completeStage(stage: StageName): void;
+  uncompleteStage(stage: StageName): void;
   initCompletedStages(stages: StageName[]): void;
   reset(): void;
 }
@@ -59,6 +60,10 @@ export const useSessionStore = create<SessionState>((set) => ({
     completedStages: state.completedStages.includes(stage)
       ? state.completedStages
       : [...state.completedStages, stage],
+  })),
+
+  uncompleteStage: (stage) => set((state) => ({
+    completedStages: state.completedStages.filter((s) => s !== stage),
   })),
 
   initCompletedStages: (stages) => set({ completedStages: stages }),

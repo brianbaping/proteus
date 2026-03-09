@@ -16,6 +16,7 @@ vi.mock("@proteus-forge/cli/api", () => ({
   getInboxDir: vi.fn(),
   getActiveProject: vi.fn(),
   revertStage: vi.fn(),
+  updateProject: vi.fn(),
 }));
 
 vi.mock("#electron/gui-dashboard.js", () => {
@@ -368,19 +369,37 @@ describe("pipeline IPC handlers", () => {
   });
 
   describe("stage:revert", () => {
-    it("calls revertStage with the active project target path", async () => {
-      const { getActiveProject, revertStage } = await import("@proteus-forge/cli/api");
+    it("reverts to previous stage when destroying a non-first stage", async () => {
+      const { getActiveProject, revertStage, updateProject } = await import("@proteus-forge/cli/api");
       vi.mocked(getActiveProject).mockResolvedValue({
         name: "proj",
         entry: { source: "/s", target: "/t", createdAt: "", lastCompletedStage: "plan" },
       });
-      vi.mocked(revertStage).mockResolvedValue({ removed: ["plan", "split", "execute"] });
+      vi.mocked(revertStage).mockResolvedValue({ removed: ["design", "plan", "split", "execute"] });
 
       const handler = handlers.get("stage:revert")!;
       const result = await handler({}, "design");
 
-      expect(revertStage).toHaveBeenCalledWith("/t", "design");
-      expect(result).toEqual({ removed: ["plan", "split", "execute"] });
+      // Should revert to previous stage (inspect) to include current stage
+      expect(revertStage).toHaveBeenCalledWith("/t", "inspect");
+      expect(updateProject).toHaveBeenCalledWith("proj", { lastCompletedStage: "inspect" });
+      expect(result).toEqual({ removed: ["design", "plan", "split", "execute"] });
+    });
+
+    it("removes inspect dir directly when destroying first stage", async () => {
+      const { getActiveProject, revertStage, updateProject } = await import("@proteus-forge/cli/api");
+      vi.mocked(getActiveProject).mockResolvedValue({
+        name: "proj",
+        entry: { source: "/s", target: "/t", createdAt: "", lastCompletedStage: "inspect" },
+      });
+      vi.mocked(revertStage).mockResolvedValue({ removed: [] });
+
+      const handler = handlers.get("stage:revert")!;
+      const result = await handler({}, "inspect");
+
+      expect(revertStage).toHaveBeenCalledWith("/t", "inspect");
+      expect(updateProject).toHaveBeenCalledWith("proj", { lastCompletedStage: "new" });
+      expect(result).toEqual({ removed: ["inspect", "design", "plan", "split", "execute"] });
     });
 
     it("throws when no active project", async () => {

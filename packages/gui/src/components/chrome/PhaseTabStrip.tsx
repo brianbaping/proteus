@@ -2,7 +2,6 @@ import React from "react";
 import { STAGE_ORDER } from "@proteus-forge/shared";
 import type { StageName } from "@proteus-forge/shared";
 import { useProjectStore } from "../../stores/project-store.js";
-import { useSessionStore } from "../../stores/session-store.js";
 
 const PHASE_LABELS: Record<StageName, string> = {
   inspect: "Inspection",
@@ -19,25 +18,11 @@ interface PhaseTabStripProps {
 
 export function PhaseTabStrip({ activePhase, onPhaseClick }: PhaseTabStripProps): React.JSX.Element {
   const stageStatuses = useProjectStore((s) => s.stageStatuses);
-  const completedStages = useSessionStore((s) => s.completedStages);
 
-  function getTabState(stage: StageName): "active" | "completed" | "unlocked" | "locked" {
+  function getTabState(stage: StageName): "active" | "completed" | "idle" {
     if (stage === activePhase) return "active";
-
-    // "completed" — user has explicitly completed this stage
-    if (completedStages.includes(stage)) return "completed";
-
-    // "unlocked" — all prior stages are user-completed AND complete on disk
-    const stageIdx = STAGE_ORDER.indexOf(stage);
-    const allPriorUserCompleted = STAGE_ORDER.slice(0, stageIdx).every(
-      (s) => completedStages.includes(s)
-    );
-    const allPriorDiskComplete = STAGE_ORDER.slice(0, stageIdx).every(
-      (s) => stageStatuses.find((st) => st.stage === s)?.complete
-    );
-    if (stageIdx === 0 || (allPriorUserCompleted && allPriorDiskComplete)) return "unlocked";
-
-    return "locked";
+    const isDiskComplete = stageStatuses.find((s) => s.stage === stage)?.complete ?? false;
+    return isDiskComplete ? "completed" : "idle";
   }
 
   return (
@@ -52,16 +37,13 @@ export function PhaseTabStrip({ activePhase, onPhaseClick }: PhaseTabStripProps)
               <span className="text-fg-muted text-xs mx-2 select-none">&rsaquo;</span>
             )}
             <button
-              onClick={() => state !== "locked" && onPhaseClick(stage)}
-              disabled={state === "locked"}
-              className={`flex items-center gap-2 px-3 py-2 text-sm transition-colors relative ${
+              onClick={() => onPhaseClick(stage)}
+              className={`flex items-center gap-2 px-3 py-2 text-sm transition-colors relative cursor-pointer ${
                 state === "active"
                   ? "text-green"
                   : state === "completed"
-                    ? "text-green-dim cursor-pointer hover:text-green"
-                    : state === "unlocked"
-                      ? "text-fg-dim cursor-pointer hover:text-green"
-                      : "text-fg-muted cursor-not-allowed"
+                    ? "text-green-dim hover:text-green"
+                    : "text-fg-dim hover:text-green"
               }`}
             >
               <span
@@ -70,9 +52,7 @@ export function PhaseTabStrip({ activePhase, onPhaseClick }: PhaseTabStripProps)
                     ? "bg-green text-bg"
                     : state === "completed"
                       ? "border border-green-dim text-green-dim"
-                      : state === "unlocked"
-                        ? "border border-fg-muted text-fg-dim"
-                        : "bg-bg-3 text-fg-muted"
+                      : "border border-fg-muted text-fg-dim"
                 }`}
               >
                 {phaseNum}

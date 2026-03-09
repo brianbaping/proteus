@@ -151,7 +151,9 @@ describe("BreakdownPhase", () => {
   });
 
   it("forwards notes as brief option in runStage call", async () => {
-    setProjectStoreState({});
+    setProjectStoreState({
+      stageStatuses: [{ stage: "plan", complete: true, artifactPath: "/p" }] as never,
+    });
 
     const { BreakdownPhase } = await import("../../components/breakdown/BreakdownPhase.js");
     render(<BreakdownPhase />);
@@ -172,7 +174,9 @@ describe("BreakdownPhase", () => {
   });
 
   it("does not set options.brief when notes are empty", async () => {
-    setProjectStoreState({});
+    setProjectStoreState({
+      stageStatuses: [{ stage: "plan", complete: true, artifactPath: "/p" }] as never,
+    });
 
     const { BreakdownPhase } = await import("../../components/breakdown/BreakdownPhase.js");
     render(<BreakdownPhase />);
@@ -204,7 +208,9 @@ describe("BreakdownPhase", () => {
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({ manifest });
 
-    setProjectStoreState({ stageStatuses: [] });
+    setProjectStoreState({
+      stageStatuses: [{ stage: "plan", complete: true, artifactPath: "/p" }] as never,
+    });
 
     const { BreakdownPhase } = await import("../../components/breakdown/BreakdownPhase.js");
     render(<BreakdownPhase />);
@@ -241,7 +247,9 @@ describe("BreakdownPhase", () => {
   it("handles runStage exception with error message", async () => {
     mockRunStage.mockRejectedValue(new Error("breakdown failed"));
 
-    setProjectStoreState({});
+    setProjectStoreState({
+      stageStatuses: [{ stage: "plan", complete: true, artifactPath: "/p" }] as never,
+    });
 
     const { BreakdownPhase } = await import("../../components/breakdown/BreakdownPhase.js");
     render(<BreakdownPhase />);
@@ -260,8 +268,10 @@ describe("BreakdownPhase", () => {
     expect(messages.some((m) => m.text.includes("breakdown failed"))).toBe(true);
   });
 
-  it("disables Run button when phase is already completed", async () => {
-    useSessionStore.setState({ completedStages: ["split"] });
+  it("disables Run button when phase has artifacts", async () => {
+    setProjectStoreState({
+      stageStatuses: [{ stage: "split", complete: true, artifactPath: "/p" }] as never,
+    });
 
     const { BreakdownPhase } = await import("../../components/breakdown/BreakdownPhase.js");
     render(<BreakdownPhase />);

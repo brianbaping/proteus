@@ -100,6 +100,9 @@ export function InspectionPhase(): React.JSX.Element {
   useEffect(() => {
     if (inspectComplete) {
       loadInspectionArtifacts();
+    } else {
+      setInspectionData(null);
+      setArtifactFiles([]);
     }
   }, [inspectComplete, loadInspectionArtifacts]);
 

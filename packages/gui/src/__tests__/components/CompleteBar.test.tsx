@@ -8,7 +8,6 @@ describe("CompleteBar", () => {
   const defaults = {
     currentPhase: "inspect" as const,
     onDestroy: vi.fn(),
-    onComplete: vi.fn(),
   };
 
   beforeEach(() => {
@@ -17,12 +16,10 @@ describe("CompleteBar", () => {
     useProjectStore.setState({ costs: null });
   });
 
-  it("renders hint text and both buttons", () => {
+  it("renders Destroy button", () => {
     render(<CompleteBar {...defaults} />);
 
-    expect(screen.getByText(/Review findings before proceeding to design/)).toBeDefined();
     expect(screen.getByText(/Destroy Phase/)).toBeDefined();
-    expect(screen.getByText(/Complete Phase/)).toBeDefined();
   });
 
   it("renders cost and duration when session store has non-zero values", () => {
@@ -72,12 +69,12 @@ describe("CompleteBar", () => {
     expect(costDuration.textContent).not.toContain("·");
   });
 
-  it("shows correct hint for each phase", () => {
+  it("renders for different phases", () => {
     const { rerender } = render(<CompleteBar {...defaults} currentPhase="design" />);
-    expect(screen.getByText(/Review architecture before generating the plan/)).toBeDefined();
+    expect(screen.getByText(/Destroy Phase/)).toBeDefined();
 
     rerender(<CompleteBar {...defaults} currentPhase="execute" />);
-    expect(screen.getByText(/Review generated code and verify output/)).toBeDefined();
+    expect(screen.getByText(/Destroy Phase/)).toBeDefined();
   });
 
   it("displays session ID when present", () => {
@@ -157,7 +154,7 @@ describe("CompleteBar", () => {
     expect(sessionIdEl.textContent).toBe("sess-live");
   });
 
-  it("disables Complete button when session is running", () => {
+  it("disables Destroy button when session is running", () => {
     useSessionStore.setState({ isRunning: true });
     useProjectStore.setState({
       stageStatuses: [{ stage: "inspect", complete: true, artifactPath: "/p" }] as never,
@@ -165,45 +162,31 @@ describe("CompleteBar", () => {
 
     render(<CompleteBar {...defaults} />);
 
-    const btn = screen.getByText(/Complete Phase/).closest("button");
+    const btn = screen.getByText(/Destroy Phase/).closest("button");
     expect(btn?.disabled).toBe(true);
-    expect(btn?.className).toContain("opacity-50");
   });
 
-  it("disables Complete button when phase is not complete on disk", () => {
+  it("disables Destroy button when phase is not complete on disk", () => {
     useProjectStore.setState({
       stageStatuses: [{ stage: "inspect", complete: false, artifactPath: "" }] as never,
     });
 
     render(<CompleteBar {...defaults} />);
 
-    const btn = screen.getByText(/Complete Phase/).closest("button");
+    const btn = screen.getByText(/Destroy Phase/).closest("button");
     expect(btn?.disabled).toBe(true);
   });
 
-  it("disables Complete button when phase is already user-completed", () => {
-    useSessionStore.setState({ completedStages: ["inspect"] });
+  it("enables Destroy button when phase is disk-complete and not running", () => {
+    useSessionStore.setState({ isRunning: false });
     useProjectStore.setState({
       stageStatuses: [{ stage: "inspect", complete: true, artifactPath: "/p" }] as never,
     });
 
     render(<CompleteBar {...defaults} />);
 
-    const btn = screen.getByText(/Complete Phase/).closest("button");
-    expect(btn?.disabled).toBe(true);
-  });
-
-  it("enables Complete button when phase is disk-complete, not running, not user-completed", () => {
-    useSessionStore.setState({ isRunning: false, completedStages: [] });
-    useProjectStore.setState({
-      stageStatuses: [{ stage: "inspect", complete: true, artifactPath: "/p" }] as never,
-    });
-
-    render(<CompleteBar {...defaults} />);
-
-    const btn = screen.getByText(/Complete Phase/).closest("button");
+    const btn = screen.getByText(/Destroy Phase/).closest("button");
     expect(btn?.disabled).toBe(false);
-    expect(btn?.className).not.toContain("opacity-50");
   });
 
   it("shows no cost when phase has no historical entry and session is empty", () => {

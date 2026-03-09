@@ -31,7 +31,7 @@ function PhaseContent({ phase }: { phase: StageName }): React.JSX.Element {
 export function App(): React.JSX.Element {
   const { loadRegistry, stageStatuses, activeProjectName } = useProjectStore();
   const { addMessage } = useChatStore();
-  const { completeStage, initCompletedStages } = useSessionStore();
+  const { initCompletedStages } = useSessionStore();
   const [activePhase, setActivePhase] = useState<StageName>("inspect");
   const prevProjectRef = useRef<string | null>(null);
   const [showNewDialog, setShowNewDialog] = useState(false);
@@ -114,18 +114,6 @@ export function App(): React.JSX.Element {
     };
   }, [addMessage]);
 
-  const handleComplete = useCallback(() => {
-    completeStage(activePhase);
-    if (activeProjectName) {
-      window.electronAPI.updateProject(activeProjectName, { lastCompletedStage: activePhase });
-    }
-    const idx = STAGE_ORDER.indexOf(activePhase);
-    if (idx < STAGE_ORDER.length - 1) {
-      setActivePhase(STAGE_ORDER[idx + 1]);
-    }
-    useProjectStore.getState().refreshStatus();
-  }, [activePhase, activeProjectName, completeStage]);
-
   const handleDestroy = useCallback(async () => {
     const confirmed = window.confirm(
       `Destroy ${activePhase} artifacts and all downstream stages?`
@@ -138,11 +126,7 @@ export function App(): React.JSX.Element {
       // Revert failed — still navigate back so UI is consistent
     }
 
-    const idx = STAGE_ORDER.indexOf(activePhase);
-    if (idx > 0) {
-      setActivePhase(STAGE_ORDER[idx - 1]);
-    }
-    useProjectStore.getState().refreshStatus();
+    await useProjectStore.getState().refreshStatus();
   }, [activePhase]);
 
   return (
@@ -173,7 +157,6 @@ export function App(): React.JSX.Element {
       <CompleteBar
         currentPhase={activePhase}
         onDestroy={handleDestroy}
-        onComplete={handleComplete}
       />
       <AIChatPanel />
 

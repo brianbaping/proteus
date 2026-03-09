@@ -156,7 +156,9 @@ describe("DesignPhase", () => {
   });
 
   it("forwards brief as option in runStage call", async () => {
-    setProjectStoreState({});
+    setProjectStoreState({
+      stageStatuses: [{ stage: "inspect", complete: true, artifactPath: "/p" }] as never,
+    });
 
     const { DesignPhase } = await import("../../components/design/DesignPhase.js");
     render(<DesignPhase />);
@@ -191,7 +193,9 @@ describe("DesignPhase", () => {
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({ designMeta, designMd: "# Design" });
 
-    setProjectStoreState({ stageStatuses: [] });
+    setProjectStoreState({
+      stageStatuses: [{ stage: "inspect", complete: true, artifactPath: "/p" }] as never,
+    });
 
     const { DesignPhase } = await import("../../components/design/DesignPhase.js");
     render(<DesignPhase />);
@@ -228,7 +232,9 @@ describe("DesignPhase", () => {
   it("handles runStage exception with error message", async () => {
     mockRunStage.mockRejectedValue(new Error("design generation failed"));
 
-    setProjectStoreState({});
+    setProjectStoreState({
+      stageStatuses: [{ stage: "inspect", complete: true, artifactPath: "/p" }] as never,
+    });
 
     const { DesignPhase } = await import("../../components/design/DesignPhase.js");
     render(<DesignPhase />);
@@ -247,8 +253,10 @@ describe("DesignPhase", () => {
     expect(messages.some((m) => m.text.includes("design generation failed"))).toBe(true);
   });
 
-  it("disables Run button when phase is already completed", async () => {
-    useSessionStore.setState({ completedStages: ["design"] });
+  it("disables Run button when phase has artifacts", async () => {
+    setProjectStoreState({
+      stageStatuses: [{ stage: "design", complete: true, artifactPath: "/p" }] as never,
+    });
 
     const { DesignPhase } = await import("../../components/design/DesignPhase.js");
     render(<DesignPhase />);

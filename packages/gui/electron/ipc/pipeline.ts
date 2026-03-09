@@ -14,9 +14,11 @@ import {
   getInboxDir,
   getActiveProject,
   revertStage,
+  updateProject,
 } from "@proteus-forge/cli/api";
+import { STAGE_DIRS, STAGE_ORDER } from "@proteus-forge/shared";
 import { existsSync } from "node:fs";
-import { unlink } from "node:fs/promises";
+import { rm, unlink } from "node:fs/promises";
 import { join } from "node:path";
 import { GuiDashboard } from "../gui-dashboard.js";
 
@@ -143,6 +145,33 @@ export function registerPipelineHandlers(
   ipcMain.handle("stage:revert", async (_event, stage: StageName) => {
     const active = await getActiveProject();
     if (!active) throw new Error("No active project");
-    return revertStage(active.entry.target, stage);
+    const targetPath = active.entry.target;
+
+    // revertStage removes stages *after* the given stage.
+    // The GUI "Destroy Phase & Revert" should also remove the current stage.
+    const idx = STAGE_ORDER.indexOf(stage);
+    if (idx > 0) {
+      // Revert to previous stage — removes current + downstream
+      await revertStage(targetPath, STAGE_ORDER[idx - 1]);
+    } else {
+      // First stage (inspect) — revert downstream then remove inspect dir
+      await revertStage(targetPath, stage);
+      const forgeDir = join(targetPath, ".proteus-forge");
+      const stageDir = join(forgeDir, STAGE_DIRS[stage]);
+      if (existsSync(stageDir)) {
+        await rm(stageDir, { recursive: true, force: true });
+      }
+      // Also remove 02-style (auto-generated side-effect of inspect)
+      const styleDir = join(forgeDir, "02-style");
+      if (existsSync(styleDir)) {
+        await rm(styleDir, { recursive: true, force: true });
+      }
+    }
+
+    // Determine the new lastCompletedStage
+    const newLast = idx > 0 ? STAGE_ORDER[idx - 1] : "new";
+    await updateProject(active.name, { lastCompletedStage: newLast });
+
+    return { removed: [stage, ...STAGE_ORDER.slice(idx + 1)] };
   });
 }

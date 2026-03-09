@@ -47,46 +47,17 @@ describe("PhaseTabStrip", () => {
     expect(inspectBtn?.className).toContain("text-green-dim");
   });
 
-  it("locks tabs when prior stages are not user-completed", () => {
-    // inspect is disk-complete but NOT user-completed
-    useProjectStore.setState({
-      stageStatuses: [{ stage: "inspect", complete: true, artifactPath: "/p" }] as never,
-    });
-
+  it("all tabs are always enabled (no locked state)", () => {
     render(<PhaseTabStrip {...defaults} activePhase="inspect" />);
 
     const designBtn = screen.getByText("Design").closest("button");
-    // Design should be locked because inspect is not in completedStages
-    expect(designBtn?.disabled).toBe(true);
+    expect(designBtn?.disabled).toBeFalsy();
+
+    const executeBtn = screen.getByText("Execution").closest("button");
+    expect(executeBtn?.disabled).toBeFalsy();
   });
 
-  it("unlocks tab when all prior stages are user-completed and disk-complete", () => {
-    useSessionStore.setState({ completedStages: ["inspect"] });
-    useProjectStore.setState({
-      stageStatuses: [{ stage: "inspect", complete: true, artifactPath: "/p" }] as never,
-    });
-
-    render(<PhaseTabStrip {...defaults} activePhase="inspect" />);
-
-    const designBtn = screen.getByText("Design").closest("button");
-    expect(designBtn?.disabled).toBe(false);
-  });
-
-  it("does not call onPhaseClick for locked tabs", () => {
-    render(<PhaseTabStrip {...defaults} />);
-
-    const designBtn = screen.getByText("Design").closest("button")!;
-    fireEvent.click(designBtn);
-
-    expect(defaults.onPhaseClick).not.toHaveBeenCalled();
-  });
-
-  it("calls onPhaseClick for unlocked tabs", () => {
-    useSessionStore.setState({ completedStages: ["inspect"] });
-    useProjectStore.setState({
-      stageStatuses: [{ stage: "inspect", complete: true, artifactPath: "/p" }] as never,
-    });
-
+  it("calls onPhaseClick for any tab", () => {
     render(<PhaseTabStrip {...defaults} activePhase="inspect" />);
 
     const designBtn = screen.getByText("Design").closest("button")!;

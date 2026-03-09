@@ -40,7 +40,7 @@ Verify create, destroy, settings, and revert workflows.
 - [x] Create new project via GitHub clone — BUG-013 fixed
 - [x] Create new project via archive upload — BUG-014 fixed
 - [x] Destroy a project — BUG-016 fixed
-- [ ] Destroy Phase & Revert removes artifacts and navigates back — not tested
+- [x] Destroy Phase & Revert removes artifacts and clears canvas
 - [x] Settings dialog loads global config
 - [x] Settings dialog saves config changes — BUG-015 closed (Tiers tab works as designed)
 - [x] Project selector dropdown works with multiple projects

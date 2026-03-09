@@ -56,8 +56,10 @@ function planJsonToPlanData(plan: PlanJson): PlanData {
 
 export function PlanningPhase(): React.JSX.Element {
   const { activeEntry, activeProjectName, stageStatuses, refreshStatus } = useProjectStore();
-  const { isRunning, startStage, endSession, completedStages } = useSessionStore();
-  const phaseCompleted = completedStages.includes("plan");
+  const { isRunning, startStage, endSession } = useSessionStore();
+  const hasArtifacts = stageStatuses.find((s) => s.stage === "plan")?.complete ?? false;
+  const prevHasArtifacts = stageStatuses.find((s) => s.stage === "design")?.complete ?? false;
+  const runDisabled = hasArtifacts || !prevHasArtifacts;
   const { addMessage, clearMessages } = useChatStore();
   const [notes, setNotes] = useState("");
   const [briefFile, setBriefFile] = useState("");
@@ -84,6 +86,9 @@ export function PlanningPhase(): React.JSX.Element {
   useEffect(() => {
     if (planComplete) {
       loadPlanArtifacts();
+    } else {
+      setPlanData(null);
+      setArtifactFiles([]);
     }
   }, [planComplete, loadPlanArtifacts]);
 
@@ -165,9 +170,9 @@ export function PlanningPhase(): React.JSX.Element {
           ) : (
             <button
               onClick={handleApprovePlan}
-              disabled={phaseCompleted}
+              disabled={runDisabled}
               className={`w-full py-2.5 rounded font-bold text-sm transition-colors ${
-                phaseCompleted
+                runDisabled
                   ? "bg-green text-bg opacity-50 cursor-not-allowed"
                   : "bg-green text-bg hover:bg-green-dim"
               }`}

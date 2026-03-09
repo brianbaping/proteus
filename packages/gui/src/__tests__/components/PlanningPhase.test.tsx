@@ -153,7 +153,9 @@ describe("PlanningPhase", () => {
   });
 
   it("forwards notes as brief option in runStage call", async () => {
-    setProjectStoreState({});
+    setProjectStoreState({
+      stageStatuses: [{ stage: "design", complete: true, artifactPath: "/p" }] as never,
+    });
 
     const { PlanningPhase } = await import("../../components/planning/PlanningPhase.js");
     render(<PlanningPhase />);
@@ -174,7 +176,9 @@ describe("PlanningPhase", () => {
   });
 
   it("does not set options.brief when notes are empty", async () => {
-    setProjectStoreState({});
+    setProjectStoreState({
+      stageStatuses: [{ stage: "design", complete: true, artifactPath: "/p" }] as never,
+    });
 
     const { PlanningPhase } = await import("../../components/planning/PlanningPhase.js");
     render(<PlanningPhase />);
@@ -206,7 +210,9 @@ describe("PlanningPhase", () => {
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({ plan, planMd: "# Plan" });
 
-    setProjectStoreState({ stageStatuses: [] });
+    setProjectStoreState({
+      stageStatuses: [{ stage: "design", complete: true, artifactPath: "/p" }] as never,
+    });
 
     const { PlanningPhase } = await import("../../components/planning/PlanningPhase.js");
     render(<PlanningPhase />);
@@ -243,7 +249,9 @@ describe("PlanningPhase", () => {
   it("handles runStage exception with error message", async () => {
     mockRunStage.mockRejectedValue(new Error("plan generation failed"));
 
-    setProjectStoreState({});
+    setProjectStoreState({
+      stageStatuses: [{ stage: "design", complete: true, artifactPath: "/p" }] as never,
+    });
 
     const { PlanningPhase } = await import("../../components/planning/PlanningPhase.js");
     render(<PlanningPhase />);
@@ -262,8 +270,10 @@ describe("PlanningPhase", () => {
     expect(messages.some((m) => m.text.includes("plan generation failed"))).toBe(true);
   });
 
-  it("disables Run button when phase is already completed", async () => {
-    useSessionStore.setState({ completedStages: ["plan"] });
+  it("disables Run button when phase has artifacts", async () => {
+    setProjectStoreState({
+      stageStatuses: [{ stage: "plan", complete: true, artifactPath: "/p" }] as never,
+    });
 
     const { PlanningPhase } = await import("../../components/planning/PlanningPhase.js");
     render(<PlanningPhase />);

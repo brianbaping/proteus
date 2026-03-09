@@ -305,7 +305,9 @@ describe("IngestSidebar", () => {
   });
 
   it("disables Run button when phase is already completed", async () => {
-    useSessionStore.setState({ completedStages: ["inspect"] });
+    useProjectStore.setState({
+      stageStatuses: [{ stage: "inspect", complete: true, artifactPath: "/p" }] as never,
+    });
 
     const { IngestSidebar } = await import("../../components/inspection/IngestSidebar.js");
     render(<IngestSidebar onRunInspection={vi.fn()} onAbort={vi.fn()} />);

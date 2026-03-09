@@ -16,11 +16,9 @@ vi.mock("../../components/chrome/ProgressBar.js", () => ({
 vi.mock("../../components/chrome/PhaseTabStrip.js", () => ({
   PhaseTabStrip: () => <div data-testid="tabstrip" />,
 }));
-let capturedOnComplete: (() => void) | undefined;
 let capturedOnDestroy: (() => void) | undefined;
 vi.mock("../../components/chrome/CompleteBar.js", () => ({
-  CompleteBar: ({ onComplete, onDestroy }: { onComplete: () => void; onDestroy: () => void }) => {
-    capturedOnComplete = onComplete;
+  CompleteBar: ({ onDestroy }: { onDestroy: () => void }) => {
     capturedOnDestroy = onDestroy;
     return <div data-testid="completebar" />;
   },
@@ -281,28 +279,6 @@ describe("App", () => {
     });
   });
 
-  it("handleComplete calls completeStage, advances phase, and refreshes status", async () => {
-    // Prevent loadRegistry on mount from interfering
-    window.electronAPI.getActiveProject = vi.fn().mockResolvedValue(null) as never;
-
-    const refreshSpy = vi.fn().mockResolvedValue(undefined);
-    useProjectStore.setState({ refreshStatus: refreshSpy } as never);
-
-    const { App } = await import("../../App.js");
-    render(<App />);
-
-    // Wait for mount effects to settle
-    await waitFor(() => {
-      expect(capturedOnComplete).toBeDefined();
-    });
-    capturedOnComplete!();
-
-    await waitFor(() => {
-      expect(refreshSpy).toHaveBeenCalled();
-    });
-    expect(useSessionStore.getState().completedStages).toContain("inspect");
-  });
-
   it("handleDestroy calls revertStage and moves phase back when confirmed", async () => {
     // Simulate project switch so effect fires: set a new project name with inspect complete
     useProjectStore.setState({
@@ -373,8 +349,8 @@ describe("App", () => {
 
     // Wait a tick — phase should NOT have auto-advanced to "design"
     await new Promise((r) => setTimeout(r, 50));
-    // The capturedOnComplete still works from inspect, proving no auto-advance
-    expect(capturedOnComplete).toBeDefined();
+    // The capturedOnDestroy still works from inspect, proving no auto-advance
+    expect(capturedOnDestroy).toBeDefined();
   });
 
   it("inits completedStages on project switch", async () => {

@@ -6,29 +6,18 @@ import { useProjectStore } from "../../stores/project-store.js";
 interface CompleteBarProps {
   currentPhase: StageName;
   onDestroy(): void;
-  onComplete(): void;
 }
 
-const COMPLETE_HINTS: Record<StageName, string> = {
-  inspect: "Review findings before proceeding to design",
-  design: "Review architecture before generating the plan",
-  plan: "Review task DAG before breaking into tracks",
-  split: "Review tracks before launching execution",
-  execute: "Review generated code and verify output",
-};
-
-export function CompleteBar({ currentPhase, onDestroy, onComplete }: CompleteBarProps): React.JSX.Element {
+export function CompleteBar({ currentPhase, onDestroy }: CompleteBarProps): React.JSX.Element {
   const sessionCost = useSessionStore((s) => s.cost);
   const sessionDuration = useSessionStore((s) => s.duration);
   const sessionSessionId = useSessionStore((s) => s.sessionId);
   const isRunning = useSessionStore((s) => s.isRunning);
-  const completedStages = useSessionStore((s) => s.completedStages);
   const stageStatuses = useProjectStore((s) => s.stageStatuses);
   const stageCosts = useProjectStore((s) => s.costs);
 
   const isDiskComplete = stageStatuses.find((s) => s.stage === currentPhase)?.complete ?? false;
-  const alreadyCompleted = completedStages.includes(currentPhase);
-  const completeDisabled = isRunning || !isDiskComplete || alreadyCompleted;
+  const destroyDisabled = isRunning || !isDiskComplete;
 
   const historicalStage = stageCosts?.stages[currentPhase];
   const cost = sessionCost > 0 ? sessionCost : (historicalStage?.estimatedCost ?? 0);
@@ -40,7 +29,12 @@ export function CompleteBar({ currentPhase, onDestroy, onComplete }: CompleteBar
       <div className="flex items-center gap-4">
         <button
           onClick={onDestroy}
-          className="px-4 py-1.5 text-sm bg-red-dark text-red border border-red/30 rounded hover:bg-red/20 transition-colors"
+          disabled={destroyDisabled}
+          className={`px-4 py-1.5 text-sm border rounded transition-colors ${
+            destroyDisabled
+              ? "bg-bg-3 text-fg-muted border-border-2 cursor-not-allowed"
+              : "bg-red-dark text-red border-red/30 hover:bg-red/20"
+          }`}
         >
           &larr; Destroy Phase &amp; Revert
         </button>
@@ -60,23 +54,6 @@ export function CompleteBar({ currentPhase, onDestroy, onComplete }: CompleteBar
             {sessionId}
           </span>
         )}
-      </div>
-
-      <div className="flex items-center gap-4">
-        <span className="text-fg-muted text-xs">
-          {COMPLETE_HINTS[currentPhase]}
-        </span>
-        <button
-          onClick={onComplete}
-          disabled={completeDisabled}
-          className={`px-4 py-1.5 text-sm font-bold rounded transition-colors ${
-            completeDisabled
-              ? "bg-amber text-bg opacity-50 cursor-not-allowed"
-              : "bg-amber text-bg hover:bg-amber-dim"
-          }`}
-        >
-          Complete Phase &amp; Unlock Next &rarr;
-        </button>
       </div>
     </div>
   );

@@ -230,7 +230,9 @@ describe("ExecutionPhase", () => {
         .mockResolvedValueOnce(null)  // initial split load
         .mockResolvedValueOnce({ session });  // after run execute load
 
-      setProjectState({ stageStatuses: [] });
+      setProjectState({
+        stageStatuses: [{ stage: "split", complete: true, artifactPath: "/p" }] as never,
+      });
 
       const { ExecutionPhase } = await import("../../components/execution/ExecutionPhase.js");
       render(<ExecutionPhase />);
@@ -262,7 +264,9 @@ describe("ExecutionPhase", () => {
         sessionId: "",
         cost: { estimatedCost: 0, duration: "5s" },
       });
-      setProjectState({ stageStatuses: [] });
+      setProjectState({
+        stageStatuses: [{ stage: "split", complete: true, artifactPath: "/p" }] as never,
+      });
 
       const { ExecutionPhase } = await import("../../components/execution/ExecutionPhase.js");
       render(<ExecutionPhase />);
@@ -279,7 +283,9 @@ describe("ExecutionPhase", () => {
 
     it("handles runStage exception", async () => {
       mockRunStage.mockRejectedValue(new Error("session crashed"));
-      setProjectState({ stageStatuses: [] });
+      setProjectState({
+        stageStatuses: [{ stage: "split", complete: true, artifactPath: "/p" }] as never,
+      });
 
       const { ExecutionPhase } = await import("../../components/execution/ExecutionPhase.js");
       render(<ExecutionPhase />);
@@ -328,8 +334,10 @@ describe("ExecutionPhase", () => {
       expect(mockRunStage).not.toHaveBeenCalled();
     });
 
-    it("disables Run button when phase is already completed", async () => {
-      useSessionStore.setState({ completedStages: ["execute"] });
+    it("disables Run button when phase has artifacts", async () => {
+      setProjectState({
+        stageStatuses: [{ stage: "execute", complete: true, artifactPath: "/p" }] as never,
+      });
 
       const { ExecutionPhase } = await import("../../components/execution/ExecutionPhase.js");
       render(<ExecutionPhase />);

@@ -48,8 +48,10 @@ function designMetaToDesignData(meta: DesignMetaJson): DesignData {
 
 export function DesignPhase(): React.JSX.Element {
   const { activeEntry, activeProjectName, stageStatuses, refreshStatus } = useProjectStore();
-  const { isRunning, startStage, endSession, completedStages } = useSessionStore();
-  const phaseCompleted = completedStages.includes("design");
+  const { isRunning, startStage, endSession } = useSessionStore();
+  const hasArtifacts = stageStatuses.find((s) => s.stage === "design")?.complete ?? false;
+  const prevHasArtifacts = stageStatuses.find((s) => s.stage === "inspect")?.complete ?? false;
+  const runDisabled = hasArtifacts || !prevHasArtifacts;
   const { addMessage, clearMessages } = useChatStore();
   const [brief, setBrief] = useState("");
   const [briefFile, setBriefFile] = useState("");
@@ -77,6 +79,9 @@ export function DesignPhase(): React.JSX.Element {
   useEffect(() => {
     if (designComplete) {
       loadDesignArtifacts();
+    } else {
+      setDesignData(null);
+      setArtifactFiles([]);
     }
   }, [designComplete, loadDesignArtifacts]);
 
@@ -177,9 +182,9 @@ export function DesignPhase(): React.JSX.Element {
           ) : (
             <button
               onClick={handleRunDesign}
-              disabled={phaseCompleted}
+              disabled={runDisabled}
               className={`w-full py-2.5 rounded font-bold text-sm transition-colors ${
-                phaseCompleted
+                runDisabled
                   ? "bg-green text-bg opacity-50 cursor-not-allowed"
                   : "bg-green text-bg hover:bg-green-dim"
               }`}
