@@ -27,9 +27,9 @@ Verify running stages, streaming, and abort from the GUI. Costs real API dollars
 - [x] Stage completion triggers status refresh and artifact load
 - [x] Run design stage with brief text
 - [x] Run design stage with uploaded brief file
-- [x] Complete Phase & Unlock Next advances to next tab
-- [x] Phase state machine: Run/Complete buttons follow correct enabled/disabled states
-- [x] Tabs lock/unlock based on user-explicit completion (not auto-advance)
+- [x] ~~Complete Phase & Unlock Next~~ — removed; tabs always enabled, Run/Destroy gated by artifacts
+- [x] Phase state machine: Run enabled when no artifacts + prerequisites met; Destroy enabled when artifacts exist
+- [x] ~~Tabs lock/unlock~~ — removed; all tabs always enabled
 - [x] Project switching navigates to correct tab and reflects correct completed state
 
 ## Milestone 3: Project Management — COMPLETE

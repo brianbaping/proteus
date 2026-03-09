@@ -65,4 +65,21 @@ describe("useChatStore", () => {
 
     expect(useChatStore.getState().inputValue).toBe("preserved");
   });
+
+  it("addMessage stores agent metadata when provided", () => {
+    useChatStore.getState().addMessage("ai", "Scanning files", { name: "researcher", color: "#ff6b6b" });
+
+    const { messages } = useChatStore.getState();
+    expect(messages).toHaveLength(1);
+    expect(messages[0].agentName).toBe("researcher");
+    expect(messages[0].agentColor).toBe("#ff6b6b");
+  });
+
+  it("addMessage leaves agent fields undefined when no metadata provided", () => {
+    useChatStore.getState().addMessage("ai", "Generic message");
+
+    const { messages } = useChatStore.getState();
+    expect(messages[0].agentName).toBeUndefined();
+    expect(messages[0].agentColor).toBeUndefined();
+  });
 });

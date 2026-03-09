@@ -8,7 +8,7 @@ Bug log for GUI manual validation. See [`docs/gui-testing-guide.md`](gui-testing
 |----------|------|-------|--------|-----------|
 | Blocker  | 0    | 3     | 0      | 0         |
 | Bug      | 0    | 4     | 1      | 1         |
-| Cosmetic | 9    | 0     | 0      | 0         |
+| Cosmetic | 8    | 1     | 0      | 0         |
 
 ## Bugs
 
@@ -77,14 +77,14 @@ Bug log for GUI manual validation. See [`docs/gui-testing-guide.md`](gui-testing
 
 - **Layer:** UI
 - **Severity:** Cosmetic
-- **Status:** Open
+- **Status:** Fixed
 - **Steps to reproduce:**
   1. Run a pipeline stage (e.g., inspect) from the GUI
   2. Observe agent activity messages in the AI Chat panel
   3. All agent names appear in plain text — no color differentiation
   4. Expected: agent names should be color-coded like the CLI's AgentDashboard output
-- **Root cause:** AIChatPanel renders all messages as plain text without parsing agent identity for color assignment.
-- **Fix:** Apply per-agent color coding consistent with the CLI dashboard palette.
+- **Root cause:** `ChatMessage` only stored `role` and `text`. `App.tsx` discarded `agentName`/`agentColor` from `SessionEvent` when calling `addMessage`. `AIChatPanel` rendered a generic green "AI" label for all AI messages.
+- **Fix:** Extended `ChatMessage` with optional `agentName`/`agentColor`. `App.tsx` passes agent metadata from `SessionEvent` for agent-spawned/activity/done events. `AIChatPanel` displays the agent name with inline color styling, falling back to green "AI" for reporter messages.
 
 ### BUG-007: AI Chat panel truncates message text
 

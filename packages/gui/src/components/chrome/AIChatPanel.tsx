@@ -49,10 +49,11 @@ export function AIChatPanel(): React.JSX.Element {
           <div key={i} className="flex gap-2 text-xs">
             <span
               className={`font-bold shrink-0 ${
-                msg.role === "ai" ? "text-green" : "text-amber"
+                msg.role === "ai" && !msg.agentColor ? "text-green" : msg.role === "user" ? "text-amber" : ""
               }`}
+              style={msg.agentColor ? { color: msg.agentColor } : undefined}
             >
-              {msg.role === "ai" ? "AI" : "YOU"}
+              {msg.role === "user" ? "YOU" : msg.agentName ?? "AI"}
             </span>
             <span className="text-fg-dim">{msg.text}</span>
           </div>

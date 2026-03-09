@@ -143,30 +143,35 @@ describe("App", () => {
     expect(errors).toContain("Something went wrong");
   });
 
-  it("routes agent-spawned session events to chat", async () => {
+  it("routes agent-spawned session events to chat with agent metadata", async () => {
     const { App } = await import("../../App.js");
     render(<App />);
 
     const event: SessionEvent = {
       type: "agent-spawned",
       agentName: "researcher",
+      agentColor: "#ff6b6b",
       timestamp: Date.now(),
     };
     eventCallback(event);
 
     await waitFor(() => {
       const messages = useChatStore.getState().messages;
-      expect(messages.some((m) => m.text.includes("Spawning teammate: researcher"))).toBe(true);
+      const msg = messages.find((m) => m.text.includes("Spawning teammate: researcher"));
+      expect(msg).toBeDefined();
+      expect(msg!.agentName).toBe("researcher");
+      expect(msg!.agentColor).toBe("#ff6b6b");
     });
   });
 
-  it("routes agent-activity session events to chat", async () => {
+  it("routes agent-activity session events to chat with agent metadata", async () => {
     const { App } = await import("../../App.js");
     render(<App />);
 
     const event: SessionEvent = {
       type: "agent-activity",
       agentName: "scout",
+      agentColor: "#4ecdc4",
       message: "Scanning source files",
       timestamp: Date.now(),
     };
@@ -174,24 +179,31 @@ describe("App", () => {
 
     await waitFor(() => {
       const messages = useChatStore.getState().messages;
-      expect(messages.some((m) => m.text.includes("[scout] Scanning source files"))).toBe(true);
+      const msg = messages.find((m) => m.text.includes("[scout] Scanning source files"));
+      expect(msg).toBeDefined();
+      expect(msg!.agentName).toBe("scout");
+      expect(msg!.agentColor).toBe("#4ecdc4");
     });
   });
 
-  it("routes agent-done session events to chat", async () => {
+  it("routes agent-done session events to chat with agent metadata", async () => {
     const { App } = await import("../../App.js");
     render(<App />);
 
     const event: SessionEvent = {
       type: "agent-done",
       agentName: "architect",
+      agentColor: "#ffe66d",
       timestamp: Date.now(),
     };
     eventCallback(event);
 
     await waitFor(() => {
       const messages = useChatStore.getState().messages;
-      expect(messages.some((m) => m.text.includes("architect done"))).toBe(true);
+      const msg = messages.find((m) => m.text.includes("architect done"));
+      expect(msg).toBeDefined();
+      expect(msg!.agentName).toBe("architect");
+      expect(msg!.agentColor).toBe("#ffe66d");
     });
   });
 
@@ -372,7 +384,7 @@ describe("App", () => {
     });
   });
 
-  it("uses agentId fallback when agentName is missing in agent-spawned", async () => {
+  it("uses agentId fallback when agentName is missing in agent-spawned (no agent metadata)", async () => {
     const { App } = await import("../../App.js");
     render(<App />);
 
@@ -385,7 +397,10 @@ describe("App", () => {
 
     await waitFor(() => {
       const messages = useChatStore.getState().messages;
-      expect(messages.some((m) => m.text.includes("Spawning teammate: agent-123"))).toBe(true);
+      const msg = messages.find((m) => m.text.includes("Spawning teammate: agent-123"));
+      expect(msg).toBeDefined();
+      expect(msg!.agentName).toBeUndefined();
+      expect(msg!.agentColor).toBeUndefined();
     });
   });
 });

@@ -88,15 +88,18 @@ export function App(): React.JSX.Element {
     });
     const unsubEvent = window.electronAPI.onSessionEvent((raw) => {
       const event = raw as SessionEvent;
+      const agentMeta = event.agentName && event.agentColor
+        ? { name: event.agentName, color: event.agentColor }
+        : undefined;
       switch (event.type) {
         case "agent-spawned":
-          addMessage("ai", `Spawning teammate: ${event.agentName ?? event.agentId}`);
+          addMessage("ai", `Spawning teammate: ${event.agentName ?? event.agentId}`, agentMeta);
           break;
         case "agent-activity":
-          addMessage("ai", `[${event.agentName ?? "agent"}] ${event.message ?? ""}`);
+          addMessage("ai", `[${event.agentName ?? "agent"}] ${event.message ?? ""}`, agentMeta);
           break;
         case "agent-done":
-          addMessage("ai", `${event.agentName ?? "agent"} done`);
+          addMessage("ai", `${event.agentName ?? "agent"} done`, agentMeta);
           break;
         case "session-start":
         case "session-end":
