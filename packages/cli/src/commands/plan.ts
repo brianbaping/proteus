@@ -123,7 +123,7 @@ export async function runPlan(
       duration: result.cost.duration,
       cost: result.cost.estimatedCost,
     });
-    await updateProject(name, { lastCompletedStage: "plan" });
+    await updateProject(project.name, { lastCompletedStage: "plan" });
 
     reporter.log(`\n  Output: ${join(planDir, "plan.md")}`);
     reporter.log(`          ${planJsonPath}`);

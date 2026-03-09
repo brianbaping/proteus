@@ -114,7 +114,7 @@ export async function runInspect(
       duration: result.cost.duration,
       cost: result.cost.estimatedCost,
     });
-    await updateProject(name, { lastCompletedStage: "inspect" });
+    await updateProject(project.name, { lastCompletedStage: "inspect" });
 
     reporter.log(`\n  Output: ${join(inspectDir, "inspect.md")}`);
     reporter.log(`          ${featuresPath}`);

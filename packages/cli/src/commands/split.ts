@@ -123,7 +123,7 @@ export async function runSplit(
       duration: result.cost.duration,
       cost: result.cost.estimatedCost,
     });
-    await updateProject(name, { lastCompletedStage: "split" });
+    await updateProject(project.name, { lastCompletedStage: "split" });
 
     reporter.log(`\n  Output: ${join(tracksDir, "split.md")}`);
     reporter.log(`          ${manifestPath}`);

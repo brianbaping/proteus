@@ -156,7 +156,7 @@ export async function runExecute(
       teammates: nonSharedTracks.length,
       details: verifySummary,
     });
-    await updateProject(name, { lastCompletedStage: "execute" });
+    await updateProject(project.name, { lastCompletedStage: "execute" });
 
     reporter.log(`\n  Output: ${join(executeDir, "execute.md")}`);
     reporter.log(`          ${join(executeDir, "session.json")}`);

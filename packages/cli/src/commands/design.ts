@@ -129,7 +129,7 @@ export async function runDesign(
       duration: result.cost.duration,
       cost: result.cost.estimatedCost,
     });
-    await updateProject(name, { lastCompletedStage: "design" });
+    await updateProject(project.name, { lastCompletedStage: "design" });
 
     reporter.log(`\n  Output: ${join(designDir, "design.md")}`);
     reporter.log(`          ${join(designDir, "design-meta.json")}`);

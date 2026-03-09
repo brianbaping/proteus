@@ -7,7 +7,7 @@ export default defineConfig({
   entry: ["electron/main.ts", "electron/preload.ts"],
   format: ["cjs"],
   outDir: "dist/main",
-  external: ["electron"],
+  external: ["electron", "@anthropic-ai/claude-agent-sdk"],
   noExternal: ["@proteus-forge/cli", "@proteus-forge/shared"],
   env: isDev ? { VITE_DEV_SERVER_URL: "http://localhost:5173" } : {},
 });
