@@ -14,7 +14,7 @@ import { getStageStatuses, checkStaleness } from "@proteus-forge/cli/api";
 import { createProjectConfig, writeProjectConfig } from "@proteus-forge/cli/api";
 import { STAGE_DIRS } from "@proteus-forge/shared";
 import { join } from "node:path";
-import { mkdir, readFile, readdir, lstat, mkdtemp } from "node:fs/promises";
+import { mkdir, readFile, readdir, lstat, mkdtemp, rm } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { execFile as execFileCb } from "node:child_process";
@@ -67,6 +67,7 @@ export function registerProjectHandlers(ipcMain: IpcMain): void {
   ipcMain.handle("project:destroy", async (_event, name: string) => {
     const entry = await getProject(name);
     if (!entry) throw new Error(`Project "${name}" not found`);
+    await rm(entry.target, { recursive: true, force: true });
     await unregisterProject(name);
   });
 
@@ -131,29 +132,48 @@ export function registerProjectHandlers(ipcMain: IpcMain): void {
     await updateProject(name, updates);
   });
 
-  ipcMain.handle("project:clone-repo", async (_event, url: string) => {
-    const targetDir = await mkdtemp(join(tmpdir(), "proteus-clone-"));
-    try {
-      await execFileAsync("git", ["clone", "--depth", "1", url, targetDir]);
-    } catch (err) {
-      throw new Error(`git clone failed: ${(err as Error).message}`, { cause: err });
+  ipcMain.handle("project:clone-repo", async (_event, url: string, targetDir?: string) => {
+    const cloneDir = targetDir ?? await mkdtemp(join(tmpdir(), "proteus-clone-"));
+    if (targetDir) {
+      await mkdir(targetDir, { recursive: true });
     }
-    return targetDir;
+    try {
+      await execFileAsync("git", ["clone", "--depth", "1", url, cloneDir], {
+        shell: true,
+        env: { ...process.env },
+      });
+    } catch (err) {
+      const message = (err as Error).message;
+      if (message.includes("ENOENT") || message.includes("not found")) {
+        throw new Error("git is not available. Please install git and ensure it is in your PATH.");
+      }
+      throw new Error(`git clone failed: ${message}`, { cause: err });
+    }
+    return cloneDir;
   });
 
-  ipcMain.handle("project:extract-archive", async (_event, archivePath: string) => {
-    const extractDir = await mkdtemp(join(tmpdir(), "proteus-extract-"));
+  ipcMain.handle("project:extract-archive", async (_event, archivePath: string, targetDir?: string) => {
+    const extractDir = targetDir ?? await mkdtemp(join(tmpdir(), "proteus-extract-"));
+    if (targetDir) {
+      await mkdir(targetDir, { recursive: true });
+    }
     const lower = archivePath.toLowerCase();
 
     if (lower.endsWith(".tar.gz") || lower.endsWith(".tgz")) {
       try {
-        await execFileAsync("tar", ["xzf", archivePath, "-C", extractDir]);
+        await execFileAsync("tar", ["xzf", archivePath, "-C", extractDir], {
+          shell: true,
+          env: { ...process.env },
+        });
       } catch (err) {
         throw new Error(`tar extraction failed: ${(err as Error).message}`, { cause: err });
       }
     } else if (lower.endsWith(".zip")) {
       try {
-        await execFileAsync("unzip", ["-q", archivePath, "-d", extractDir]);
+        await execFileAsync("unzip", ["-q", archivePath, "-d", extractDir], {
+          shell: true,
+          env: { ...process.env },
+        });
       } catch (err) {
         throw new Error(`unzip extraction failed: ${(err as Error).message}`, { cause: err });
       }
@@ -163,12 +183,15 @@ export function registerProjectHandlers(ipcMain: IpcMain): void {
 
     // Single-directory unwrap: if the archive contains exactly one top-level
     // directory (common for GitHub downloads), return that directory instead
-    const entries = await readdir(extractDir);
-    if (entries.length === 1) {
-      const singleEntry = join(extractDir, entries[0]);
-      const stat = await lstat(singleEntry);
-      if (stat.isDirectory()) {
-        return singleEntry;
+    // Only do this when extracting to a temp dir (no explicit target)
+    if (!targetDir) {
+      const entries = await readdir(extractDir);
+      if (entries.length === 1) {
+        const singleEntry = join(extractDir, entries[0]);
+        const stat = await lstat(singleEntry);
+        if (stat.isDirectory()) {
+          return singleEntry;
+        }
       }
     }
 

@@ -4,11 +4,11 @@ Bug log for GUI manual validation. See [`docs/gui-testing-guide.md`](gui-testing
 
 ## Summary
 
-| Severity | Open | Fixed | Won't Fix |
-|----------|------|-------|-----------|
-| Blocker  | 0    | 3     | 0         |
-| Bug      | 0    | 1     | 1         |
-| Cosmetic | 7    | 0     | 0         |
+| Severity | Open | Fixed | Closed | Won't Fix |
+|----------|------|-------|--------|-----------|
+| Blocker  | 0    | 3     | 0      | 0         |
+| Bug      | 0    | 4     | 1      | 1         |
+| Cosmetic | 9    | 0     | 0      | 0         |
 
 ## Bugs
 
@@ -168,5 +168,83 @@ Bug log for GUI manual validation. See [`docs/gui-testing-guide.md`](gui-testing
 - **Root cause:** No font size scaling mechanism is implemented.
 - **Fix:** Add font size controls — either keyboard shortcuts (Ctrl+Plus/Ctrl+Minus/Ctrl+0) that adjust a base font scale, a View menu option, or a setting in the Settings dialog.
 
-<!-- Next ID: BUG-013 -->
+### BUG-013: GitHub clone not available from Create dialog and Ingest card clone does nothing
+
+- **Layer:** UI / IPC
+- **Severity:** Bug
+- **Status:** Fixed
+- **Steps to reproduce:**
+  1. Click New Project — no option to provide a GitHub repo URL for cloning
+  2. Create a project with a local path instead
+  3. On the Ingest card, enter a GitHub repo URL and click clone
+  4. Nothing happens — no clone, no error, no feedback
+- **Expected:** Create dialog should support GitHub URL as a source option. Ingest card clone button should trigger a git clone and update the source path.
+- **Root cause:** Electron main process may not inherit the full shell PATH when launched from a desktop shortcut, so `git` isn't found by `execFileAsync`. The `handleCloneRepo` in IngestSidebar already had try/catch wiring but the IPC handler silently failed.
+- **Fix:** Added `shell: true` and `env: { ...process.env }` to `execFileAsync` calls in the IPC handler. Added a descriptive error message when git is not found.
+
+### BUG-014: Archive upload not available from Create dialog and Ingest card archive does nothing
+
+- **Layer:** UI / IPC
+- **Severity:** Bug
+- **Status:** Fixed
+- **Steps to reproduce:**
+  1. Click New Project — no option to upload an archive (.zip/.tar.gz)
+  2. Create a project with a local path instead
+  3. On the Ingest card, click the archive button
+  4. Nothing happens — no file picker, no extraction, no feedback
+- **Expected:** Create dialog should support archive upload as a source option. Ingest card archive button should open a file picker, extract the archive, and set the source path.
+- **Root cause:** FileDropZone's `handleClick` called `openFile()` without file filters and without try/catch, so errors were swallowed silently. Archive extraction also failed due to PATH issues (same as BUG-013).
+- **Fix:** Added `filters` prop to FileDropZone, passed archive-specific filters from IngestSidebar. Added try/catch with console.error in handleClick. Added `shell: true` to tar/unzip execFileAsync calls.
+
+### BUG-015: Settings dialog has no way to change models
+
+- **Layer:** UI
+- **Severity:** Bug
+- **Status:** Closed — works as designed
+- **Steps to reproduce:**
+  1. Open Settings dialog
+  2. No model configuration or tier-to-model mapping controls are present
+  3. Expected: ability to view and change model assignments for each tier (fast/standard/advanced)
+- **Root cause:** The Settings dialog's Tiers tab already provides model editing for each tier. The reporter missed the Tiers tab.
+- **Note:** A future enhancement could populate the model input with a dropdown fed by `list-models --available` for better discoverability.
+
+### BUG-016: No way to destroy a project from the GUI
+
+- **Layer:** UI
+- **Severity:** Bug
+- **Status:** Fixed
+- **Steps to reproduce:**
+  1. Select a project in the project selector
+  2. No delete/destroy button or menu option exists
+  3. Expected: a way to destroy a project (e.g., context menu, button, or menu option) with a confirmation dialog
+- **Root cause:** No UI existed for the destroy action despite full backend wiring (preload, IPC handler, CLI api).
+- **Fix:** Added destroy button (x icon) to ProjectSelector with `window.confirm()` dialog. Added `destroyProject` method to project store. Fixed IPC handler to also delete the target directory (matching CLI `destroy` behavior).
+
+### BUG-017: Destroy project should offer option to also remove POC source folder
+
+- **Layer:** UI
+- **Severity:** Cosmetic
+- **Status:** Open
+- **Steps to reproduce:**
+  1. Select a project and click the destroy button
+  2. Confirmation dialog only mentions removing the target directory
+  3. The POC source folder remains on disk after destroy
+  4. Expected: an option (e.g., checkbox in confirm dialog or "Deep Destroy") to also delete the POC source folder
+- **Root cause:** Destroy handler only removes the target directory and unregisters the project. No option to clean up the source folder.
+- **Fix:** Add a "deep destroy" option that also removes `entry.source` when selected.
+
+### BUG-018: Drag-and-drop does not work in WSL2
+
+- **Layer:** Platform
+- **Severity:** Cosmetic
+- **Status:** Open
+- **Steps to reproduce:**
+  1. Run the GUI in WSL2 (`npm run dev -w @proteus-forge/gui`)
+  2. Drag a file from Windows Explorer onto the FileDropZone
+  3. Cursor shows circle-with-slash, drop is not accepted
+  4. `dragover` events do not fire in the renderer at all
+- **Root cause:** WSL2 limitation — the drag-and-drop protocol does not cross the WSL2/Windows boundary. Electron in WSL2 cannot receive drag events from Windows Explorer.
+- **Fix:** Expected to work on native Windows and native Linux. Verify during Windows rollout testing. Click-to-browse is the workaround in WSL2.
+
+<!-- Next ID: BUG-019 -->
 

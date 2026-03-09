@@ -2,9 +2,18 @@ import React from "react";
 import { useProjectStore } from "../../stores/project-store.js";
 
 export function ProjectSelector(): React.JSX.Element {
-  const { registry, activeProjectName, setActiveProject } = useProjectStore();
+  const { registry, activeProjectName, setActiveProject, destroyProject } = useProjectStore();
 
   const projectNames = registry ? Object.keys(registry.projects) : [];
+
+  async function handleDestroy(): Promise<void> {
+    if (!activeProjectName) return;
+    const confirmed = window.confirm(
+      `Destroy project "${activeProjectName}"?\n\nThis will delete the target directory and remove the project from the registry. This cannot be undone.`
+    );
+    if (!confirmed) return;
+    await destroyProject(activeProjectName);
+  }
 
   if (projectNames.length === 0) {
     return (
@@ -26,6 +35,13 @@ export function ProjectSelector(): React.JSX.Element {
           </option>
         ))}
       </select>
+      <button
+        onClick={handleDestroy}
+        title="Destroy project"
+        className="text-fg-muted hover:text-red transition-colors text-xs leading-none"
+      >
+        &#x2715;
+      </button>
     </div>
   );
 }

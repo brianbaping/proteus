@@ -15,6 +15,7 @@ interface ProjectState {
   setActiveProject(name: string): Promise<void>;
   refreshStatus(): Promise<void>;
   createProject(name: string, source: string, target?: string): Promise<void>;
+  destroyProject(name: string): Promise<void>;
   updateProject(name: string, updates: { source?: string; target?: string }): Promise<void>;
 }
 
@@ -78,6 +79,11 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
 
   createProject: async (name: string, source: string, target?: string) => {
     await window.electronAPI.createProject(name, source, target);
+    await get().loadRegistry();
+  },
+
+  destroyProject: async (name: string) => {
+    await window.electronAPI.destroyProject(name);
     await get().loadRegistry();
   },
 

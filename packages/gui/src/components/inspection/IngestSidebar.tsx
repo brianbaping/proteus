@@ -19,6 +19,7 @@ export function IngestSidebar({ onRunInspection, onAbort }: IngestSidebarProps):
   const [githubUrl, setGithubUrl] = useState("");
   const [cloning, setCloning] = useState(false);
   const [cloneError, setCloneError] = useState("");
+  const [cloneSuccess, setCloneSuccess] = useState("");
   const [extracting, setExtracting] = useState(false);
   const [extractError, setExtractError] = useState("");
 
@@ -63,11 +64,12 @@ export function IngestSidebar({ onRunInspection, onAbort }: IngestSidebarProps):
     if (!githubUrl.trim()) return;
     setCloning(true);
     setCloneError("");
+    setCloneSuccess("");
     try {
-      const clonedPath = await window.electronAPI.cloneRepo(githubUrl.trim());
+      const clonedPath = await window.electronAPI.cloneRepo(githubUrl.trim(), pocPath || undefined);
       setPocPath(clonedPath);
-      setIngestMethod("upload");
       await persistPaths({ source: clonedPath });
+      setCloneSuccess("Cloned successfully into source folder.");
     } catch (err) {
       setCloneError((err as Error).message);
     } finally {
@@ -90,13 +92,26 @@ export function IngestSidebar({ onRunInspection, onAbort }: IngestSidebarProps):
     setExtracting(true);
     setExtractError("");
     try {
-      const extractedPath = await window.electronAPI.extractArchive(path);
+      const extractedPath = await window.electronAPI.extractArchive(path, pocPath || undefined);
       setPocPath(extractedPath);
       await persistPaths({ source: extractedPath });
     } catch (err) {
       setExtractError((err as Error).message);
     } finally {
       setExtracting(false);
+    }
+  }
+
+  async function handleUploadClick(): Promise<void> {
+    setIngestMethod("upload");
+    try {
+      const path = await window.electronAPI.openFile([
+        { name: "Archives", extensions: ["zip", "tar.gz", "tgz"] },
+        { name: "All Files", extensions: ["*"] },
+      ]);
+      if (path) await handleFileDrop(path);
+    } catch (err) {
+      console.error("File picker failed:", err);
     }
   }
 
@@ -108,36 +123,42 @@ export function IngestSidebar({ onRunInspection, onAbort }: IngestSidebarProps):
           CODE SOURCE
         </div>
 
-        <button
-          onClick={() => setIngestMethod("upload")}
-          className={`w-full text-left p-3 rounded-lg border transition-colors ${
-            ingestMethod === "upload"
-              ? "border-green/30 bg-green-dark"
-              : "border-border-2 bg-bg-3 hover:border-border-2"
-          }`}
-        >
-          <div className="text-sm font-bold text-fg">Upload Archive</div>
-          <div className="text-2xs text-fg-dim mt-0.5">.zip or .tar.gz of your POC</div>
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setIngestMethod("upload")}
+            className={`flex-1 text-center p-2 rounded-lg border transition-colors ${
+              ingestMethod === "upload"
+                ? "border-green/30 bg-green-dark"
+                : "border-border-2 bg-bg-3 hover:border-border-2"
+            }`}
+          >
+            <div className="text-xs font-bold text-fg">Upload / Browse</div>
+            <div className="text-2xs text-fg-dim mt-0.5">.zip, .tar.gz, or folder</div>
+          </button>
 
-        <button
-          onClick={() => setIngestMethod("github")}
-          className={`w-full text-left p-3 rounded-lg border transition-colors ${
-            ingestMethod === "github"
-              ? "border-green/30 bg-green-dark"
-              : "border-border-2 bg-bg-3 hover:border-border-2"
-          }`}
-        >
-          <div className="text-sm font-bold text-fg">GitHub Repo</div>
-          <div className="text-2xs text-fg-dim mt-0.5">Clone from GitHub URL</div>
-        </button>
+          <button
+            onClick={() => setIngestMethod("github")}
+            className={`flex-1 text-center p-2 rounded-lg border transition-colors ${
+              ingestMethod === "github"
+                ? "border-green/30 bg-green-dark"
+                : "border-border-2 bg-bg-3 hover:border-border-2"
+            }`}
+          >
+            <div className="text-xs font-bold text-fg">GitHub Repo</div>
+            <div className="text-2xs text-fg-dim mt-0.5">Clone from URL</div>
+          </button>
+        </div>
 
         {ingestMethod === "upload" && (
           <>
             <FileDropZone
               onFilePath={handleFileDrop}
               accept=".zip or .tar.gz"
-              label="Drop archive or click to browse POC folder"
+              label="Drop archive here, or click above to browse"
+              filters={[
+                { name: "Archives", extensions: ["zip", "tar.gz", "tgz"] },
+                { name: "All Files", extensions: ["*"] },
+              ]}
             />
             {extracting && (
               <div className="text-2xs text-amber">Extracting archive...</div>
@@ -170,6 +191,9 @@ export function IngestSidebar({ onRunInspection, onAbort }: IngestSidebarProps):
             </button>
             {cloneError && (
               <div className="text-2xs text-red">{cloneError}</div>
+            )}
+            {cloneSuccess && (
+              <div className="text-2xs text-green">{cloneSuccess}</div>
             )}
           </div>
         )}

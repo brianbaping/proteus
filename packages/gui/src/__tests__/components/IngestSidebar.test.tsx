@@ -179,7 +179,7 @@ describe("IngestSidebar", () => {
       });
 
       await waitFor(() => {
-        expect(mockCloneRepo).toHaveBeenCalledWith("https://github.com/test/repo");
+        expect(mockCloneRepo).toHaveBeenCalledWith("https://github.com/test/repo", "/original/src");
         expect(mockUpdateProject).toHaveBeenCalledWith("test-project", { source: "/cloned/path" });
       });
     });
@@ -196,7 +196,7 @@ describe("IngestSidebar", () => {
       });
 
       await waitFor(() => {
-        expect(mockExtractArchive).toHaveBeenCalledWith("/home/user/downloads/project.zip");
+        expect(mockExtractArchive).toHaveBeenCalledWith("/home/user/downloads/project.zip", "/original/src");
       });
     });
 
@@ -210,7 +210,7 @@ describe("IngestSidebar", () => {
       });
 
       await waitFor(() => {
-        expect(mockExtractArchive).toHaveBeenCalledWith("/home/user/downloads/project.tar.gz");
+        expect(mockExtractArchive).toHaveBeenCalledWith("/home/user/downloads/project.tar.gz", "/original/src");
       });
     });
 
@@ -224,7 +224,7 @@ describe("IngestSidebar", () => {
       });
 
       await waitFor(() => {
-        expect(mockExtractArchive).toHaveBeenCalledWith("/home/user/downloads/project.tgz");
+        expect(mockExtractArchive).toHaveBeenCalledWith("/home/user/downloads/project.tgz", "/original/src");
       });
     });
 

@@ -1,10 +1,11 @@
 import type { IpcMain } from "electron";
-import { dialog } from "electron";
+import { BrowserWindow, dialog } from "electron";
 import { copyFile } from "node:fs/promises";
 
 export function registerDialogHandlers(ipcMain: IpcMain): void {
   ipcMain.handle("dialog:open-directory", async () => {
-    const result = await dialog.showOpenDialog({
+    const win = BrowserWindow.getFocusedWindow() ?? undefined;
+    const result = await dialog.showOpenDialog(win!, {
       properties: ["openDirectory"],
     });
     if (result.canceled || result.filePaths.length === 0) return null;
@@ -12,7 +13,8 @@ export function registerDialogHandlers(ipcMain: IpcMain): void {
   });
 
   ipcMain.handle("dialog:open-file", async (_event, filters?: Array<{ name: string; extensions: string[] }>) => {
-    const result = await dialog.showOpenDialog({
+    const win = BrowserWindow.getFocusedWindow() ?? undefined;
+    const result = await dialog.showOpenDialog(win!, {
       properties: ["openFile"],
       filters: filters ?? [{ name: "All Files", extensions: ["*"] }],
     });
@@ -21,7 +23,8 @@ export function registerDialogHandlers(ipcMain: IpcMain): void {
   });
 
   ipcMain.handle("dialog:save-file", async (_event, sourcePath: string, defaultName: string) => {
-    const result = await dialog.showSaveDialog({
+    const win = BrowserWindow.getFocusedWindow() ?? undefined;
+    const result = await dialog.showSaveDialog(win!, {
       defaultPath: defaultName,
       filters: [{ name: "All Files", extensions: ["*"] }],
     });

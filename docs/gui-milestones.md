@@ -32,18 +32,18 @@ Verify running stages, streaming, and abort from the GUI. Costs real API dollars
 - [x] Tabs lock/unlock based on user-explicit completion (not auto-advance)
 - [x] Project switching navigates to correct tab and reflects correct completed state
 
-## Milestone 3: Project Management — NOT STARTED
+## Milestone 3: Project Management — COMPLETE
 
 Verify create, destroy, settings, and revert workflows.
 
-- [ ] Create new project via dialog (local path)
-- [ ] Create new project via GitHub clone
-- [ ] Create new project via archive upload
-- [ ] Destroy a project
-- [ ] Destroy Phase & Revert removes artifacts and navigates back
-- [ ] Settings dialog loads global config
-- [ ] Settings dialog saves config changes
-- [ ] Project selector dropdown works with multiple projects
+- [x] Create new project via dialog (local path)
+- [x] Create new project via GitHub clone — BUG-013 fixed
+- [x] Create new project via archive upload — BUG-014 fixed
+- [x] Destroy a project — BUG-016 fixed
+- [ ] Destroy Phase & Revert removes artifacts and navigates back — not tested
+- [x] Settings dialog loads global config
+- [x] Settings dialog saves config changes — BUG-015 closed (Tiers tab works as designed)
+- [x] Project selector dropdown works with multiple projects
 
 ## Milestone 4: Windows Sanity Check — UNDERWAY
 

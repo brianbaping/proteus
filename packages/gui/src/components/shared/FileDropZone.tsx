@@ -4,9 +4,10 @@ interface FileDropZoneProps {
   onFilePath(path: string): void;
   accept?: string;
   label?: string;
+  filters?: Array<{ name: string; extensions: string[] }>;
 }
 
-export function FileDropZone({ onFilePath, accept, label }: FileDropZoneProps): React.JSX.Element {
+export function FileDropZone({ onFilePath, accept, label, filters }: FileDropZoneProps): React.JSX.Element {
   const [dragOver, setDragOver] = useState(false);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -37,8 +38,12 @@ export function FileDropZone({ onFilePath, accept, label }: FileDropZoneProps): 
   }, [onFilePath]);
 
   async function handleClick(): Promise<void> {
-    const path = await window.electronAPI.openFile();
-    if (path) onFilePath(path);
+    try {
+      const path = await window.electronAPI.openFile(filters);
+      if (path) onFilePath(path);
+    } catch (err) {
+      console.error("File picker failed:", err);
+    }
   }
 
   return (

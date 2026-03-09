@@ -41,10 +41,10 @@ export interface ElectronAPI {
   saveFile(sourcePath: string, defaultName: string): Promise<string | null>;
 
   // Git
-  cloneRepo(url: string): Promise<string>;
+  cloneRepo(url: string, targetDir?: string): Promise<string>;
 
   // Archive extraction
-  extractArchive(archivePath: string): Promise<string>;
+  extractArchive(archivePath: string, targetDir?: string): Promise<string>;
 }
 
 const electronAPI: ElectronAPI = {
@@ -102,10 +102,10 @@ const electronAPI: ElectronAPI = {
   saveFile: (sourcePath, defaultName) => ipcRenderer.invoke("dialog:save-file" satisfies IpcChannel, sourcePath, defaultName),
 
   // Git
-  cloneRepo: (url) => ipcRenderer.invoke("project:clone-repo" satisfies IpcChannel, url),
+  cloneRepo: (url, targetDir) => ipcRenderer.invoke("project:clone-repo" satisfies IpcChannel, url, targetDir),
 
   // Archive extraction
-  extractArchive: (archivePath) => ipcRenderer.invoke("project:extract-archive" satisfies IpcChannel, archivePath),
+  extractArchive: (archivePath, targetDir) => ipcRenderer.invoke("project:extract-archive" satisfies IpcChannel, archivePath, targetDir),
 };
 
 contextBridge.exposeInMainWorld("electronAPI", electronAPI);
