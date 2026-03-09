@@ -16,12 +16,12 @@ export function NewProjectDialog({ open, onClose }: NewProjectDialogProps): Reac
   if (!open) return null;
 
   async function handleBrowseSource(): Promise<void> {
-    const dir = await window.electronAPI.openDirectory();
+    const dir = await window.electronAPI.openDirectory(source);
     if (dir) setSource(dir);
   }
 
   async function handleBrowseTarget(): Promise<void> {
-    const dir = await window.electronAPI.openDirectory();
+    const dir = await window.electronAPI.openDirectory(target);
     if (dir) setTarget(dir);
   }
 

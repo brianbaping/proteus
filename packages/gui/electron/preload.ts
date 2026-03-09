@@ -36,7 +36,7 @@ export interface ElectronAPI {
   readCosts(targetPath: string): Promise<CostTracking>;
 
   // Dialogs
-  openDirectory(): Promise<string | null>;
+  openDirectory(defaultPath?: string): Promise<string | null>;
   openFile(filters?: Array<{ name: string; extensions: string[] }>): Promise<string | null>;
   saveFile(sourcePath: string, defaultName: string): Promise<string | null>;
 
@@ -97,7 +97,7 @@ const electronAPI: ElectronAPI = {
   readCosts: (targetPath) => ipcRenderer.invoke("costs:read" satisfies IpcChannel, targetPath),
 
   // Dialogs
-  openDirectory: () => ipcRenderer.invoke("dialog:open-directory" satisfies IpcChannel),
+  openDirectory: (defaultPath) => ipcRenderer.invoke("dialog:open-directory" satisfies IpcChannel, defaultPath),
   openFile: (filters) => ipcRenderer.invoke("dialog:open-file" satisfies IpcChannel, filters),
   saveFile: (sourcePath, defaultName) => ipcRenderer.invoke("dialog:save-file" satisfies IpcChannel, sourcePath, defaultName),
 

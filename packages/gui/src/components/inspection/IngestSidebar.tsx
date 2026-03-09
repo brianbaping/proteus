@@ -45,7 +45,7 @@ export function IngestSidebar({ onRunInspection, onAbort }: IngestSidebarProps):
   }
 
   async function handleBrowsePoc(): Promise<void> {
-    const dir = await window.electronAPI.openDirectory();
+    const dir = await window.electronAPI.openDirectory(pocPath);
     if (dir) {
       setPocPath(dir);
       await persistPaths({ source: dir });
@@ -53,7 +53,7 @@ export function IngestSidebar({ onRunInspection, onAbort }: IngestSidebarProps):
   }
 
   async function handleBrowseTarget(): Promise<void> {
-    const dir = await window.electronAPI.openDirectory();
+    const dir = await window.electronAPI.openDirectory(targetPath);
     if (dir) {
       setTargetPath(dir);
       await persistPaths({ target: dir });

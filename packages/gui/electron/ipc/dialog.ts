@@ -3,10 +3,11 @@ import { BrowserWindow, dialog } from "electron";
 import { copyFile } from "node:fs/promises";
 
 export function registerDialogHandlers(ipcMain: IpcMain): void {
-  ipcMain.handle("dialog:open-directory", async () => {
+  ipcMain.handle("dialog:open-directory", async (_event, defaultPath?: string) => {
     const win = BrowserWindow.getFocusedWindow() ?? undefined;
     const result = await dialog.showOpenDialog(win!, {
       properties: ["openDirectory"],
+      defaultPath,
     });
     if (result.canceled || result.filePaths.length === 0) return null;
     return result.filePaths[0];
