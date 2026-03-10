@@ -4,15 +4,20 @@ directories:
   output: release
 files:
   - dist/**/*
+  - build/icon-*.png
   - package.json
+icon: build/icon-256.png
 win:
+  icon: build/icon.ico
   target:
     - nsis
     - portable
 mac:
+  icon: build/icon-1024.png
   target:
     - dmg
 linux:
+  icon: build
   target:
     - AppImage
     - deb

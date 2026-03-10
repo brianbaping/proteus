@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="glow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#00ff88"/>
+      <stop offset="100%" stop-color="#ffc100"/>
+    </linearGradient>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0f1215"/>
+      <stop offset="100%" stop-color="#0a0c0e"/>
+    </linearGradient>
+  </defs>
+  <!-- Background rounded square -->
+  <rect width="1024" height="1024" rx="220" fill="url(#bg)"/>
+  <!-- Outer glow ring -->
+  <rect x="40" y="40" width="944" height="944" rx="190" fill="none" stroke="url(#glow)" stroke-width="6" opacity="0.3"/>
+  <!-- Stylized P shape — vertical stem + curved head -->
+  <g transform="translate(512, 512)">
+    <!-- Vertical stem -->
+    <rect x="-180" y="-280" width="80" height="560" rx="40" fill="url(#glow)"/>
+    <!-- P curve (open arc from top of stem curving right and back) -->
+    <path d="M -140,-280 L 40,-280 C 250,-280 250,-20 40,-20 L -140,-20"
+          fill="none" stroke="url(#glow)" stroke-width="80" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Forge spark / transformation dot -->
+    <circle cx="160" cy="-150" r="36" fill="#ffc100" opacity="0.9"/>
+    <!-- Small spark -->
+    <circle cx="220" cy="-220" r="14" fill="#ffc100" opacity="0.5"/>
+  </g>
+</svg>

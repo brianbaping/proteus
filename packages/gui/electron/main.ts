@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, ipcMain } from "electron";
+import { app, BrowserWindow, Menu, ipcMain, nativeImage } from "electron";
 import path from "node:path";
 import { readFile, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
@@ -81,12 +81,15 @@ function buildMenu(): void {
 }
 
 function createWindow(): void {
+  const iconPath = path.join(__dirname, "..", "..", "build", "icon-256.png");
+
   mainWindow = new BrowserWindow({
     width: 1440,
     height: 900,
     minWidth: 1024,
     minHeight: 600,
     backgroundColor: "#0a0c0e",
+    icon: nativeImage.createFromPath(iconPath),
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
