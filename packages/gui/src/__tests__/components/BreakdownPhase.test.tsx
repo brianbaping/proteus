@@ -3,7 +3,7 @@ import { render, screen, fireEvent, act, waitFor } from "@testing-library/react"
 import type { ElectronAPI } from "#electron/preload.js";
 import { useProjectStore } from "../../stores/project-store.js";
 import { useSessionStore } from "../../stores/session-store.js";
-import { useChatStore } from "../../stores/chat-store.js";
+import { useAgentStore } from "../../stores/agent-store.js";
 
 vi.mock("../../components/shared/FileDropZone.js", () => ({
   FileDropZone: () => <div data-testid="file-drop-zone">DropZone</div>,
@@ -22,7 +22,7 @@ describe("BreakdownPhase", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useSessionStore.getState().reset();
-    useChatStore.getState().clearMessages();
+    useAgentStore.getState().reset();
 
     mockReadArtifacts = vi.fn().mockResolvedValue(null);
     mockRunStage = vi.fn().mockResolvedValue({
@@ -53,6 +53,9 @@ describe("BreakdownPhase", () => {
       saveFile: vi.fn(),
       cloneRepo: vi.fn(),
       updateProject: vi.fn(),
+      saveSessionLog: vi.fn().mockResolvedValue(undefined),
+      readSessionLogs: vi.fn().mockResolvedValue({}),
+      exportSessionLogs: vi.fn().mockResolvedValue(null),
     } as unknown as ElectronAPI;
   });
 
@@ -223,8 +226,6 @@ describe("BreakdownPhase", () => {
       expect(mockReadArtifacts).toHaveBeenCalledWith("/tgt", "split");
     });
 
-    const messages = useChatStore.getState().messages;
-    expect(messages.some((m) => m.text.includes("Breakdown complete"))).toBe(true);
   });
 
   it("calls abortStage when stop button is clicked during run", async () => {
@@ -240,8 +241,7 @@ describe("BreakdownPhase", () => {
 
     expect(window.electronAPI.abortStage).toHaveBeenCalled();
     expect(useSessionStore.getState().isRunning).toBe(false);
-    const messages = useChatStore.getState().messages;
-    expect(messages.some((m) => m.text.includes("aborted"))).toBe(true);
+
   });
 
   it("handles runStage exception with error message", async () => {
@@ -264,8 +264,6 @@ describe("BreakdownPhase", () => {
       expect(session.cost).toBe(0);
     });
 
-    const messages = useChatStore.getState().messages;
-    expect(messages.some((m) => m.text.includes("breakdown failed"))).toBe(true);
   });
 
   it("disables Run button when phase has artifacts", async () => {

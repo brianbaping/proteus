@@ -1,31 +1,53 @@
 import { create } from "zustand";
 
-interface ChatMessage {
-  role: "ai" | "user";
-  text: string;
-  timestamp: number;
+export interface ChatMessage {
+  id: string;
+  sender: "user" | "agent";
   agentName?: string;
   agentColor?: string;
+  text: string;
+  timestamp: number;
 }
 
 interface ChatState {
   messages: ChatMessage[];
-  inputValue: string;
+  panelOpen: boolean;
 
-  addMessage(role: "ai" | "user", text: string, agent?: { name: string; color: string }): void;
-  setInput(value: string): void;
-  clearMessages(): void;
+  addUserMessage(text: string): void;
+  addAgentMessage(agentName: string, agentColor: string, text: string): void;
+  togglePanel(): void;
+  clear(): void;
+  reset(): void;
+}
+
+let nextId = 0;
+function genId(): string {
+  return `chat-${++nextId}`;
 }
 
 export const useChatStore = create<ChatState>((set) => ({
   messages: [],
-  inputValue: "",
+  panelOpen: false,
 
-  addMessage: (role, text, agent) => set((state) => ({
-    messages: [...state.messages, { role, text, timestamp: Date.now(), agentName: agent?.name, agentColor: agent?.color }],
+  addUserMessage: (text) => set((state) => ({
+    messages: [
+      ...state.messages,
+      { id: genId(), sender: "user", text, timestamp: Date.now() },
+    ],
+    panelOpen: true,
   })),
 
-  setInput: (value) => set({ inputValue: value }),
+  addAgentMessage: (agentName, agentColor, text) => set((state) => ({
+    messages: [
+      ...state.messages,
+      { id: genId(), sender: "agent", agentName, agentColor, text, timestamp: Date.now() },
+    ],
+    panelOpen: true,
+  })),
 
-  clearMessages: () => set({ messages: [] }),
+  togglePanel: () => set((state) => ({ panelOpen: !state.panelOpen })),
+
+  clear: () => set({ messages: [] }),
+
+  reset: () => set({ messages: [], panelOpen: false }),
 }));

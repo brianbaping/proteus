@@ -52,6 +52,18 @@ export function registerPipelineHandlers(
     const stageOpts = options.options ?? {};
     const name = options.projectName;
 
+    // Apply maxOutputTokens from global config as env var
+    try {
+      const globalConfig = await readGlobalConfig();
+      if (globalConfig?.maxOutputTokens) {
+        process.env.CLAUDE_CODE_MAX_OUTPUT_TOKENS = String(globalConfig.maxOutputTokens);
+      } else {
+        delete process.env.CLAUDE_CODE_MAX_OUTPUT_TOKENS;
+      }
+    } catch {
+      // Config read failed — leave env as-is
+    }
+
     let success = false;
     const startTime = Date.now();
 

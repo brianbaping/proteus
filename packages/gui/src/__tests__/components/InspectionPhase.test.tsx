@@ -3,7 +3,7 @@ import { render, screen, waitFor, fireEvent, act } from "@testing-library/react"
 import type { ElectronAPI } from "#electron/preload.js";
 import { useProjectStore } from "../../stores/project-store.js";
 import { useSessionStore } from "../../stores/session-store.js";
-import { useChatStore } from "../../stores/chat-store.js";
+import { useAgentStore } from "../../stores/agent-store.js";
 import { featuresJsonToInspectionData } from "../../components/inspection/InspectionPhase.js";
 
 // Mock child components to isolate InspectionPhase logic
@@ -33,7 +33,7 @@ describe("InspectionPhase", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useSessionStore.getState().reset();
-    useChatStore.getState().clearMessages();
+    useAgentStore.getState().reset();
 
     mockReadArtifacts = vi.fn().mockResolvedValue(null);
     mockRunStage = vi.fn().mockResolvedValue({
@@ -64,6 +64,9 @@ describe("InspectionPhase", () => {
       saveFile: vi.fn(),
       cloneRepo: vi.fn(),
       updateProject: vi.fn(),
+      saveSessionLog: vi.fn().mockResolvedValue(undefined),
+      readSessionLogs: vi.fn().mockResolvedValue({}),
+      exportSessionLogs: vi.fn().mockResolvedValue(null),
     } as unknown as ElectronAPI;
   });
 
@@ -180,8 +183,6 @@ describe("InspectionPhase", () => {
       expect(session.duration).toBe("1m 30s");
       expect(session.sessionId).toBe("s1");
 
-      const messages = useChatStore.getState().messages;
-      expect(messages.some((m) => m.text.includes("Inspection complete"))).toBe(true);
     });
 
     it("handles runStage failure", async () => {
@@ -201,8 +202,8 @@ describe("InspectionPhase", () => {
       });
 
       await waitFor(() => {
-        const messages = useChatStore.getState().messages;
-        expect(messages.some((m) => m.text.includes("Inspection failed"))).toBe(true);
+        const session = useSessionStore.getState();
+        expect(session.isRunning).toBe(false);
       });
     });
 
@@ -224,8 +225,6 @@ describe("InspectionPhase", () => {
         expect(session.cost).toBe(0);
       });
 
-      const messages = useChatStore.getState().messages;
-      expect(messages.some((m) => m.text.includes("network error"))).toBe(true);
     });
 
     it("calls abortStage when stop button is clicked during run", async () => {
@@ -241,8 +240,6 @@ describe("InspectionPhase", () => {
 
       expect(window.electronAPI.abortStage).toHaveBeenCalled();
       expect(useSessionStore.getState().isRunning).toBe(false);
-      const messages = useChatStore.getState().messages;
-      expect(messages.some((m) => m.text.includes("aborted"))).toBe(true);
     });
 
     it("does nothing when no active project name", async () => {

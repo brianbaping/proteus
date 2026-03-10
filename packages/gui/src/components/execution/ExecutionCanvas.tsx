@@ -2,10 +2,12 @@ import React from "react";
 import { ArtifactHeader } from "../shared/ArtifactHeader.js";
 import { ArtifactList } from "../shared/ArtifactList.js";
 import type { ArtifactFile } from "../shared/ArtifactList.js";
+import { AgentActivityTree } from "../shared/AgentActivityTree.js";
 import { StalenessWarning } from "../shared/StalenessWarning.js";
 import { StatCard } from "../shared/StatCard.js";
 import { useSessionStore } from "../../stores/session-store.js";
 import { useProjectStore } from "../../stores/project-store.js";
+import { useAgentStore } from "../../stores/agent-store.js";
 
 interface ExecutionData {
   totalTasks: number;
@@ -134,24 +136,19 @@ export function ExecutionCanvas({ data, files }: ExecutionCanvasProps): React.JS
           </div>
         )}
 
+        {/* Agent activity during run */}
+        {isRunning && <AgentActivityTree stage="execute" />}
+
         {/* Artifacts */}
         <ArtifactList stage="execute" files={files} title="Execution Artifacts" />
 
+        {/* Session log after run */}
+        {!isRunning && <AgentActivityTree stage="execute" collapsed />}
+
         {/* Empty state */}
-        {!data && !isRunning && (
+        {!data && !isRunning && !useAgentStore.getState().phaseHistory.execute && (
           <div className="flex items-center justify-center h-64 text-fg-muted text-sm">
             Click "Build Candidate" to start production code generation
-          </div>
-        )}
-
-        {/* Running state */}
-        {isRunning && !data && (
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center space-y-2">
-              <div className="w-8 h-8 border-2 border-green border-t-transparent rounded-full animate-spin mx-auto" />
-              <div className="text-fg-dim text-sm">Agent Team executing production build...</div>
-              <div className="text-fg-muted text-2xs">Check AI Chat for real-time agent activity</div>
-            </div>
           </div>
         )}
       </div>

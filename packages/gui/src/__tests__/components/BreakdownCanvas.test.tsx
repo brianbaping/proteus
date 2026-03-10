@@ -22,6 +22,12 @@ vi.mock("../../components/shared/ArtifactList.js", () => ({
   ),
 }));
 
+vi.mock("../../components/shared/AgentActivityTree.js", () => ({
+  AgentActivityTree: ({ stage, collapsed }: { stage: string; collapsed?: boolean }) => (
+    <div data-testid={collapsed ? "session-log" : "activity-tree"}>{stage}</div>
+  ),
+}));
+
 describe("BreakdownCanvas", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -74,7 +80,7 @@ describe("BreakdownCanvas", () => {
     const { BreakdownCanvas } = await import("../../components/breakdown/BreakdownCanvas.js");
     render(<BreakdownCanvas data={null} files={[]} />);
 
-    expect(screen.getByText("Splitting into tracks...")).toBeDefined();
+    expect(screen.getByTestId("activity-tree")).toBeDefined();
   });
 
   it("renders tracks with dependencies when data is provided", async () => {

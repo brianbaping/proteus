@@ -5,7 +5,7 @@ import type { PlanData, TaskEntry } from "./PlanningCanvas.js";
 import type { ArtifactFile } from "../shared/ArtifactList.js";
 import { useProjectStore } from "../../stores/project-store.js";
 import { useSessionStore } from "../../stores/session-store.js";
-import { useChatStore } from "../../stores/chat-store.js";
+import { useAgentStore, serializeTree } from "../../stores/agent-store.js";
 
 interface PlanJson {
   tasks?: Array<{
@@ -60,7 +60,6 @@ export function PlanningPhase(): React.JSX.Element {
   const hasArtifacts = stageStatuses.find((s) => s.stage === "plan")?.complete ?? false;
   const prevHasArtifacts = stageStatuses.find((s) => s.stage === "design")?.complete ?? false;
   const runDisabled = hasArtifacts || !prevHasArtifacts;
-  const { addMessage, clearMessages } = useChatStore();
   const [notes, setNotes] = useState("");
   const [briefFile, setBriefFile] = useState("");
   const [planData, setPlanData] = useState<PlanData | null>(null);
@@ -99,14 +98,12 @@ export function PlanningPhase(): React.JSX.Element {
       // Session may have already ended
     }
     endSession(false, 0, "0s", "");
-    addMessage("ai", "Stage aborted by user.");
   }
 
   async function handleApprovePlan(): Promise<void> {
     if (!activeProjectName) return;
-    clearMessages();
+    useAgentStore.getState().startRun("plan");
     startStage("plan");
-    addMessage("ai", "Generating execution plan...");
 
     try {
       const result = await window.electronAPI.runStage({
@@ -117,17 +114,23 @@ export function PlanningPhase(): React.JSX.Element {
           : undefined,
       });
       endSession(result.success, result.cost.estimatedCost, result.cost.duration, result.sessionId);
+      useAgentStore.getState().endRun();
+      const tree = useAgentStore.getState().phaseHistory.plan;
+      if (tree && activeEntry?.target) {
+        window.electronAPI.saveSessionLog(activeEntry.target, "plan", serializeTree(tree)).catch(() => {});
+      }
       await refreshStatus();
 
       if (result.success) {
-        addMessage("ai", "Plan generated.");
         await loadPlanArtifacts();
-      } else {
-        addMessage("ai", "Plan failed.");
       }
     } catch (err) {
       endSession(false, 0, "0s", "");
-      addMessage("ai", `Error: ${(err as Error).message}`);
+      useAgentStore.getState().endRun();
+      const tree = useAgentStore.getState().phaseHistory.plan;
+      if (tree && activeEntry?.target) {
+        window.electronAPI.saveSessionLog(activeEntry.target, "plan", serializeTree(tree)).catch(() => {});
+      }
     }
   }
 

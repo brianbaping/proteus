@@ -22,6 +22,12 @@ vi.mock("../../components/shared/ArtifactList.js", () => ({
   ),
 }));
 
+vi.mock("../../components/shared/AgentActivityTree.js", () => ({
+  AgentActivityTree: ({ stage, collapsed }: { stage: string; collapsed?: boolean }) => (
+    <div data-testid={collapsed ? "session-log" : "activity-tree"}>{stage}</div>
+  ),
+}));
+
 describe("ExecutionCanvas", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -74,7 +80,7 @@ describe("ExecutionCanvas", () => {
     const { ExecutionCanvas } = await import("../../components/execution/ExecutionCanvas.js");
     render(<ExecutionCanvas data={null} files={[]} />);
 
-    expect(screen.getByText("Agent Team executing production build...")).toBeDefined();
+    expect(screen.getByTestId("activity-tree")).toBeDefined();
   });
 
   it("renders stats, session details, and progress when data is provided", async () => {

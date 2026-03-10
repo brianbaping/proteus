@@ -5,8 +5,9 @@ import { STAGE_ORDER } from "@proteus-forge/shared";
 import { TopBar } from "./components/chrome/TopBar.js";
 import { ProgressBar } from "./components/chrome/ProgressBar.js";
 import { PhaseTabStrip } from "./components/chrome/PhaseTabStrip.js";
+import type { ActiveTab } from "./components/chrome/PhaseTabStrip.js";
 import { CompleteBar } from "./components/chrome/CompleteBar.js";
-import { AIChatPanel } from "./components/chrome/AIChatPanel.js";
+import { ChatPanel } from "./components/chrome/ChatPanel.js";
 import { NewProjectDialog } from "./components/dialogs/NewProjectDialog.js";
 import { SettingsDialog } from "./components/dialogs/SettingsDialog.js";
 import { InspectionPhase } from "./components/inspection/InspectionPhase.js";
@@ -14,25 +15,28 @@ import { DesignPhase } from "./components/design/DesignPhase.js";
 import { PlanningPhase } from "./components/planning/PlanningPhase.js";
 import { BreakdownPhase } from "./components/breakdown/BreakdownPhase.js";
 import { ExecutionPhase } from "./components/execution/ExecutionPhase.js";
+import { LogTab } from "./components/log/LogTab.js";
 import { useProjectStore } from "./stores/project-store.js";
 import { useSessionStore } from "./stores/session-store.js";
+import { useAgentStore, deserializeTree } from "./stores/agent-store.js";
+import type { SerializedAgentTree } from "./stores/agent-store.js";
 import { useChatStore } from "./stores/chat-store.js";
 
-function PhaseContent({ phase }: { phase: StageName }): React.JSX.Element {
+function PhaseContent({ phase }: { phase: ActiveTab }): React.JSX.Element {
   switch (phase) {
     case "inspect": return <InspectionPhase />;
     case "design": return <DesignPhase />;
     case "plan": return <PlanningPhase />;
     case "split": return <BreakdownPhase />;
     case "execute": return <ExecutionPhase />;
+    case "log": return <LogTab />;
   }
 }
 
 export function App(): React.JSX.Element {
   const { loadRegistry, stageStatuses, activeProjectName } = useProjectStore();
-  const { addMessage } = useChatStore();
   const { initCompletedStages } = useSessionStore();
-  const [activePhase, setActivePhase] = useState<StageName>("inspect");
+  const [activePhase, setActivePhase] = useState<ActiveTab>("inspect");
   const prevProjectRef = useRef<string | null>(null);
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
@@ -47,6 +51,27 @@ export function App(): React.JSX.Element {
     if (activeProjectName === prevProjectRef.current) return;
     if (stageStatuses.length === 0) return;
     prevProjectRef.current = activeProjectName;
+
+    useAgentStore.getState().clearHistory();
+    useChatStore.getState().clear();
+
+    // Load persisted session logs
+    const entry = useProjectStore.getState().activeEntry;
+    if (entry?.target) {
+      window.electronAPI.readSessionLogs(entry.target).then((logs) => {
+        const typed = logs as Partial<Record<StageName, SerializedAgentTree>>;
+        for (const [stage, serialized] of Object.entries(typed)) {
+          if (serialized) {
+            useAgentStore.getState().loadPhaseHistory(
+              stage as StageName,
+              deserializeTree(serialized),
+            );
+          }
+        }
+      }).catch(() => {
+        // Session logs not available
+      });
+    }
 
     const completedNames = stageStatuses
       .filter((s) => s.complete)
@@ -71,41 +96,30 @@ export function App(): React.JSX.Element {
     const unsubLog = window.electronAPI.onReporterLog((msg) => {
       const trimmed = msg.trim();
       if (trimmed) {
-        addMessage("ai", trimmed);
+        useAgentStore.getState().handleReporterMessage("log", trimmed);
         useSessionStore.getState().addLog(trimmed);
       }
     });
     const unsubWarn = window.electronAPI.onReporterWarn((msg) => {
       const trimmed = msg.trim();
-      if (trimmed) addMessage("ai", `[warn] ${trimmed}`);
+      if (trimmed) useAgentStore.getState().handleReporterMessage("warn", trimmed);
     });
     const unsubErr = window.electronAPI.onReporterError((msg) => {
       const trimmed = msg.trim();
       if (trimmed) {
-        addMessage("ai", `[error] ${trimmed}`);
+        useAgentStore.getState().handleReporterMessage("error", trimmed);
         useSessionStore.getState().addError(trimmed);
       }
     });
     const unsubEvent = window.electronAPI.onSessionEvent((raw) => {
       const event = raw as SessionEvent;
-      const agentMeta = event.agentName && event.agentColor
-        ? { name: event.agentName, color: event.agentColor }
-        : undefined;
-      switch (event.type) {
-        case "agent-spawned":
-          addMessage("ai", `Spawning teammate: ${event.agentName ?? event.agentId}`, agentMeta);
-          break;
-        case "agent-activity":
-          addMessage("ai", `[${event.agentName ?? "agent"}] ${event.message ?? ""}`, agentMeta);
-          break;
-        case "agent-done":
-          addMessage("ai", `${event.agentName ?? "agent"} done`, agentMeta);
-          break;
-        case "session-start":
-        case "session-end":
-          if (event.message) addMessage("ai", event.message);
-          break;
-        // "progress" and "error" are handled by reporter channels
+      useAgentStore.getState().handleSessionEvent(event);
+      if (event.type === "agent-text" && event.message) {
+        useChatStore.getState().addAgentMessage(
+          event.agentName ?? "Lead",
+          event.agentColor ?? "#00ff88",
+          event.message,
+        );
       }
     });
 
@@ -115,9 +129,10 @@ export function App(): React.JSX.Element {
       unsubErr();
       unsubEvent();
     };
-  }, [addMessage]);
+  }, []);
 
   const handleDestroy = useCallback(async () => {
+    if (activePhase === "log") return;
     const confirmed = window.confirm(
       `Destroy ${activePhase} artifacts and all downstream stages?`
     );
@@ -157,11 +172,13 @@ export function App(): React.JSX.Element {
         )}
       </div>
 
-      <CompleteBar
-        currentPhase={activePhase}
-        onDestroy={handleDestroy}
-      />
-      <AIChatPanel />
+      {activePhase !== "log" && (
+        <CompleteBar
+          currentPhase={activePhase}
+          onDestroy={handleDestroy}
+        />
+      )}
+      <ChatPanel />
 
       <NewProjectDialog
         open={showNewDialog}

@@ -5,7 +5,7 @@ import type { DesignData, ServiceEntry } from "./DesignCanvas.js";
 import type { ArtifactFile } from "../shared/ArtifactList.js";
 import { useProjectStore } from "../../stores/project-store.js";
 import { useSessionStore } from "../../stores/session-store.js";
-import { useChatStore } from "../../stores/chat-store.js";
+import { useAgentStore, serializeTree } from "../../stores/agent-store.js";
 
 interface DesignMetaJson {
   architectureStyle?: string;
@@ -52,7 +52,6 @@ export function DesignPhase(): React.JSX.Element {
   const hasArtifacts = stageStatuses.find((s) => s.stage === "design")?.complete ?? false;
   const prevHasArtifacts = stageStatuses.find((s) => s.stage === "inspect")?.complete ?? false;
   const runDisabled = hasArtifacts || !prevHasArtifacts;
-  const { addMessage, clearMessages } = useChatStore();
   const [brief, setBrief] = useState("");
   const [briefFile, setBriefFile] = useState("");
   const [excludeStyle, setExcludeStyle] = useState(false);
@@ -92,14 +91,12 @@ export function DesignPhase(): React.JSX.Element {
       // Session may have already ended
     }
     endSession(false, 0, "0s", "");
-    addMessage("ai", "Stage aborted by user.");
   }
 
   async function handleRunDesign(): Promise<void> {
     if (!activeProjectName) return;
-    clearMessages();
+    useAgentStore.getState().startRun("design");
     startStage("design");
-    addMessage("ai", "Starting design phase...");
 
     try {
       const result = await window.electronAPI.runStage({
@@ -112,17 +109,23 @@ export function DesignPhase(): React.JSX.Element {
         },
       });
       endSession(result.success, result.cost.estimatedCost, result.cost.duration, result.sessionId);
+      useAgentStore.getState().endRun();
+      const tree = useAgentStore.getState().phaseHistory.design;
+      if (tree && activeEntry?.target) {
+        window.electronAPI.saveSessionLog(activeEntry.target, "design", serializeTree(tree)).catch(() => {});
+      }
       await refreshStatus();
 
       if (result.success) {
-        addMessage("ai", "Design complete.");
         await loadDesignArtifacts();
-      } else {
-        addMessage("ai", "Design failed.");
       }
     } catch (err) {
       endSession(false, 0, "0s", "");
-      addMessage("ai", `Error: ${(err as Error).message}`);
+      useAgentStore.getState().endRun();
+      const tree = useAgentStore.getState().phaseHistory.design;
+      if (tree && activeEntry?.target) {
+        window.electronAPI.saveSessionLog(activeEntry.target, "design", serializeTree(tree)).catch(() => {});
+      }
     }
   }
 

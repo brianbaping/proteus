@@ -4,7 +4,7 @@ import type { ExecutionData } from "./ExecutionCanvas.js";
 import type { ArtifactFile } from "../shared/ArtifactList.js";
 import { useProjectStore } from "../../stores/project-store.js";
 import { useSessionStore } from "../../stores/session-store.js";
-import { useChatStore } from "../../stores/chat-store.js";
+import { useAgentStore, serializeTree } from "../../stores/agent-store.js";
 
 interface TrackEntry {
   id: string;
@@ -67,7 +67,6 @@ export function ExecutionPhase(): React.JSX.Element {
   const hasArtifacts = stageStatuses.find((s) => s.stage === "execute")?.complete ?? false;
   const prevHasArtifacts = stageStatuses.find((s) => s.stage === "split")?.complete ?? false;
   const runDisabled = hasArtifacts || !prevHasArtifacts;
-  const { addMessage, clearMessages } = useChatStore();
   const [tracks, setTracks] = useState<TrackEntry[]>([]);
   const [executionData, setExecutionData] = useState<ExecutionData | null>(null);
   const [artifactFiles, setArtifactFiles] = useState<ArtifactFile[]>([]);
@@ -127,14 +126,12 @@ export function ExecutionPhase(): React.JSX.Element {
       // Session may have already ended
     }
     endSession(false, 0, "0s", "");
-    addMessage("ai", "Stage aborted by user.");
   }
 
   async function handleBuildCandidate(): Promise<void> {
     if (!activeProjectName) return;
-    clearMessages();
+    useAgentStore.getState().startRun("execute");
     startStage("execute");
-    addMessage("ai", "Launching Agent Team for execution...");
 
     try {
       const result = await window.electronAPI.runStage({
@@ -142,17 +139,23 @@ export function ExecutionPhase(): React.JSX.Element {
         stage: "execute",
       });
       endSession(result.success, result.cost.estimatedCost, result.cost.duration, result.sessionId);
+      useAgentStore.getState().endRun();
+      const tree = useAgentStore.getState().phaseHistory.execute;
+      if (tree && activeEntry?.target) {
+        window.electronAPI.saveSessionLog(activeEntry.target, "execute", serializeTree(tree)).catch(() => {});
+      }
       await refreshStatus();
 
       if (result.success) {
-        addMessage("ai", "Execution complete.");
         await loadSessionArtifacts();
-      } else {
-        addMessage("ai", "Execution failed.");
       }
     } catch (err) {
       endSession(false, 0, "0s", "");
-      addMessage("ai", `Error: ${(err as Error).message}`);
+      useAgentStore.getState().endRun();
+      const tree = useAgentStore.getState().phaseHistory.execute;
+      if (tree && activeEntry?.target) {
+        window.electronAPI.saveSessionLog(activeEntry.target, "execute", serializeTree(tree)).catch(() => {});
+      }
     }
   }
 

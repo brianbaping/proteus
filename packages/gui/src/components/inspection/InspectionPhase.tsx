@@ -4,7 +4,7 @@ import { InspectionCanvas, type InspectionData } from "./InspectionCanvas.js";
 import type { ArtifactFile } from "../shared/ArtifactList.js";
 import { useProjectStore } from "../../stores/project-store.js";
 import { useSessionStore } from "../../stores/session-store.js";
-import { useChatStore } from "../../stores/chat-store.js";
+import { useAgentStore, serializeTree } from "../../stores/agent-store.js";
 
 interface FeaturesJson {
   source?: {
@@ -75,7 +75,6 @@ export function featuresJsonToInspectionData(features: FeaturesJson): Inspection
 export function InspectionPhase(): React.JSX.Element {
   const { activeEntry, activeProjectName, stageStatuses, refreshStatus } = useProjectStore();
   const { startStage, endSession } = useSessionStore();
-  const { addMessage, clearMessages } = useChatStore();
   const [inspectionData, setInspectionData] = useState<InspectionData | null>(null);
   const [artifactFiles, setArtifactFiles] = useState<ArtifactFile[]>([]);
 
@@ -113,15 +112,13 @@ export function InspectionPhase(): React.JSX.Element {
       // Session may have already ended
     }
     endSession(false, 0, "0s", "");
-    addMessage("ai", "Stage aborted by user.");
   }
 
   async function handleRunInspection(options: { excludeStyle?: boolean }): Promise<void> {
     if (!activeProjectName) return;
 
-    clearMessages();
+    useAgentStore.getState().startRun("inspect");
     startStage("inspect");
-    addMessage("ai", "Starting inspection of source codebase...");
 
     try {
       const result = await window.electronAPI.runStage({
@@ -131,17 +128,23 @@ export function InspectionPhase(): React.JSX.Element {
       });
 
       endSession(result.success, result.cost.estimatedCost, result.cost.duration, result.sessionId);
+      useAgentStore.getState().endRun();
+      const tree = useAgentStore.getState().phaseHistory.inspect;
+      if (tree && activeEntry?.target) {
+        window.electronAPI.saveSessionLog(activeEntry.target, "inspect", serializeTree(tree)).catch(() => {});
+      }
       await refreshStatus();
 
       if (result.success) {
-        addMessage("ai", "Inspection complete. Review the findings above.");
         await loadInspectionArtifacts();
-      } else {
-        addMessage("ai", "Inspection failed. Check the errors above.");
       }
     } catch (err) {
       endSession(false, 0, "0s", "");
-      addMessage("ai", `Error: ${(err as Error).message}`);
+      useAgentStore.getState().endRun();
+      const tree = useAgentStore.getState().phaseHistory.inspect;
+      if (tree && activeEntry?.target) {
+        window.electronAPI.saveSessionLog(activeEntry.target, "inspect", serializeTree(tree)).catch(() => {});
+      }
     }
   }
 

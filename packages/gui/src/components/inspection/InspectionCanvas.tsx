@@ -2,9 +2,11 @@ import React from "react";
 import { ArtifactHeader } from "../shared/ArtifactHeader.js";
 import { ArtifactList } from "../shared/ArtifactList.js";
 import type { ArtifactFile } from "../shared/ArtifactList.js";
+import { AgentActivityTree } from "../shared/AgentActivityTree.js";
 import { StatCard } from "../shared/StatCard.js";
 import { useSessionStore } from "../../stores/session-store.js";
 import { useProjectStore } from "../../stores/project-store.js";
+import { useAgentStore } from "../../stores/agent-store.js";
 
 export interface InspectionData {
   filesAnalyzed: number;
@@ -87,23 +89,19 @@ export function InspectionCanvas({ data, files }: InspectionCanvasProps): React.
           </div>
         )}
 
+        {/* Agent activity during run */}
+        {isRunning && <AgentActivityTree stage="inspect" />}
+
         {/* Artifacts */}
         <ArtifactList stage="inspect" files={files} title="Inspection Artifacts" />
 
+        {/* Session log after run */}
+        {!isRunning && <AgentActivityTree stage="inspect" collapsed />}
+
         {/* Empty state */}
-        {!data && !isRunning && (
+        {!data && !isRunning && !useAgentStore.getState().phaseHistory.inspect && (
           <div className="flex items-center justify-center h-64 text-fg-muted text-sm">
             Run inspection to analyze the source codebase
-          </div>
-        )}
-
-        {/* Running state */}
-        {isRunning && !data && (
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center space-y-2">
-              <div className="w-8 h-8 border-2 border-green border-t-transparent rounded-full animate-spin mx-auto" />
-              <div className="text-fg-dim text-sm">Inspecting source codebase...</div>
-            </div>
           </div>
         )}
       </div>

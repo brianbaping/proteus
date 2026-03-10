@@ -22,6 +22,12 @@ vi.mock("../../components/shared/ArtifactList.js", () => ({
   ),
 }));
 
+vi.mock("../../components/shared/AgentActivityTree.js", () => ({
+  AgentActivityTree: ({ stage, collapsed }: { stage: string; collapsed?: boolean }) => (
+    <div data-testid={collapsed ? "session-log" : "activity-tree"}>{stage}</div>
+  ),
+}));
+
 describe("DesignCanvas", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -74,7 +80,7 @@ describe("DesignCanvas", () => {
     const { DesignCanvas } = await import("../../components/design/DesignCanvas.js");
     render(<DesignCanvas data={null} files={[]} />);
 
-    expect(screen.getByText("Designing production architecture...")).toBeDefined();
+    expect(screen.getByTestId("activity-tree")).toBeDefined();
   });
 
   it("renders stats, stack, and services when data is provided", async () => {

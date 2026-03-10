@@ -122,7 +122,17 @@ export class GuiDashboard {
             agentId: newAgent.id,
             agentName: newAgent.name,
             agentColor: newAgent.color,
+            parentAgentId: agent.id,
             message: `Spawning teammate: ${newAgent.name}`,
+            timestamp: Date.now(),
+          });
+          // Immediately emit activity so agent transitions to "active"
+          this.emit({
+            type: "agent-activity",
+            agentId: newAgent.id,
+            agentName: newAgent.name,
+            agentColor: newAgent.color,
+            message: `Working on: ${name}`,
             timestamp: Date.now(),
           });
           continue;
@@ -130,6 +140,28 @@ export class GuiDashboard {
 
         if (b.type === "tool_use" && typeof b.name === "string") {
           agent.status = "working";
+
+          // TaskOutput: relay activity to the target agent
+          if (b.name === "TaskOutput") {
+            const inp = b.input as Record<string, unknown> | null;
+            const taskId = inp?.task_id ?? inp?.taskId;
+            if (typeof taskId === "string") {
+              const target = this.agents.get(taskId);
+              if (target && target.status !== "done") {
+                target.status = "working";
+                this.emit({
+                  type: "agent-activity",
+                  agentId: target.id,
+                  agentName: target.name,
+                  agentColor: target.color,
+                  message: "Processing...",
+                  timestamp: Date.now(),
+                });
+              }
+            }
+            continue;
+          }
+
           const desc = describeToolUse(b.name, b.input);
           if (desc) {
             this.emit({
@@ -148,17 +180,15 @@ export class GuiDashboard {
         if (b.type === "text" && typeof b.text === "string") {
           const text = (b.text as string).trim();
           if (text.length > 0 && !isInternalNoise(text)) {
-            const preview = text.length <= 200 ? text : summarizeText(text);
-            if (preview) {
-              this.emit({
-                type: "agent-activity",
-                agentId: agent.id,
-                agentName: agent.name,
-                agentColor: agent.color,
-                message: preview,
-                timestamp: Date.now(),
-              });
-            }
+            // Emit full text as agent-text for chat panel
+            this.emit({
+              type: "agent-text",
+              agentId: agent.id,
+              agentName: agent.name,
+              agentColor: agent.color,
+              message: text,
+              timestamp: Date.now(),
+            });
           }
         }
       }
@@ -183,9 +213,32 @@ export class GuiDashboard {
       return;
     }
 
-    // Agent completion
-    if (msg.type === "user" && "tool_use_result" in msg && msg.tool_use_result != null) {
-      if (msg.parent_tool_use_id) {
+    // Agent completion — detect from tool_result blocks in user messages
+    if (msg.type === "user" && "message" in msg) {
+      const userMsg = msg.message as Record<string, unknown> | null;
+      const content = userMsg?.content;
+      if (Array.isArray(content)) {
+        for (const block of content) {
+          if (!block || typeof block !== "object") continue;
+          const rb = block as Record<string, unknown>;
+          if (rb.type === "tool_result" && typeof rb.tool_use_id === "string") {
+            const agent = this.agents.get(rb.tool_use_id);
+            if (agent && agent.status !== "done") {
+              agent.status = "done";
+              this.emit({
+                type: "agent-done",
+                agentId: agent.id,
+                agentName: agent.name,
+                agentColor: agent.color,
+                message: "Done",
+                timestamp: Date.now(),
+              });
+            }
+          }
+        }
+      }
+      // Also check via parent_tool_use_id (subagent messages forwarded by SDK)
+      if (msg.parent_tool_use_id && "tool_use_result" in msg && msg.tool_use_result != null) {
         const agent = this.agents.get(msg.parent_tool_use_id as string);
         if (agent && agent.status !== "done") {
           agent.status = "done";

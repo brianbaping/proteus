@@ -5,7 +5,7 @@ import type { BreakdownData, TrackDisplay } from "./BreakdownCanvas.js";
 import type { ArtifactFile } from "../shared/ArtifactList.js";
 import { useProjectStore } from "../../stores/project-store.js";
 import { useSessionStore } from "../../stores/session-store.js";
-import { useChatStore } from "../../stores/chat-store.js";
+import { useAgentStore, serializeTree } from "../../stores/agent-store.js";
 
 interface ManifestJson {
   tracks?: Array<{
@@ -44,7 +44,6 @@ export function BreakdownPhase(): React.JSX.Element {
   const hasArtifacts = stageStatuses.find((s) => s.stage === "split")?.complete ?? false;
   const prevHasArtifacts = stageStatuses.find((s) => s.stage === "plan")?.complete ?? false;
   const runDisabled = hasArtifacts || !prevHasArtifacts;
-  const { addMessage, clearMessages } = useChatStore();
   const [notes, setNotes] = useState("");
   const [briefFile, setBriefFile] = useState("");
   const [breakdownData, setBreakdownData] = useState<BreakdownData | null>(null);
@@ -83,14 +82,12 @@ export function BreakdownPhase(): React.JSX.Element {
       // Session may have already ended
     }
     endSession(false, 0, "0s", "");
-    addMessage("ai", "Stage aborted by user.");
   }
 
   async function handleApproveBreakdown(): Promise<void> {
     if (!activeProjectName) return;
-    clearMessages();
+    useAgentStore.getState().startRun("split");
     startStage("split");
-    addMessage("ai", "Splitting plan into discipline tracks...");
 
     try {
       const result = await window.electronAPI.runStage({
@@ -101,17 +98,23 @@ export function BreakdownPhase(): React.JSX.Element {
           : undefined,
       });
       endSession(result.success, result.cost.estimatedCost, result.cost.duration, result.sessionId);
+      useAgentStore.getState().endRun();
+      const tree = useAgentStore.getState().phaseHistory.split;
+      if (tree && activeEntry?.target) {
+        window.electronAPI.saveSessionLog(activeEntry.target, "split", serializeTree(tree)).catch(() => {});
+      }
       await refreshStatus();
 
       if (result.success) {
-        addMessage("ai", "Breakdown complete.");
         await loadBreakdownArtifacts();
-      } else {
-        addMessage("ai", "Breakdown failed.");
       }
     } catch (err) {
       endSession(false, 0, "0s", "");
-      addMessage("ai", `Error: ${(err as Error).message}`);
+      useAgentStore.getState().endRun();
+      const tree = useAgentStore.getState().phaseHistory.split;
+      if (tree && activeEntry?.target) {
+        window.electronAPI.saveSessionLog(activeEntry.target, "split", serializeTree(tree)).catch(() => {});
+      }
     }
   }
 

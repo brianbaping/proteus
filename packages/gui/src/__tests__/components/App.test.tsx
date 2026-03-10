@@ -4,7 +4,7 @@ import type { ElectronAPI } from "#electron/preload.js";
 import type { SessionEvent } from "@proteus-forge/shared";
 import { useProjectStore } from "../../stores/project-store.js";
 import { useSessionStore } from "../../stores/session-store.js";
-import { useChatStore } from "../../stores/chat-store.js";
+import { useAgentStore } from "../../stores/agent-store.js";
 
 // Mock all phase components to simplify rendering
 vi.mock("../../components/chrome/TopBar.js", () => ({
@@ -23,11 +23,14 @@ vi.mock("../../components/chrome/CompleteBar.js", () => ({
     return <div data-testid="completebar" />;
   },
 }));
-vi.mock("../../components/chrome/AIChatPanel.js", () => ({
-  AIChatPanel: () => <div data-testid="chatpanel" />,
+vi.mock("../../components/chrome/ChatPanel.js", () => ({
+  ChatPanel: () => <div data-testid="chatpanel" />,
 }));
 vi.mock("../../components/dialogs/NewProjectDialog.js", () => ({
   NewProjectDialog: () => null,
+}));
+vi.mock("../../components/dialogs/SettingsDialog.js", () => ({
+  SettingsDialog: () => null,
 }));
 vi.mock("../../components/inspection/InspectionPhase.js", () => ({
   InspectionPhase: () => <div>Inspect</div>,
@@ -44,6 +47,9 @@ vi.mock("../../components/breakdown/BreakdownPhase.js", () => ({
 vi.mock("../../components/execution/ExecutionPhase.js", () => ({
   ExecutionPhase: () => <div>Execute</div>,
 }));
+vi.mock("../../components/log/LogTab.js", () => ({
+  LogTab: () => <div>Log</div>,
+}));
 
 describe("App", () => {
   let logCallback: (msg: string) => void;
@@ -54,7 +60,7 @@ describe("App", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useSessionStore.getState().reset();
-    useChatStore.getState().clearMessages();
+    useAgentStore.getState().reset();
 
     window.electronAPI = {
       runStage: vi.fn(),
@@ -91,6 +97,9 @@ describe("App", () => {
       cloneRepo: vi.fn(),
       updateProject: vi.fn(),
       revertStage: vi.fn().mockResolvedValue({ removed: [] }),
+      saveSessionLog: vi.fn().mockResolvedValue(undefined),
+      readSessionLogs: vi.fn().mockResolvedValue({}),
+      exportSessionLogs: vi.fn().mockResolvedValue(null),
     } as unknown as ElectronAPI;
 
     useProjectStore.setState({
@@ -113,39 +122,43 @@ describe("App", () => {
     expect(window.electronAPI.onSessionEvent).toHaveBeenCalled();
   });
 
-  it("pipes reporter log messages to chat store and session store", async () => {
+  it("pipes reporter log messages to agent store and session store", async () => {
     const { App } = await import("../../App.js");
     render(<App />);
 
+    useAgentStore.getState().startRun("inspect");
     logCallback("Build completed successfully");
 
     await waitFor(() => {
-      const messages = useChatStore.getState().messages;
-      expect(messages.some((m) => m.text === "Build completed successfully")).toBe(true);
+      const lead = useAgentStore.getState().currentTree!.agents.get("lead")!;
+      expect(lead.messages.some((m) => m.text === "Build completed successfully")).toBe(true);
     });
 
     const logs = useSessionStore.getState().logs;
     expect(logs).toContain("Build completed successfully");
   });
 
-  it("pipes reporter error messages to chat store and session store", async () => {
+  it("pipes reporter error messages to agent store and session store", async () => {
     const { App } = await import("../../App.js");
     render(<App />);
 
+    useAgentStore.getState().startRun("inspect");
     errorCallback("Something went wrong");
 
     await waitFor(() => {
-      const messages = useChatStore.getState().messages;
-      expect(messages.some((m) => m.text === "[error] Something went wrong")).toBe(true);
+      const lead = useAgentStore.getState().currentTree!.agents.get("lead")!;
+      expect(lead.messages.some((m) => m.text === "Something went wrong" && m.type === "error")).toBe(true);
     });
 
     const errors = useSessionStore.getState().errors;
     expect(errors).toContain("Something went wrong");
   });
 
-  it("routes agent-spawned session events to chat with agent metadata", async () => {
+  it("routes agent-spawned session events to agent store", async () => {
     const { App } = await import("../../App.js");
     render(<App />);
+
+    useAgentStore.getState().startRun("inspect");
 
     const event: SessionEvent = {
       type: "agent-spawned",
@@ -156,42 +169,55 @@ describe("App", () => {
     eventCallback(event);
 
     await waitFor(() => {
-      const messages = useChatStore.getState().messages;
-      const msg = messages.find((m) => m.text.includes("Spawning teammate: researcher"));
-      expect(msg).toBeDefined();
-      expect(msg!.agentName).toBe("researcher");
-      expect(msg!.agentColor).toBe("#ff6b6b");
+      const tree = useAgentStore.getState().currentTree!;
+      // The agent is added with an auto-generated id since agentId is not provided
+      const agents = Array.from(tree.agents.values());
+      const agent = agents.find((a) => a.name === "researcher");
+      expect(agent).toBeDefined();
+      expect(agent!.color).toBe("#ff6b6b");
     });
   });
 
-  it("routes agent-activity session events to chat with agent metadata", async () => {
+  it("routes agent-activity session events to agent store", async () => {
     const { App } = await import("../../App.js");
     render(<App />);
+
+    useAgentStore.getState().startRun("inspect");
 
     const event: SessionEvent = {
       type: "agent-activity",
       agentName: "scout",
       agentColor: "#4ecdc4",
+      agentId: "lead",
       message: "Scanning source files",
       timestamp: Date.now(),
     };
     eventCallback(event);
 
     await waitFor(() => {
-      const messages = useChatStore.getState().messages;
-      const msg = messages.find((m) => m.text.includes("[scout] Scanning source files"));
-      expect(msg).toBeDefined();
-      expect(msg!.agentName).toBe("scout");
-      expect(msg!.agentColor).toBe("#4ecdc4");
+      const lead = useAgentStore.getState().currentTree!.agents.get("lead")!;
+      expect(lead.messages.some((m) => m.text === "Scanning source files")).toBe(true);
     });
   });
 
-  it("routes agent-done session events to chat with agent metadata", async () => {
+  it("routes agent-done session events to agent store", async () => {
     const { App } = await import("../../App.js");
     render(<App />);
 
+    useAgentStore.getState().startRun("inspect");
+
+    // First spawn the agent so it exists in the tree
+    eventCallback({
+      type: "agent-spawned",
+      agentId: "architect-1",
+      agentName: "architect",
+      agentColor: "#ffe66d",
+      timestamp: Date.now(),
+    } satisfies SessionEvent);
+
     const event: SessionEvent = {
       type: "agent-done",
+      agentId: "architect-1",
       agentName: "architect",
       agentColor: "#ffe66d",
       timestamp: Date.now(),
@@ -199,19 +225,17 @@ describe("App", () => {
     eventCallback(event);
 
     await waitFor(() => {
-      const messages = useChatStore.getState().messages;
-      const msg = messages.find((m) => m.text.includes("architect done"));
-      expect(msg).toBeDefined();
-      expect(msg!.agentName).toBe("architect");
-      expect(msg!.agentColor).toBe("#ffe66d");
+      const agent = useAgentStore.getState().currentTree!.agents.get("architect-1")!;
+      expect(agent.status).toBe("done");
     });
   });
 
-  it("does not add chat messages for progress events", async () => {
+  it("does not add agents to store for progress events", async () => {
     const { App } = await import("../../App.js");
     render(<App />);
 
-    const msgCountBefore = useChatStore.getState().messages.length;
+    useAgentStore.getState().startRun("inspect");
+    const agentCountBefore = useAgentStore.getState().currentTree!.agents.size;
 
     const event: SessionEvent = {
       type: "progress",
@@ -220,20 +244,24 @@ describe("App", () => {
     };
     eventCallback(event);
 
-    // Wait a tick and verify no new message was added
+    // Wait a tick and verify no new agent was added
     await new Promise((r) => setTimeout(r, 50));
-    expect(useChatStore.getState().messages.length).toBe(msgCountBefore);
+    expect(useAgentStore.getState().currentTree!.agents.size).toBe(agentCountBefore);
   });
 
   it("ignores empty/whitespace log messages", async () => {
     const { App } = await import("../../App.js");
     render(<App />);
 
-    const msgCountBefore = useChatStore.getState().messages.length;
+    useAgentStore.getState().startRun("inspect");
+    const lead = useAgentStore.getState().currentTree!.agents.get("lead")!;
+    const msgCountBefore = lead.messages.length;
+
     logCallback("   ");
 
     await new Promise((r) => setTimeout(r, 50));
-    expect(useChatStore.getState().messages.length).toBe(msgCountBefore);
+    const leadAfter = useAgentStore.getState().currentTree!.agents.get("lead")!;
+    expect(leadAfter.messages.length).toBe(msgCountBefore);
   });
 
   it("shows welcome screen when no active project", async () => {
@@ -245,9 +273,11 @@ describe("App", () => {
     expect(container.textContent).toContain("Start New");
   });
 
-  it("routes session-start events with message to chat", async () => {
+  it("routes session-start events with message to agent store", async () => {
     const { App } = await import("../../App.js");
     render(<App />);
+
+    useAgentStore.getState().startRun("inspect");
 
     const event: SessionEvent = {
       type: "session-start",
@@ -257,14 +287,16 @@ describe("App", () => {
     eventCallback(event);
 
     await waitFor(() => {
-      const messages = useChatStore.getState().messages;
-      expect(messages.some((m) => m.text === "Session started")).toBe(true);
+      const lead = useAgentStore.getState().currentTree!.agents.get("lead")!;
+      expect(lead.messages.some((m) => m.text === "Session started")).toBe(true);
     });
   });
 
-  it("routes session-end events with message to chat", async () => {
+  it("routes session-end events with message to agent store", async () => {
     const { App } = await import("../../App.js");
     render(<App />);
+
+    useAgentStore.getState().startRun("inspect");
 
     const event: SessionEvent = {
       type: "session-end",
@@ -274,20 +306,21 @@ describe("App", () => {
     eventCallback(event);
 
     await waitFor(() => {
-      const messages = useChatStore.getState().messages;
-      expect(messages.some((m) => m.text === "Session complete")).toBe(true);
+      const lead = useAgentStore.getState().currentTree!.agents.get("lead")!;
+      expect(lead.messages.some((m) => m.text === "Session complete")).toBe(true);
     });
   });
 
-  it("pipes warn messages to chat", async () => {
+  it("pipes warn messages to agent store", async () => {
     const { App } = await import("../../App.js");
     render(<App />);
 
+    useAgentStore.getState().startRun("inspect");
     warnCallback("Stale artifact detected");
 
     await waitFor(() => {
-      const messages = useChatStore.getState().messages;
-      expect(messages.some((m) => m.text === "[warn] Stale artifact detected")).toBe(true);
+      const lead = useAgentStore.getState().currentTree!.agents.get("lead")!;
+      expect(lead.messages.some((m) => m.text === "Stale artifact detected" && m.type === "warn")).toBe(true);
     });
   });
 
@@ -384,9 +417,11 @@ describe("App", () => {
     });
   });
 
-  it("uses agentId fallback when agentName is missing in agent-spawned (no agent metadata)", async () => {
+  it("uses agentId fallback when agentName is missing in agent-spawned", async () => {
     const { App } = await import("../../App.js");
     render(<App />);
+
+    useAgentStore.getState().startRun("inspect");
 
     const event: SessionEvent = {
       type: "agent-spawned",
@@ -396,11 +431,9 @@ describe("App", () => {
     eventCallback(event);
 
     await waitFor(() => {
-      const messages = useChatStore.getState().messages;
-      const msg = messages.find((m) => m.text.includes("Spawning teammate: agent-123"));
-      expect(msg).toBeDefined();
-      expect(msg!.agentName).toBeUndefined();
-      expect(msg!.agentColor).toBeUndefined();
+      expect(useAgentStore.getState().currentTree!.agents.has("agent-123")).toBe(true);
+      const agent = useAgentStore.getState().currentTree!.agents.get("agent-123")!;
+      expect(agent.name).toBe("agent"); // default name when agentName is missing
     });
   });
 });

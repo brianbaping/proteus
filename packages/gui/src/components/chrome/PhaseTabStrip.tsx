@@ -11,9 +11,11 @@ const PHASE_LABELS: Record<StageName, string> = {
   execute: "Execution",
 };
 
+export type ActiveTab = StageName | "log";
+
 interface PhaseTabStripProps {
-  activePhase: StageName;
-  onPhaseClick(phase: StageName): void;
+  activePhase: ActiveTab;
+  onPhaseClick(phase: ActiveTab): void;
 }
 
 export function PhaseTabStrip({ activePhase, onPhaseClick }: PhaseTabStripProps): React.JSX.Element {
@@ -24,6 +26,8 @@ export function PhaseTabStrip({ activePhase, onPhaseClick }: PhaseTabStripProps)
     const isDiskComplete = stageStatuses.find((s) => s.stage === stage)?.complete ?? false;
     return isDiskComplete ? "completed" : "idle";
   }
+
+  const logActive = activePhase === "log";
 
   return (
     <div className="flex items-center h-11 px-4 gap-0 bg-bg-2 border-b border-border">
@@ -65,6 +69,23 @@ export function PhaseTabStrip({ activePhase, onPhaseClick }: PhaseTabStripProps)
           </div>
         );
       })}
+
+      {/* Log tab */}
+      <div className="flex items-center">
+        <span className="text-fg-muted text-xs mx-2 select-none">&rsaquo;</span>
+        <button
+          onClick={() => onPhaseClick("log")}
+          className={`flex items-center gap-2 px-3 py-2 text-sm transition-colors relative cursor-pointer ${
+            logActive ? "text-green" : "text-fg-dim hover:text-green"
+          }`}
+          data-testid="log-tab-button"
+        >
+          <span>Log</span>
+          {logActive && (
+            <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-green" />
+          )}
+        </button>
+      </div>
     </div>
   );
 }

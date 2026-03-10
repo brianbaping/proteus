@@ -2,84 +2,93 @@ import { useChatStore } from "../../stores/chat-store.js";
 
 describe("useChatStore", () => {
   beforeEach(() => {
-    useChatStore.getState().clearMessages();
-    useChatStore.getState().setInput("");
+    useChatStore.getState().reset();
   });
 
   it("has correct initial state", () => {
     const state = useChatStore.getState();
     expect(state.messages).toEqual([]);
-    expect(state.inputValue).toBe("");
+    expect(state.panelOpen).toBe(false);
   });
 
-  it("addMessage appends a message with correct role and auto-timestamp", () => {
-    const before = Date.now();
-    useChatStore.getState().addMessage("ai", "Hello world");
-    const after = Date.now();
+  describe("addUserMessage", () => {
+    it("adds a user message and opens panel", () => {
+      useChatStore.getState().addUserMessage("hello");
 
-    const { messages } = useChatStore.getState();
-    expect(messages).toHaveLength(1);
-    expect(messages[0].role).toBe("ai");
-    expect(messages[0].text).toBe("Hello world");
-    expect(messages[0].timestamp).toBeGreaterThanOrEqual(before);
-    expect(messages[0].timestamp).toBeLessThanOrEqual(after);
+      const state = useChatStore.getState();
+      expect(state.messages).toHaveLength(1);
+      expect(state.messages[0].sender).toBe("user");
+      expect(state.messages[0].text).toBe("hello");
+      expect(state.messages[0].id).toBeTruthy();
+      expect(state.messages[0].timestamp).toBeGreaterThan(0);
+      expect(state.panelOpen).toBe(true);
+    });
   });
 
-  it("addMessage appends multiple messages preserving order", () => {
-    const { addMessage } = useChatStore.getState();
-    addMessage("ai", "first");
-    addMessage("user", "second");
-    addMessage("ai", "third");
+  describe("addAgentMessage", () => {
+    it("adds an agent message with name and color", () => {
+      useChatStore.getState().addAgentMessage("Lead", "#00ff88", "Analyzing...");
+
+      const state = useChatStore.getState();
+      expect(state.messages).toHaveLength(1);
+      expect(state.messages[0].sender).toBe("agent");
+      expect(state.messages[0].agentName).toBe("Lead");
+      expect(state.messages[0].agentColor).toBe("#00ff88");
+      expect(state.messages[0].text).toBe("Analyzing...");
+      expect(state.panelOpen).toBe(true);
+    });
+  });
+
+  describe("togglePanel", () => {
+    it("toggles panel open state", () => {
+      expect(useChatStore.getState().panelOpen).toBe(false);
+      useChatStore.getState().togglePanel();
+      expect(useChatStore.getState().panelOpen).toBe(true);
+      useChatStore.getState().togglePanel();
+      expect(useChatStore.getState().panelOpen).toBe(false);
+    });
+  });
+
+  describe("clear", () => {
+    it("clears messages but keeps panel state", () => {
+      useChatStore.getState().addUserMessage("test");
+      expect(useChatStore.getState().messages).toHaveLength(1);
+      expect(useChatStore.getState().panelOpen).toBe(true);
+
+      useChatStore.getState().clear();
+      expect(useChatStore.getState().messages).toEqual([]);
+      expect(useChatStore.getState().panelOpen).toBe(true);
+    });
+  });
+
+  describe("reset", () => {
+    it("clears messages and closes panel", () => {
+      useChatStore.getState().addUserMessage("test");
+      useChatStore.getState().reset();
+
+      const state = useChatStore.getState();
+      expect(state.messages).toEqual([]);
+      expect(state.panelOpen).toBe(false);
+    });
+  });
+
+  it("accumulates multiple messages in order", () => {
+    useChatStore.getState().addUserMessage("question");
+    useChatStore.getState().addAgentMessage("Lead", "#00ff88", "answer");
+    useChatStore.getState().addUserMessage("follow-up");
 
     const { messages } = useChatStore.getState();
     expect(messages).toHaveLength(3);
-    expect(messages[0].role).toBe("ai");
-    expect(messages[0].text).toBe("first");
-    expect(messages[1].role).toBe("user");
-    expect(messages[1].text).toBe("second");
-    expect(messages[2].role).toBe("ai");
-    expect(messages[2].text).toBe("third");
+    expect(messages[0].sender).toBe("user");
+    expect(messages[1].sender).toBe("agent");
+    expect(messages[2].sender).toBe("user");
   });
 
-  it("setInput updates the inputValue", () => {
-    useChatStore.getState().setInput("new input");
-    expect(useChatStore.getState().inputValue).toBe("new input");
-  });
-
-  it("clearMessages empties the messages array", () => {
-    const { addMessage, clearMessages } = useChatStore.getState();
-    addMessage("ai", "msg1");
-    addMessage("user", "msg2");
-
-    clearMessages();
-
-    expect(useChatStore.getState().messages).toEqual([]);
-  });
-
-  it("clearMessages does not affect inputValue", () => {
-    const { setInput, addMessage, clearMessages } = useChatStore.getState();
-    setInput("preserved");
-    addMessage("ai", "msg");
-
-    clearMessages();
-
-    expect(useChatStore.getState().inputValue).toBe("preserved");
-  });
-
-  it("addMessage stores agent metadata when provided", () => {
-    useChatStore.getState().addMessage("ai", "Scanning files", { name: "researcher", color: "#ff6b6b" });
+  it("generates unique IDs for each message", () => {
+    useChatStore.getState().addUserMessage("a");
+    useChatStore.getState().addUserMessage("b");
 
     const { messages } = useChatStore.getState();
-    expect(messages).toHaveLength(1);
-    expect(messages[0].agentName).toBe("researcher");
-    expect(messages[0].agentColor).toBe("#ff6b6b");
-  });
-
-  it("addMessage leaves agent fields undefined when no metadata provided", () => {
-    useChatStore.getState().addMessage("ai", "Generic message");
-
-    const { messages } = useChatStore.getState();
-    expect(messages[0].agentName).toBeUndefined();
-    expect(messages[0].agentColor).toBeUndefined();
+    expect(messages[0].id).not.toBe(messages[1].id);
   });
 });

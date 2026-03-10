@@ -22,6 +22,12 @@ vi.mock("../../components/shared/ArtifactList.js", () => ({
   ),
 }));
 
+vi.mock("../../components/shared/AgentActivityTree.js", () => ({
+  AgentActivityTree: ({ stage, collapsed }: { stage: string; collapsed?: boolean }) => (
+    <div data-testid={collapsed ? "session-log" : "activity-tree"}>{stage}</div>
+  ),
+}));
+
 describe("PlanningCanvas", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -74,7 +80,7 @@ describe("PlanningCanvas", () => {
     const { PlanningCanvas } = await import("../../components/planning/PlanningCanvas.js");
     render(<PlanningCanvas data={null} files={[]} />);
 
-    expect(screen.getByText("Generating execution plan...")).toBeDefined();
+    expect(screen.getByTestId("activity-tree")).toBeDefined();
   });
 
   it("renders waves, tasks, and critical path when data is provided", async () => {
