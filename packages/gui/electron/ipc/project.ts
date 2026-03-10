@@ -64,10 +64,13 @@ export function registerProjectHandlers(ipcMain: IpcMain): void {
     });
   });
 
-  ipcMain.handle("project:destroy", async (_event, name: string) => {
+  ipcMain.handle("project:destroy", async (_event, name: string, options?: { deleteSource?: boolean }) => {
     const entry = await getProject(name);
     if (!entry) throw new Error(`Project "${name}" not found`);
     await rm(entry.target, { recursive: true, force: true });
+    if (options?.deleteSource && entry.source) {
+      await rm(entry.source, { recursive: true, force: true });
+    }
     await unregisterProject(name);
   });
 

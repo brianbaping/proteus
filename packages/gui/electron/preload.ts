@@ -8,7 +8,7 @@ export interface ElectronAPI {
   getActiveProject(): Promise<{ name: string; entry: { source: string; target: string; createdAt: string; lastCompletedStage: string } } | null>;
   setActiveProject(name: string): Promise<void>;
   createProject(name: string, source: string, target?: string): Promise<void>;
-  destroyProject(name: string): Promise<void>;
+  destroyProject(name: string, options?: { deleteSource?: boolean }): Promise<void>;
   getProjectStatus(targetPath: string): Promise<{ statuses: StageStatus[]; staleness: Array<{ stage: string; staleReason: string }> }>;
   readArtifacts(targetPath: string, stage: StageName): Promise<Record<string, unknown> | null>;
   openArtifact(filePath: string): Promise<void>;
@@ -61,7 +61,7 @@ const electronAPI: ElectronAPI = {
   getActiveProject: () => ipcRenderer.invoke("project:get-active" satisfies IpcChannel),
   setActiveProject: (name) => ipcRenderer.invoke("project:set-active" satisfies IpcChannel, name),
   createProject: (name, source, target) => ipcRenderer.invoke("project:create" satisfies IpcChannel, name, source, target),
-  destroyProject: (name) => ipcRenderer.invoke("project:destroy" satisfies IpcChannel, name),
+  destroyProject: (name, options) => ipcRenderer.invoke("project:destroy" satisfies IpcChannel, name, options),
   getProjectStatus: (targetPath) => ipcRenderer.invoke("project:status" satisfies IpcChannel, targetPath),
   readArtifacts: (targetPath, stage) => ipcRenderer.invoke("project:read-artifacts" satisfies IpcChannel, targetPath, stage),
   openArtifact: (filePath) => ipcRenderer.invoke("project:open-artifact" satisfies IpcChannel, filePath),

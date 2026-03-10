@@ -2,7 +2,7 @@ import React from "react";
 import { useProjectStore } from "../../stores/project-store.js";
 
 export function ProjectSelector(): React.JSX.Element {
-  const { registry, activeProjectName, setActiveProject, destroyProject } = useProjectStore();
+  const { registry, activeProjectName, activeEntry, setActiveProject, destroyProject } = useProjectStore();
 
   const projectNames = registry ? Object.keys(registry.projects) : [];
 
@@ -12,7 +12,15 @@ export function ProjectSelector(): React.JSX.Element {
       `Destroy project "${activeProjectName}"?\n\nThis will delete the target directory and remove the project from the registry. This cannot be undone.`
     );
     if (!confirmed) return;
-    await destroyProject(activeProjectName);
+
+    let deleteSource = false;
+    if (activeEntry?.source) {
+      deleteSource = window.confirm(
+        `Also delete the POC source folder?\n\n${activeEntry.source}\n\nClick OK to delete it, or Cancel to keep it.`
+      );
+    }
+
+    await destroyProject(activeProjectName, { deleteSource });
   }
 
   if (projectNames.length === 0) {
