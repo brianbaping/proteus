@@ -2,7 +2,16 @@
 
 Transform proof-of-concept codebases into production-ready applications using coordinated AI agent teams.
 
-Proteus Forge is a CLI tool that orchestrates [Claude Code Agent Teams](https://code.claude.com/docs/en/agent-teams) through a five-stage pipeline: **inspect** the POC, **design** a production architecture, **plan** the implementation tasks, **split** into discipline tracks, and **execute** with parallel agent teams writing production code.
+POCs prove an idea works, but they aren't production-ready — they skip error handling, testing, CI, and operational concerns. An engineer using AI can rewrite individual files, but a full-app rewrite requires coordinated changes across dozens of files — data models, API contracts, frontend, tests, CI — and single-agent AI loses coherence at that scale.
+
+Proteus Forge takes a different approach. Instead of ad-hoc file-by-file AI rewriting, it runs a structured pipeline: inspect the POC, design a production architecture, plan the tasks, split into discipline tracks, and execute with parallel [Claude Code Agent Teams](https://code.claude.com/docs/en/agent-teams). Each stage produces human-editable artifacts (`design.md`, `plan.md`) so you make the architectural decisions before any code is written. Your POC stays mounted read-only as the source of truth; production code is built in a separate repo.
+
+Why this beats sitting down with AI and rewriting it yourself:
+
+- **Coordination at scale** — parallel specialist agents with file ownership isolation, not one agent context-switching across 50 files
+- **Architecture before code** — forced design and planning stages prevent "works per-file, doesn't hold together as a system"
+- **Crash recovery** — git checkpoints after each execution wave, so you resume from the last good state instead of starting over
+- **Repeatable process** — same pipeline, any POC. Artifacts are durable, stages are re-runnable, costs are tracked
 
 ---
 
