@@ -231,7 +231,7 @@ Bug log for GUI manual validation. See [`docs/gui-testing-guide.md`](gui-testing
   3. The POC source folder remains on disk after destroy
   4. Expected: an option (e.g., checkbox in confirm dialog or "Deep Destroy") to also delete the POC source folder
 - **Root cause:** Destroy handler only removes the target directory and unregisters the project. No option to clean up the source folder.
-- **Fix:** Two-step confirm: first dialog confirms project destroy, second asks whether to also delete the POC source folder (shows the path). `destroyProject` IPC accepts `{ deleteSource: boolean }` option; when true, `rm`s `entry.source` before unregistering.
+- **Fix:** Custom `DestroyDialog` modal with project name, warning text, and a checkbox toggle to "Also delete POC source folder" (shows path, off by default). `destroyProject` IPC accepts `{ deleteSource: boolean }` option; when true, `rm`s `entry.source` before unregistering.
 
 ### BUG-018: Drag-and-drop does not work in WSL2
 

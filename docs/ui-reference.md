@@ -44,7 +44,7 @@ All navigation is state-driven (Zustand stores, no router). Modals overlay via `
 |-----------|------|-------------|
 | **TopBar** | `TopBar.tsx` | App header — Logo, ProjectSelector dropdown, "+ Start New" button (opens NewProjectDialog), Settings gear (opens SettingsDialog), SessionBadge |
 | **Logo** | `Logo.tsx` | "Proteus-" in green + "Forge" in amber, `font-display` (Syne) |
-| **ProjectSelector** | `ProjectSelector.tsx` | Dropdown of all projects. Label: "PROJECT:" (uppercase, muted). Reads/writes `projectStore` |
+| **ProjectSelector** | `ProjectSelector.tsx` | Dropdown of all projects. Label: "PROJECT:" (uppercase, muted). Destroy button (×) opens DestroyDialog modal with checkbox to also delete POC source folder. Reads/writes `projectStore` |
 | **SessionBadge** | `SessionBadge.tsx` | Pill: "ACTIVE SESSION" (green, pulsing dot) or "IDLE" (gray). Reads `sessionStore.isRunning` |
 | **ProgressBar** | `ProgressBar.tsx` | 2px gradient bar, green→amber, fills proportionally to completed stages (1/5 = 20%) |
 | **PhaseTabStrip** | `PhaseTabStrip.tsx` | 5 tabs with number badges. States: **active** (green bg), **completed** (green border), **locked** (gray, disabled). Separated by `›` chevrons. Green underline on active |
@@ -137,7 +137,13 @@ Each phase follows the **Container + Canvas** pattern:
 - **3 tabs**:
   - **Providers**: name + type + API key (password field, show/hide toggle) per provider. "+ Add Provider" button
   - **Tiers**: fixed 3 rows (fast/standard/advanced). Each: tier name + provider dropdown + model text input
-  - **Roles**: role name + custom checkbox + tier dropdown or provider+model inputs. "+ Add Role"
+  - **Phases**: phase name (read-only) + tier dropdown or custom provider+model inputs
+
+### DestroyDialog (inline in `ProjectSelector.tsx`)
+- **Trigger**: × button in ProjectSelector
+- **Size**: 420px wide, centered modal with `bg-black/60` backdrop
+- **Content**: Project name, warning text, checkbox toggle "Also delete POC source folder" (shows path, off by default)
+- **Buttons**: Cancel (secondary) + Destroy (red destructive)
 
 ---
 
