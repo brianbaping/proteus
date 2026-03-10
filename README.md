@@ -105,6 +105,8 @@ proteus-forge run --budget 5.00                      # per-stage budget cap
 
 | Document | Description |
 |----------|-------------|
+| [User Guide (CLI)](docs/user-guide.md) | Quickstart and task-oriented how-to guide for the CLI |
+| [User Guide (GUI)](docs/gui-user-guide.md) | Quickstart and walkthrough for the desktop app |
 | [CLI Commands](docs/commands.md) | Full command reference for all 30 commands |
 | [Architecture](docs/architecture.md) | How Proteus Forge delegates to Agent Teams |
 | [Model Tiers](docs/model-tiers.md) | Three-tier model configuration and role mapping |
