@@ -17,6 +17,18 @@ const TABS: { key: TabName; label: string }[] = [
 
 const TIER_NAMES = ["fast", "standard", "advanced"];
 
+const ZOOM_PRESETS: { level: number; label: string }[] = [
+  { level: -3, label: "60%" },
+  { level: -2, label: "75%" },
+  { level: -1, label: "90%" },
+  { level: 0, label: "100%" },
+  { level: 1, label: "110%" },
+  { level: 2, label: "125%" },
+  { level: 3, label: "150%" },
+  { level: 4, label: "175%" },
+  { level: 5, label: "200%" },
+];
+
 export function SettingsDialog({ open, onClose }: SettingsDialogProps): React.JSX.Element | null {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -29,6 +41,8 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps): React.JS
   const [phases, setPhases] = useState<Record<string, PhaseMapping>>({});
   const [forgeVersion, setForgeVersion] = useState("1.0.0");
   const [maxOutputTokens, setMaxOutputTokens] = useState<number | undefined>(undefined);
+  const [zoomLevel, setZoomLevel] = useState(0);
+  const [initialZoomLevel, setInitialZoomLevel] = useState(0);
 
   const loadConfig = useCallback(async () => {
     setLoading(true);
@@ -42,6 +56,9 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps): React.JS
         setForgeVersion(config.forgeVersion ?? "1.0.0");
         setMaxOutputTokens(config.maxOutputTokens);
       }
+      const zoom = await window.electronAPI.getZoomLevel();
+      setZoomLevel(zoom);
+      setInitialZoomLevel(zoom);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load config");
     } finally {
@@ -57,6 +74,13 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps): React.JS
   }, [open, loadConfig]);
 
   if (!open) return null;
+
+  function handleCancel(): void {
+    if (zoomLevel !== initialZoomLevel) {
+      window.electronAPI.setZoomLevel(initialZoomLevel);
+    }
+    onClose();
+  }
 
   async function handleSave(): Promise<void> {
     setSaving(true);
@@ -155,7 +179,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps): React.JS
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
           <h2 className="font-display text-lg text-fg">Settings</h2>
-          <button onClick={onClose} className="text-fg-muted hover:text-fg text-lg">&times;</button>
+          <button onClick={handleCancel} className="text-fg-muted hover:text-fg text-lg">&times;</button>
         </div>
 
         {/* Tab strip */}
@@ -212,6 +236,63 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps): React.JS
                     <p className="text-2xs text-fg-muted">
                       Maximum tokens per Claude Code response. Leave blank for the default (32000).
                       Sets <code className="text-fg-dim">CLAUDE_CODE_MAX_OUTPUT_TOKENS</code>.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block text-sm text-fg-dim">
+                      Zoom Level
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          const next = zoomLevel - 1;
+                          setZoomLevel(next);
+                          window.electronAPI.setZoomLevel(next);
+                        }}
+                        disabled={zoomLevel <= -3}
+                        className={`px-2 py-1 text-sm font-bold rounded border border-border-2 transition-colors ${
+                          zoomLevel <= -3
+                            ? "text-fg-muted cursor-not-allowed"
+                            : "text-fg hover:bg-bg-3"
+                        }`}
+                        data-testid="zoom-out"
+                      >
+                        A-
+                      </button>
+                      <select
+                        value={zoomLevel}
+                        onChange={(e) => {
+                          const next = parseInt(e.target.value, 10);
+                          setZoomLevel(next);
+                          window.electronAPI.setZoomLevel(next);
+                        }}
+                        className="bg-bg text-fg text-sm px-2 py-1.5 rounded border border-border-2 outline-none"
+                        data-testid="zoom-select"
+                      >
+                        {ZOOM_PRESETS.map((p) => (
+                          <option key={p.level} value={p.level}>{p.label}</option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => {
+                          const next = zoomLevel + 1;
+                          setZoomLevel(next);
+                          window.electronAPI.setZoomLevel(next);
+                        }}
+                        disabled={zoomLevel >= 5}
+                        className={`px-2 py-1 text-sm font-bold rounded border border-border-2 transition-colors ${
+                          zoomLevel >= 5
+                            ? "text-fg-muted cursor-not-allowed"
+                            : "text-fg hover:bg-bg-3"
+                        }`}
+                        data-testid="zoom-in"
+                      >
+                        A+
+                      </button>
+                    </div>
+                    <p className="text-2xs text-fg-muted">
+                      Also available via Ctrl+=/Ctrl+-
                     </p>
                   </div>
                 </div>
@@ -294,7 +375,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps): React.JS
         {/* Footer */}
         <div className="flex justify-end gap-3 px-5 py-4 border-t border-border shrink-0">
           <button
-            onClick={onClose}
+            onClick={handleCancel}
             className="px-4 py-1.5 text-sm border border-border-2 text-fg-dim rounded hover:text-fg"
           >
             Cancel

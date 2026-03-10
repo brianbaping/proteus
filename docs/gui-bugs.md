@@ -8,7 +8,7 @@ Bug log for GUI manual validation. See [`docs/gui-testing-guide.md`](gui-testing
 |----------|------|-------|--------|-----------|
 | Blocker  | 0    | 3     | 0      | 0         |
 | Bug      | 0    | 4     | 1      | 1         |
-| Cosmetic | 2    | 7     | 0      | 0         |
+| Cosmetic | 1    | 8     | 0      | 0         |
 
 ## Bugs
 
@@ -160,13 +160,13 @@ Bug log for GUI manual validation. See [`docs/gui-testing-guide.md`](gui-testing
 
 - **Layer:** UI
 - **Severity:** Cosmetic
-- **Status:** Open
+- **Status:** Fixed
 - **Steps to reproduce:**
   1. Open the app
   2. No way to increase or decrease the font size of the GUI
   3. Expected: user should be able to adjust font size (e.g., Ctrl+/Ctrl- or a settings control)
-- **Root cause:** No font size scaling mechanism is implemented.
-- **Fix:** Add font size controls — either keyboard shortcuts (Ctrl+Plus/Ctrl+Minus/Ctrl+0) that adjust a base font scale, a View menu option, or a setting in the Settings dialog.
+- **Root cause:** No font size scaling mechanism is implemented. Electron's View menu had role-based zoom items but zoom level reset on app restart.
+- **Fix:** Persisted Electron's `webContents.zoomLevel` in `GlobalConfig` (`~/.proteus-forge/config.json`). Replaced View menu role-based zoom items with custom handlers that also persist. Added A-/dropdown/A+ zoom control to Settings General tab (60%–200% presets, clamped -3..5). Zoom applies as live preview; Cancel reverts to the level when the dialog opened. Also available via Ctrl+=/Ctrl+-/Ctrl+0.
 
 ### BUG-013: GitHub clone not available from Create dialog and Ingest card clone does nothing
 

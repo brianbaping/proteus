@@ -60,6 +60,8 @@ describe("SettingsDialog", () => {
       cloneRepo: vi.fn(),
       updateProject: vi.fn(),
       extractArchive: vi.fn(),
+      getZoomLevel: vi.fn().mockResolvedValue(0),
+      setZoomLevel: vi.fn().mockResolvedValue(undefined),
     } as unknown as ElectronAPI;
   });
 
@@ -495,5 +497,138 @@ describe("SettingsDialog", () => {
     await waitFor(() => {
       expect(onClose).toHaveBeenCalled();
     });
+  });
+
+  it("shows zoom control on General tab", async () => {
+    await renderDialog();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("tab-general")).toBeTruthy();
+    });
+
+    expect(screen.getByTestId("zoom-select")).toBeTruthy();
+    expect(screen.getByTestId("zoom-in")).toBeTruthy();
+    expect(screen.getByTestId("zoom-out")).toBeTruthy();
+  });
+
+  it("zoom select reflects current level from getZoomLevel", async () => {
+    (window.electronAPI.getZoomLevel as ReturnType<typeof vi.fn>).mockResolvedValue(2);
+    await renderDialog();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("tab-general")).toBeTruthy();
+    });
+
+    const select = screen.getByTestId("zoom-select") as HTMLSelectElement;
+    expect(select.value).toBe("2");
+  });
+
+  it("A+ calls setZoomLevel with incremented value", async () => {
+    (window.electronAPI.getZoomLevel as ReturnType<typeof vi.fn>).mockResolvedValue(1);
+    await renderDialog();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("tab-general")).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByTestId("zoom-in"));
+
+    expect(window.electronAPI.setZoomLevel).toHaveBeenCalledWith(2);
+  });
+
+  it("A- calls setZoomLevel with decremented value", async () => {
+    (window.electronAPI.getZoomLevel as ReturnType<typeof vi.fn>).mockResolvedValue(1);
+    await renderDialog();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("tab-general")).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByTestId("zoom-out"));
+
+    expect(window.electronAPI.setZoomLevel).toHaveBeenCalledWith(0);
+  });
+
+  it("A+ disabled at max zoom level (5)", async () => {
+    (window.electronAPI.getZoomLevel as ReturnType<typeof vi.fn>).mockResolvedValue(5);
+    await renderDialog();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("tab-general")).toBeTruthy();
+    });
+
+    const btn = screen.getByTestId("zoom-in") as HTMLButtonElement;
+    expect(btn.disabled).toBe(true);
+  });
+
+  it("A- disabled at min zoom level (-3)", async () => {
+    (window.electronAPI.getZoomLevel as ReturnType<typeof vi.fn>).mockResolvedValue(-3);
+    await renderDialog();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("tab-general")).toBeTruthy();
+    });
+
+    const btn = screen.getByTestId("zoom-out") as HTMLButtonElement;
+    expect(btn.disabled).toBe(true);
+  });
+
+  it("cancel reverts zoom to initial level", async () => {
+    (window.electronAPI.getZoomLevel as ReturnType<typeof vi.fn>).mockResolvedValue(1);
+    await renderDialog();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("tab-general")).toBeTruthy();
+    });
+
+    // Zoom in twice
+    fireEvent.click(screen.getByTestId("zoom-in"));
+    fireEvent.click(screen.getByTestId("zoom-in"));
+
+    // Cancel
+    fireEvent.click(screen.getByText("Cancel"));
+
+    // Should revert to initial level (1)
+    expect(window.electronAPI.setZoomLevel).toHaveBeenLastCalledWith(1);
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it("close button reverts zoom to initial level", async () => {
+    (window.electronAPI.getZoomLevel as ReturnType<typeof vi.fn>).mockResolvedValue(0);
+    await renderDialog();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("tab-general")).toBeTruthy();
+    });
+
+    // Zoom in
+    fireEvent.click(screen.getByTestId("zoom-in"));
+
+    // Click X
+    fireEvent.click(screen.getByText("\u00D7"));
+
+    expect(window.electronAPI.setZoomLevel).toHaveBeenLastCalledWith(0);
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it("save does not revert zoom", async () => {
+    (window.electronAPI.getZoomLevel as ReturnType<typeof vi.fn>).mockResolvedValue(0);
+    await renderDialog();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("tab-general")).toBeTruthy();
+    });
+
+    // Zoom in
+    fireEvent.click(screen.getByTestId("zoom-in"));
+    (window.electronAPI.setZoomLevel as ReturnType<typeof vi.fn>).mockClear();
+
+    // Save
+    await act(async () => {
+      fireEvent.click(screen.getByText("Save"));
+    });
+
+    // setZoomLevel should NOT have been called again (no revert)
+    expect(window.electronAPI.setZoomLevel).not.toHaveBeenCalled();
   });
 });

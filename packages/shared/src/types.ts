@@ -29,6 +29,8 @@ export interface GlobalConfig {
   notifications?: NotificationConfig;
   /** Max output tokens per Claude Code response (sets CLAUDE_CODE_MAX_OUTPUT_TOKENS). */
   maxOutputTokens?: number;
+  /** Electron zoom level (-3 to 5). Persisted across restarts. */
+  zoomLevel?: number;
 }
 
 // Project entry in the registry

@@ -1,10 +1,41 @@
 import { app, BrowserWindow, Menu, ipcMain } from "electron";
 import path from "node:path";
+import { readFile, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { registerProjectHandlers } from "./ipc/project.js";
 import { registerPipelineHandlers } from "./ipc/pipeline.js";
 import { registerDialogHandlers } from "./ipc/dialog.js";
+import { registerSessionLogHandlers } from "./ipc/session-log.js";
+import type { IpcChannel, GlobalConfig } from "@proteus-forge/shared";
+
+const ZOOM_MIN = -3;
+const ZOOM_MAX = 5;
 
 let mainWindow: BrowserWindow | null = null;
+
+function clampZoom(level: number): number {
+  return Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, Math.round(level)));
+}
+
+const CONFIG_PATH = path.join(app.getPath("home"), ".proteus-forge", "config.json");
+
+function persistZoomLevel(level: number): void {
+  readFile(CONFIG_PATH, "utf-8")
+    .then((content) => {
+      const config = JSON.parse(content) as GlobalConfig;
+      config.zoomLevel = level;
+      return writeFile(CONFIG_PATH, JSON.stringify(config, null, 2) + "\n");
+    })
+    .catch(() => { /* fire-and-forget */ });
+}
+
+function applyZoom(delta: number): void {
+  if (!mainWindow) return;
+  const current = mainWindow.webContents.getZoomLevel();
+  const next = clampZoom(current + delta);
+  mainWindow.webContents.setZoomLevel(next);
+  persistZoomLevel(next);
+}
 
 function buildMenu(): void {
   const template: Electron.MenuItemConstructorOptions[] = [
@@ -21,9 +52,24 @@ function buildMenu(): void {
           click: () => mainWindow?.webContents.toggleDevTools(),
         },
         { type: "separator" },
-        { role: "resetZoom" },
-        { role: "zoomIn" },
-        { role: "zoomOut" },
+        {
+          label: "Actual Size",
+          accelerator: "CmdOrCtrl+0",
+          click: () => {
+            mainWindow?.webContents.setZoomLevel(0);
+            persistZoomLevel(0);
+          },
+        },
+        {
+          label: "Zoom In",
+          accelerator: "CmdOrCtrl+=",
+          click: () => applyZoom(1),
+        },
+        {
+          label: "Zoom Out",
+          accelerator: "CmdOrCtrl+-",
+          click: () => applyZoom(-1),
+        },
         { type: "separator" },
         { role: "togglefullscreen" },
       ],
@@ -63,13 +109,35 @@ function getMainWindow(): BrowserWindow | null {
   return mainWindow;
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   registerProjectHandlers(ipcMain);
   registerPipelineHandlers(ipcMain, getMainWindow);
   registerDialogHandlers(ipcMain);
+  registerSessionLogHandlers(ipcMain);
+
+  // Zoom IPC handlers
+  ipcMain.handle("zoom:get" satisfies IpcChannel, () => {
+    return mainWindow?.webContents.getZoomLevel() ?? 0;
+  });
+  ipcMain.handle("zoom:set" satisfies IpcChannel, (_event, level: number) => {
+    const clamped = clampZoom(level);
+    mainWindow?.webContents.setZoomLevel(clamped);
+    persistZoomLevel(clamped);
+  });
 
   buildMenu();
   createWindow();
+
+  // Restore persisted zoom level
+  try {
+    if (existsSync(CONFIG_PATH)) {
+      const content = await readFile(CONFIG_PATH, "utf-8");
+      const config = JSON.parse(content) as GlobalConfig;
+      if (config.zoomLevel != null && mainWindow) {
+        mainWindow.webContents.setZoomLevel(clampZoom(config.zoomLevel));
+      }
+    }
+  } catch { /* ignore missing config */ }
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {

@@ -42,7 +42,9 @@ export type IpcChannel =
   | "session-log:save"
   | "session-log:read"
   | "session-log:export"
-  | "chat:export";
+  | "chat:export"
+  | "zoom:get"
+  | "zoom:set";
 
 /** Options for running a pipeline stage via IPC. */
 export interface StageRunOptions {

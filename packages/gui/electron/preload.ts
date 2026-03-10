@@ -53,6 +53,10 @@ export interface ElectronAPI {
 
   // Chat export
   exportChat(messages: Array<{ sender: string; agentName?: string; text: string; timestamp: number }>): Promise<string | null>;
+
+  // Zoom
+  getZoomLevel(): Promise<number>;
+  setZoomLevel(level: number): Promise<void>;
 }
 
 const electronAPI: ElectronAPI = {
@@ -122,6 +126,10 @@ const electronAPI: ElectronAPI = {
 
   // Chat export
   exportChat: (messages) => ipcRenderer.invoke("chat:export" satisfies IpcChannel, messages),
+
+  // Zoom
+  getZoomLevel: () => ipcRenderer.invoke("zoom:get" satisfies IpcChannel),
+  setZoomLevel: (level) => ipcRenderer.invoke("zoom:set" satisfies IpcChannel, level),
 };
 
 contextBridge.exposeInMainWorld("electronAPI", electronAPI);
