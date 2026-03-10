@@ -29,8 +29,8 @@
 │  CompleteBar (h-12)                                  │
 │  [← Destroy] · $cost · duration · sessionId · [→]   │
 ├──────────────────────────────────────────────────────┤
-│  AIChatPanel (h-[220px])                             │
-│  Header · scrollable message log · input + Send      │
+│  ChatPanel (collapsible, drag-resizable)              │
+│  Header (Export | Clear | toggle) · messages · input  │
 └──────────────────────────────────────────────────────┘
 ```
 
@@ -49,7 +49,7 @@ All navigation is state-driven (Zustand stores, no router). Modals overlay via `
 | **ProgressBar** | `ProgressBar.tsx` | 2px gradient bar, green→amber, fills proportionally to completed stages (1/5 = 20%) |
 | **PhaseTabStrip** | `PhaseTabStrip.tsx` | 5 tabs with number badges. States: **active** (green bg), **completed** (green border), **locked** (gray, disabled). Separated by `›` chevrons. Green underline on active |
 | **CompleteBar** | `CompleteBar.tsx` | Bottom action bar — left: red "← Destroy Phase & Revert" + cost/duration/sessionId; right: hint text + amber "Complete Phase & Unlock Next →" |
-| **AIChatPanel** | `AIChatPanel.tsx` | Fixed 220px chat. Header pulses green when running. Messages tagged "AI" (green) or "YOU" (amber). Enter sends, reads/writes `chatStore` + `sessionStore` |
+| **ChatPanel** | `ChatPanel.tsx` | Collapsible, drag-resizable chat. Green pulse dot when running. Agent messages with color-coded name badges. Export and Clear buttons (visible when messages exist). Enter sends, reads/writes `chatStore` + `sessionStore` |
 
 ---
 
@@ -172,10 +172,10 @@ Actions: `startStage(stage)`, `addLog()`, `addError()`, `endSession(success, cos
 ### chatStore
 | State | Type | Purpose |
 |-------|------|---------|
-| `messages` | `ChatMessage[]` | `{role: "ai"\|"user", text, timestamp}` |
-| `inputValue` | `string` | Current input value |
+| `messages` | `ChatMessage[]` | `{id, sender: "user"\|"agent", agentName?, agentColor?, text, timestamp}` |
+| `panelOpen` | `boolean` | Panel expanded/collapsed state |
 
-Actions: `addMessage(role, text)`, `setInput(value)`, `clearMessages()`
+Actions: `addUserMessage(text)`, `addAgentMessage(agentName, agentColor, text)`, `togglePanel()`, `clear()`, `reset()`
 
 ---
 
@@ -244,7 +244,7 @@ All calls go through `window.electronAPI` (defined in `preload.ts`).
 | **Project** | `listProjects`, `getActiveProject`, `setActiveProject`, `createProject`, `destroyProject`, `getProjectStatus`, `readArtifacts`, `updateProject`, `cloneRepo`, `extractArchive` |
 | **Pipeline** | `runStage`, `abortStage`, `revertStage` |
 | **Events** | `onSessionEvent`, `onReporterLog`, `onReporterWarn`, `onReporterError` |
-| **Chat** | `sendMessage` |
+| **Chat** | `sendMessage`, `exportChat` |
 | **Config** | `readGlobalConfig`, `writeGlobalConfig`, `readCosts` |
 | **Dialogs** | `openDirectory`, `openFile`, `saveFile` |
 
@@ -284,7 +284,7 @@ packages/gui/
 │   └── components/
 │       ├── chrome/                # TopBar, ProgressBar, PhaseTabStrip,
 │       │                          # CompleteBar, Logo, ProjectSelector,
-│       │                          # SessionBadge, AIChatPanel
+│       │                          # SessionBadge, ChatPanel
 │       ├── shared/                # ArtifactHeader, StatCard,
 │       │                          # FileDropZone, StalenessWarning
 │       ├── dialogs/               # NewProjectDialog, SettingsDialog

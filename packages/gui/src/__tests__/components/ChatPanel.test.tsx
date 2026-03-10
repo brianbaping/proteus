@@ -234,6 +234,38 @@ describe("ChatPanel", () => {
     expect(screen.getByTestId("chat-export")).toBeDefined();
   });
 
+  it("does not show clear button when no messages", async () => {
+    useChatStore.setState({ panelOpen: true });
+
+    const { ChatPanel } = await import("../../components/chrome/ChatPanel.js");
+    render(<ChatPanel />);
+
+    expect(screen.queryByTestId("chat-clear")).toBeNull();
+  });
+
+  it("shows clear button when messages exist in expanded panel", async () => {
+    useChatStore.getState().addUserMessage("hello");
+
+    const { ChatPanel } = await import("../../components/chrome/ChatPanel.js");
+    render(<ChatPanel />);
+
+    expect(screen.getByTestId("chat-clear")).toBeDefined();
+  });
+
+  it("clicking clear empties the message list", async () => {
+    useChatStore.getState().addUserMessage("hello");
+    useChatStore.getState().addAgentMessage("Lead", "#00ff88", "Hi there");
+
+    const { ChatPanel } = await import("../../components/chrome/ChatPanel.js");
+    render(<ChatPanel />);
+
+    expect(useChatStore.getState().messages).toHaveLength(2);
+
+    fireEvent.click(screen.getByTestId("chat-clear"));
+
+    expect(useChatStore.getState().messages).toHaveLength(0);
+  });
+
   it("calls exportChat with messages on export click", async () => {
     useChatStore.getState().addUserMessage("hello");
     useChatStore.getState().addAgentMessage("Lead", "#00ff88", "Hi there");

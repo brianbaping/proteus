@@ -142,6 +142,15 @@ export function ChatPanel(): React.JSX.Element {
               Export
             </button>
           )}
+          {messages.length > 0 && (
+            <button
+              onClick={() => useChatStore.getState().clear()}
+              className="px-2 py-0.5 text-2xs text-fg-muted hover:text-fg transition-colors"
+              data-testid="chat-clear"
+            >
+              Clear
+            </button>
+          )}
           <button
             onClick={togglePanel}
             className="px-2 py-0.5 text-2xs text-fg-muted hover:text-fg transition-colors"
