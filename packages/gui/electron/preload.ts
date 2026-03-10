@@ -45,6 +45,14 @@ export interface ElectronAPI {
 
   // Archive extraction
   extractArchive(archivePath: string, targetDir?: string): Promise<string>;
+
+  // Session logs
+  saveSessionLog(targetPath: string, stage: StageName, tree: unknown): Promise<void>;
+  readSessionLogs(targetPath: string): Promise<Partial<Record<StageName, unknown>>>;
+  exportSessionLogs(targetPath: string): Promise<string | null>;
+
+  // Chat export
+  exportChat(messages: Array<{ sender: string; agentName?: string; text: string; timestamp: number }>): Promise<string | null>;
 }
 
 const electronAPI: ElectronAPI = {
@@ -106,6 +114,14 @@ const electronAPI: ElectronAPI = {
 
   // Archive extraction
   extractArchive: (archivePath, targetDir) => ipcRenderer.invoke("project:extract-archive" satisfies IpcChannel, archivePath, targetDir),
+
+  // Session logs
+  saveSessionLog: (targetPath, stage, tree) => ipcRenderer.invoke("session-log:save" satisfies IpcChannel, targetPath, stage, tree),
+  readSessionLogs: (targetPath) => ipcRenderer.invoke("session-log:read" satisfies IpcChannel, targetPath),
+  exportSessionLogs: (targetPath) => ipcRenderer.invoke("session-log:export" satisfies IpcChannel, targetPath),
+
+  // Chat export
+  exportChat: (messages) => ipcRenderer.invoke("chat:export" satisfies IpcChannel, messages),
 };
 
 contextBridge.exposeInMainWorld("electronAPI", electronAPI);

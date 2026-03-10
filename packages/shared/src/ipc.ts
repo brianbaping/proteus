@@ -2,12 +2,13 @@ import type { StageName } from "./types.js";
 
 /** Structured event emitted during agent sessions for GUI rendering. */
 export interface SessionEvent {
-  type: "agent-spawned" | "agent-activity" | "agent-done" | "session-start" | "session-end" | "progress" | "error";
+  type: "agent-spawned" | "agent-activity" | "agent-text" | "agent-done" | "session-start" | "session-end" | "progress" | "error";
   agentId?: string;
   agentName?: string;
   agentColor?: string;
   message?: string;
   tool?: string;
+  parentAgentId?: string;
   timestamp: number;
 }
 
@@ -37,7 +38,11 @@ export type IpcChannel =
   | "project:extract-archive"
   | "reporter:log"
   | "reporter:warn"
-  | "reporter:error";
+  | "reporter:error"
+  | "session-log:save"
+  | "session-log:read"
+  | "session-log:export"
+  | "chat:export";
 
 /** Options for running a pipeline stage via IPC. */
 export interface StageRunOptions {

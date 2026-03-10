@@ -8,7 +8,7 @@ Bug log for GUI manual validation. See [`docs/gui-testing-guide.md`](gui-testing
 |----------|------|-------|--------|-----------|
 | Blocker  | 0    | 3     | 0      | 0         |
 | Bug      | 0    | 4     | 1      | 1         |
-| Cosmetic | 4    | 5     | 0      | 0         |
+| Cosmetic | 3    | 6     | 0      | 0         |
 
 ## Bugs
 
@@ -147,14 +147,14 @@ Bug log for GUI manual validation. See [`docs/gui-testing-guide.md`](gui-testing
 
 - **Layer:** UI
 - **Severity:** Cosmetic
-- **Status:** Open
+- **Status:** Fixed
 - **Steps to reproduce:**
   1. Run a pipeline stage
   2. Agent activity populates the AI Chat panel
   3. No way to select all text or export/save the chat log
   4. Expected: either a log file toggle to persist the chat log, or a select-all ability in the chat window
-- **Root cause:** AIChatPanel has no export/copy mechanism and text selection may be limited.
-- **Fix:** Add either a "Save Log" toggle/button that writes chat content to a file, or enable select-all (Ctrl+A) within the chat panel.
+- **Root cause:** ChatPanel had no export/copy mechanism.
+- **Fix:** Added "Export" button to expanded ChatPanel header (visible when messages exist). New `chat:export` IPC channel shows a save dialog, formats messages as `[timestamp] sender: text` plaintext, and writes to a `.txt` file. Follows the existing `session-log:export` pattern.
 
 ### BUG-012: No way to increase or decrease GUI font size
 
