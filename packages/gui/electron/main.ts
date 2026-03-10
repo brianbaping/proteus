@@ -128,13 +128,19 @@ app.whenReady().then(async () => {
   buildMenu();
   createWindow();
 
-  // Restore persisted zoom level
+  // Restore persisted zoom level and theme
   try {
     if (existsSync(CONFIG_PATH)) {
       const content = await readFile(CONFIG_PATH, "utf-8");
       const config = JSON.parse(content) as GlobalConfig;
       if (config.zoomLevel != null && mainWindow) {
         mainWindow.webContents.setZoomLevel(clampZoom(config.zoomLevel));
+      }
+      if (config.theme && mainWindow) {
+        const theme = config.theme.replace(/[^a-z0-9-]/gi, "");
+        mainWindow.webContents.executeJavaScript(
+          `document.documentElement.setAttribute("data-theme","${theme}");localStorage.setItem("proteus-theme","${theme}");`
+        ).catch(() => {});
       }
     }
   } catch { /* ignore missing config */ }

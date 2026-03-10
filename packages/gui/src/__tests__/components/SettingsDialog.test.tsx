@@ -611,6 +611,81 @@ describe("SettingsDialog", () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  it("shows theme selector on General tab", async () => {
+    await renderDialog();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("tab-general")).toBeTruthy();
+    });
+
+    expect(screen.getByTestId("theme-select")).toBeTruthy();
+  });
+
+  it("defaults to dark theme when no theme in config", async () => {
+    await renderDialog();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("tab-general")).toBeTruthy();
+    });
+
+    const select = screen.getByTestId("theme-select") as HTMLSelectElement;
+    expect(select.value).toBe("dark");
+  });
+
+  it("selecting a theme sets data-theme attribute", async () => {
+    await renderDialog();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("tab-general")).toBeTruthy();
+    });
+
+    fireEvent.change(screen.getByTestId("theme-select"), { target: { value: "synthwave" } });
+
+    expect(document.documentElement.getAttribute("data-theme")).toBe("synthwave");
+  });
+
+  it("cancel reverts theme to initial", async () => {
+    const configWithTheme = structuredClone(mockConfig);
+    (configWithTheme as GlobalConfig & { theme: string }).theme = "solarized";
+    mockReadGlobalConfig.mockResolvedValue(configWithTheme);
+
+    await renderDialog();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("tab-general")).toBeTruthy();
+    });
+
+    // Change theme
+    fireEvent.change(screen.getByTestId("theme-select"), { target: { value: "forest" } });
+    expect(document.documentElement.getAttribute("data-theme")).toBe("forest");
+
+    // Cancel
+    fireEvent.click(screen.getByText("Cancel"));
+
+    // Should revert to solarized
+    expect(document.documentElement.getAttribute("data-theme")).toBe("solarized");
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it("save includes theme in config", async () => {
+    await renderDialog();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("tab-general")).toBeTruthy();
+    });
+
+    fireEvent.change(screen.getByTestId("theme-select"), { target: { value: "hotdog" } });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText("Save"));
+    });
+
+    await waitFor(() => {
+      const saved = mockWriteGlobalConfig.mock.calls[0][0] as GlobalConfig;
+      expect(saved.theme).toBe("hotdog");
+    });
+  });
+
   it("save does not revert zoom", async () => {
     (window.electronAPI.getZoomLevel as ReturnType<typeof vi.fn>).mockResolvedValue(0);
     await renderDialog();

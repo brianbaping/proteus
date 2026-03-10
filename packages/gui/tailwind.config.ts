@@ -1,46 +1,49 @@
 import type { Config } from "tailwindcss";
 import tailwindAnimate from "tailwindcss-animate";
 
+function cssVar(name: string): string {
+  return `rgb(var(--${name}) / <alpha-value>)`;
+}
+
 export default {
-  darkMode: "class",
   content: ["./src/**/*.{ts,tsx}", "./index.html"],
   theme: {
     extend: {
       colors: {
         green: {
-          DEFAULT: "#00ff88",
-          dim: "#00cc6a",
-          dark: "#003322",
+          DEFAULT: cssVar("green"),
+          dim: cssVar("green-dim"),
+          dark: cssVar("green-dark"),
         },
         amber: {
-          DEFAULT: "#ffb830",
-          dim: "#cc9326",
-          dark: "#332200",
+          DEFAULT: cssVar("amber"),
+          dim: cssVar("amber-dim"),
+          dark: cssVar("amber-dark"),
         },
         red: {
-          DEFAULT: "#ff4466",
-          dim: "#cc3652",
-          dark: "#331118",
+          DEFAULT: cssVar("red"),
+          dim: cssVar("red-dim"),
+          dark: cssVar("red-dark"),
         },
         cyan: {
-          DEFAULT: "#00ddcc",
-          dim: "#00b3a3",
-          dark: "#002b28",
+          DEFAULT: cssVar("cyan"),
+          dim: cssVar("cyan-dim"),
+          dark: cssVar("cyan-dark"),
         },
         bg: {
-          DEFAULT: "#0a0c0e",
-          2: "#0f1215",
-          3: "#141820",
-          4: "#1a1f2e",
+          DEFAULT: cssVar("bg"),
+          2: cssVar("bg-2"),
+          3: cssVar("bg-3"),
+          4: cssVar("bg-4"),
         },
         fg: {
-          DEFAULT: "#e2e8f0",
-          dim: "#8899aa",
-          muted: "#4a5568",
+          DEFAULT: cssVar("fg"),
+          dim: cssVar("fg-dim"),
+          muted: cssVar("fg-muted"),
         },
         border: {
-          DEFAULT: "#1f2937",
-          2: "#2d3748",
+          DEFAULT: cssVar("border"),
+          2: cssVar("border-2"),
         },
       },
       fontFamily: {

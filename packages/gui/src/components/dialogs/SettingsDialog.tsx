@@ -17,6 +17,20 @@ const TABS: { key: TabName; label: string }[] = [
 
 const TIER_NAMES = ["fast", "standard", "advanced"];
 
+const THEME_OPTIONS: { value: string; label: string }[] = [
+  { value: "dark", label: "Dark" },
+  { value: "light", label: "Light" },
+  { value: "hotdog", label: "Hot Dog Stand" },
+  { value: "synthwave", label: "Synthwave" },
+  { value: "solarized", label: "Solarized" },
+  { value: "forest", label: "Forest" },
+];
+
+function applyTheme(theme: string): void {
+  document.documentElement.setAttribute("data-theme", theme);
+  localStorage.setItem("proteus-theme", theme);
+}
+
 const ZOOM_PRESETS: { level: number; label: string }[] = [
   { level: -3, label: "60%" },
   { level: -2, label: "75%" },
@@ -43,6 +57,8 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps): React.JS
   const [maxOutputTokens, setMaxOutputTokens] = useState<number | undefined>(undefined);
   const [zoomLevel, setZoomLevel] = useState(0);
   const [initialZoomLevel, setInitialZoomLevel] = useState(0);
+  const [theme, setTheme] = useState("dark");
+  const [initialTheme, setInitialTheme] = useState("dark");
 
   const loadConfig = useCallback(async () => {
     setLoading(true);
@@ -55,6 +71,9 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps): React.JS
         setPhases(config.phases ?? {});
         setForgeVersion(config.forgeVersion ?? "1.0.0");
         setMaxOutputTokens(config.maxOutputTokens);
+        const loadedTheme = config.theme ?? "dark";
+        setTheme(loadedTheme);
+        setInitialTheme(loadedTheme);
       }
       const zoom = await window.electronAPI.getZoomLevel();
       setZoomLevel(zoom);
@@ -79,6 +98,9 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps): React.JS
     if (zoomLevel !== initialZoomLevel) {
       window.electronAPI.setZoomLevel(initialZoomLevel);
     }
+    if (theme !== initialTheme) {
+      applyTheme(initialTheme);
+    }
     onClose();
   }
 
@@ -86,7 +108,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps): React.JS
     setSaving(true);
     setError(null);
     try {
-      const config: GlobalConfig = { forgeVersion, providers, tiers, phases, maxOutputTokens };
+      const config: GlobalConfig = { forgeVersion, providers, tiers, phases, maxOutputTokens, theme };
       await window.electronAPI.writeGlobalConfig(config);
       onClose();
     } catch (err) {
@@ -293,6 +315,29 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps): React.JS
                     </div>
                     <p className="text-2xs text-fg-muted">
                       Also available via Ctrl+=/Ctrl+-
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block text-sm text-fg-dim">
+                      Theme
+                    </label>
+                    <select
+                      value={theme}
+                      onChange={(e) => {
+                        const next = e.target.value;
+                        setTheme(next);
+                        applyTheme(next);
+                      }}
+                      className="bg-bg text-fg text-sm px-3 py-1.5 rounded border border-border-2 outline-none"
+                      data-testid="theme-select"
+                    >
+                      {THEME_OPTIONS.map((t) => (
+                        <option key={t.value} value={t.value}>{t.label}</option>
+                      ))}
+                    </select>
+                    <p className="text-2xs text-fg-muted">
+                      Color theme for the interface. Applied immediately as a preview.
                     </p>
                   </div>
                 </div>

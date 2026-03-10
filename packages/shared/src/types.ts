@@ -31,6 +31,8 @@ export interface GlobalConfig {
   maxOutputTokens?: number;
   /** Electron zoom level (-3 to 5). Persisted across restarts. */
   zoomLevel?: number;
+  /** GUI color theme. Defaults to "dark". */
+  theme?: string;
 }
 
 // Project entry in the registry

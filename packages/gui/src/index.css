@@ -3,25 +3,159 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --green: #00ff88;
-    --amber: #ffb830;
-    --red: #ff4466;
-    --cyan: #00ddcc;
-    --text: #e2e8f0;
-    --text-dim: #8899aa;
-    --text-muted: #4a5568;
-    --bg: #0a0c0e;
-    --bg2: #0f1215;
-    --bg3: #141820;
-    --bg4: #1a1f2e;
-    --border: #1f2937;
-    --border2: #2d3748;
+  /* Dark (default) */
+  [data-theme="dark"] {
+    --green: 0 255 136;
+    --green-dim: 0 204 106;
+    --green-dark: 0 51 34;
+    --amber: 255 184 48;
+    --amber-dim: 204 147 38;
+    --amber-dark: 51 34 0;
+    --red: 255 68 102;
+    --red-dim: 204 54 82;
+    --red-dark: 51 17 24;
+    --cyan: 0 221 204;
+    --cyan-dim: 0 179 163;
+    --cyan-dark: 0 43 40;
+    --bg: 10 12 14;
+    --bg-2: 15 18 21;
+    --bg-3: 20 24 32;
+    --bg-4: 26 31 46;
+    --fg: 226 232 240;
+    --fg-dim: 136 153 170;
+    --fg-muted: 74 85 104;
+    --border: 31 41 55;
+    --border-2: 45 55 72;
+  }
+
+  /* Light */
+  [data-theme="light"] {
+    --green: 5 150 105;
+    --green-dim: 4 120 87;
+    --green-dark: 209 250 229;
+    --amber: 217 119 6;
+    --amber-dim: 180 83 9;
+    --amber-dark: 254 243 199;
+    --red: 220 38 38;
+    --red-dim: 185 28 28;
+    --red-dark: 254 226 226;
+    --cyan: 6 182 212;
+    --cyan-dim: 8 145 178;
+    --cyan-dark: 207 250 254;
+    --bg: 250 250 252;
+    --bg-2: 244 244 246;
+    --bg-3: 235 235 240;
+    --bg-4: 225 225 232;
+    --fg: 17 24 39;
+    --fg-dim: 75 85 99;
+    --fg-muted: 156 163 175;
+    --border: 209 213 219;
+    --border-2: 229 231 235;
+  }
+
+  /* Hot Dog Stand */
+  [data-theme="hotdog"] {
+    --green: 255 255 0;
+    --green-dim: 220 220 0;
+    --green-dark: 80 80 0;
+    --amber: 255 255 0;
+    --amber-dim: 220 220 0;
+    --amber-dark: 80 80 0;
+    --red: 255 255 255;
+    --red-dim: 220 220 220;
+    --red-dark: 120 0 0;
+    --cyan: 255 255 0;
+    --cyan-dim: 220 220 0;
+    --cyan-dark: 80 80 0;
+    --bg: 204 0 0;
+    --bg-2: 180 0 0;
+    --bg-3: 153 0 0;
+    --bg-4: 120 0 0;
+    --fg: 255 255 0;
+    --fg-dim: 255 230 100;
+    --fg-muted: 200 160 60;
+    --border: 255 255 0;
+    --border-2: 200 200 0;
+  }
+
+  /* Synthwave */
+  [data-theme="synthwave"] {
+    --green: 0 255 178;
+    --green-dim: 0 200 140;
+    --green-dark: 0 40 30;
+    --amber: 255 180 50;
+    --amber-dim: 200 140 40;
+    --amber-dark: 50 30 10;
+    --red: 255 56 100;
+    --red-dim: 220 40 80;
+    --red-dark: 60 10 25;
+    --cyan: 0 240 255;
+    --cyan-dim: 0 190 210;
+    --cyan-dark: 0 30 40;
+    --bg: 13 2 33;
+    --bg-2: 22 5 50;
+    --bg-3: 35 10 70;
+    --bg-4: 50 15 90;
+    --fg: 244 208 255;
+    --fg-dim: 180 140 210;
+    --fg-muted: 110 70 140;
+    --border: 60 20 100;
+    --border-2: 80 30 130;
+  }
+
+  /* Solarized */
+  [data-theme="solarized"] {
+    --green: 133 153 0;
+    --green-dim: 106 122 0;
+    --green-dark: 0 34 43;
+    --amber: 181 137 0;
+    --amber-dim: 145 110 0;
+    --amber-dark: 0 34 43;
+    --red: 220 50 47;
+    --red-dim: 203 75 22;
+    --red-dark: 0 34 43;
+    --cyan: 42 161 152;
+    --cyan-dim: 38 139 210;
+    --cyan-dark: 0 34 43;
+    --bg: 0 43 54;
+    --bg-2: 7 54 66;
+    --bg-3: 0 59 73;
+    --bg-4: 0 71 88;
+    --fg: 131 148 150;
+    --fg-dim: 101 123 131;
+    --fg-muted: 88 110 117;
+    --border: 7 54 66;
+    --border-2: 0 59 73;
+  }
+
+  /* Forest */
+  [data-theme="forest"] {
+    --green: 76 175 80;
+    --green-dim: 56 142 60;
+    --green-dark: 20 40 16;
+    --amber: 205 170 90;
+    --amber-dim: 170 140 70;
+    --amber-dark: 40 32 12;
+    --red: 200 80 60;
+    --red-dim: 170 60 45;
+    --red-dark: 45 18 14;
+    --cyan: 100 180 160;
+    --cyan-dim: 80 150 130;
+    --cyan-dark: 16 35 28;
+    --bg: 15 20 12;
+    --bg-2: 22 30 18;
+    --bg-3: 30 40 24;
+    --bg-4: 40 52 32;
+    --fg: 200 210 180;
+    --fg-dim: 140 155 120;
+    --fg-muted: 90 105 75;
+    --border: 40 55 35;
+    --border-2: 55 72 48;
   }
 
   body {
-    background: var(--bg);
-    color: var(--text);
+    background: rgb(var(--bg));
+    color: rgb(var(--fg));
     overflow: hidden;
     margin: 0;
     padding: 0;
@@ -29,6 +163,6 @@
 
   * {
     scrollbar-width: thin;
-    scrollbar-color: var(--border2) transparent;
+    scrollbar-color: rgb(var(--border-2)) transparent;
   }
 }

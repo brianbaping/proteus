@@ -72,6 +72,7 @@ Primary workflow: `setup` → `new` → `use` → `inspect` → (`style` auto-ru
 - **Electron** main process built with tsup (CJS format, config at `packages/gui/tsup.electron.ts`)
 - **IPC boundary**: channel types in `packages/shared/src/ipc.ts`, preload in `packages/gui/electron/preload.ts` (uses `satisfies IpcChannel`), handlers in `packages/gui/electron/ipc/` by domain
 - Fonts bundled locally (JetBrains Mono, Syne)
+- **Theme system**: CSS custom properties with space-separated RGB channels (`--green: 0 255 136`) in `src/index.css`, applied via `[data-theme="..."]` selectors. Tailwind config uses `rgb(var(--X) / <alpha-value>)` for opacity modifier support. Themes: dark (default), light, hotdog, synthwave, solarized, forest. Persisted in `GlobalConfig.theme`, applied client-side. Flash-of-wrong-theme prevented by inline `<script>` in `index.html` reading `localStorage`.
 
 ## Code Conventions
 
