@@ -8,7 +8,7 @@ Bug log for GUI manual validation. See [`docs/gui-testing-guide.md`](gui-testing
 |----------|------|-------|--------|-----------|
 | Blocker  | 0    | 3     | 0      | 0         |
 | Bug      | 0    | 4     | 1      | 1         |
-| Cosmetic | 5    | 4     | 0      | 0         |
+| Cosmetic | 4    | 5     | 0      | 0         |
 
 ## Bugs
 
@@ -65,13 +65,13 @@ Bug log for GUI manual validation. See [`docs/gui-testing-guide.md`](gui-testing
 
 - **Layer:** UI
 - **Severity:** Cosmetic
-- **Status:** Open
+- **Status:** Fixed — verify on Windows
 - **Steps to reproduce:**
   1. Open a project on the Inspection tab
   2. Click Browse for POC or Candidate path
   3. Dialog opens at filesystem root instead of near the current path value
 - **Root cause:** `dialog:open-directory` IPC handler doesn't accept or pass a `defaultPath` to Electron's `showOpenDialog`.
-- **Fix:** Pass current path value to IPC, use as `defaultPath` in dialog options.
+- **Fix:** Pass current path value to IPC, use as `defaultPath` in dialog options. Verify behavior on native Windows.
 
 ### BUG-006: Agent names in AI Chat panel not color-coded
 
@@ -237,7 +237,7 @@ Bug log for GUI manual validation. See [`docs/gui-testing-guide.md`](gui-testing
 
 - **Layer:** Platform
 - **Severity:** Cosmetic
-- **Status:** Open
+- **Status:** Open — verify on Windows
 - **Steps to reproduce:**
   1. Run the GUI in WSL2 (`npm run dev -w @proteus-forge/gui`)
   2. Drag a file from Windows Explorer onto the FileDropZone
