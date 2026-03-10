@@ -24,32 +24,29 @@ describe("global config", () => {
       }
     });
 
-    it("includes role mappings for all agent types", () => {
+    it("includes phase mappings for all pipeline stages", () => {
       const config = getDefaultGlobalConfig();
-      const expectedRoles = [
-        "scout",
-        "build-team",
-        "inspect-specialist",
-        "synthesizer",
-        "design-specialist",
-        "plan-generator",
-        "execute-agent",
-        "qa-agent",
-        "verify-fix",
+      const expectedPhases = [
+        "inspect",
+        "style",
+        "design",
+        "plan",
+        "split",
+        "execute",
       ];
-      for (const role of expectedRoles) {
-        expect(config.roles[role]).toBeDefined();
+      for (const phase of expectedPhases) {
+        expect(config.phases[phase]).toBeDefined();
       }
     });
 
-    it("maps scout to fast tier", () => {
+    it("maps inspect to fast tier", () => {
       const config = getDefaultGlobalConfig();
-      expect(config.roles.scout).toBe("fast");
+      expect(config.phases.inspect).toBe("fast");
     });
 
-    it("maps execute-agent to advanced tier", () => {
+    it("maps execute to advanced tier", () => {
       const config = getDefaultGlobalConfig();
-      expect(config.roles["execute-agent"]).toBe("advanced");
+      expect(config.phases.execute).toBe("advanced");
     });
   });
 });

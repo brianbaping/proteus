@@ -325,7 +325,7 @@ describe("pipeline IPC handlers", () => {
   describe("config:read-global", () => {
     it("returns global config", async () => {
       const { readGlobalConfig } = await import("@proteus-forge/cli/api");
-      const mockConfig = { providers: {}, tiers: {}, roles: {} };
+      const mockConfig = { providers: {}, tiers: {}, phases: {} };
       vi.mocked(readGlobalConfig).mockResolvedValue(mockConfig as never);
 
       const handler = handlers.get("config:read-global")!;
@@ -344,7 +344,7 @@ describe("pipeline IPC handlers", () => {
         forgeVersion: "1.0.0",
         providers: { anthropic: { type: "anthropic", apiKey: "$ANTHROPIC_API_KEY" } },
         tiers: { fast: { provider: "anthropic", model: "claude-haiku-4-5-20251001" } },
-        roles: { lead: "fast" },
+        phases: { inspect: "fast" },
       };
 
       const handler = handlers.get("config:write-global")!;

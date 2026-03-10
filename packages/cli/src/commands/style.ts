@@ -49,7 +49,7 @@ export async function runStyle(
     return false;
   }
 
-  const model = resolveModel(globalConfig, "style-lead", { tier: options.tier, model: options.model });
+  const model = resolveModel(globalConfig, "style", { tier: options.tier, model: options.model });
 
   reporter.log(`\n[${project.name}] Extracting style guide...\n`);
   reporter.log(`  Source: ${sourcePath}`);

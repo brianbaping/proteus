@@ -5,7 +5,7 @@ import { resolveApiKey } from "../utils/api-key.js";
 import { fetchAvailableModels } from "../utils/models-api.js";
 
 export const listModelsCommand = new Command("list-models")
-  .description("Show configured model tiers and role assignments")
+  .description("Show configured model tiers and phase assignments")
   .option("--available", "Fetch and display available models from the Anthropic API")
   .action(async (options: { available?: boolean }) => {
     const config = await readGlobalConfig();
@@ -21,13 +21,13 @@ export const listModelsCommand = new Command("list-models")
       );
     }
 
-    console.log(`\n${BOLD}Role Assignments${RESET}\n`);
-    for (const [role, mapping] of Object.entries(config.roles)) {
+    console.log(`\n${BOLD}Phase Assignments${RESET}\n`);
+    for (const [phase, mapping] of Object.entries(config.phases)) {
       const display =
         typeof mapping === "string"
           ? `→ ${mapping} → ${config.tiers[mapping]?.model ?? "?"}`
           : `→ ${mapping.model} ${DIM}(direct)${RESET}`;
-      console.log(`  ${role.padEnd(22)} ${display}`);
+      console.log(`  ${phase.padEnd(22)} ${display}`);
     }
     console.log();
 

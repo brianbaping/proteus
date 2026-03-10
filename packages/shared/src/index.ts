@@ -2,7 +2,7 @@
 export type {
   ProviderConfig,
   TierConfig,
-  RoleMapping,
+  PhaseMapping,
   NotificationConfig,
   GlobalConfig,
   ProjectEntry,

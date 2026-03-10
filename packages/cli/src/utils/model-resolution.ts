@@ -7,11 +7,11 @@ export interface ModelOverrides {
 
 /**
  * Resolve the model string for a session.
- * Precedence: --model flag > --tier flag > global config role mapping.
+ * Precedence: --model flag > --tier flag > global config phase mapping.
  */
 export function resolveModel(
   globalConfig: GlobalConfig,
-  roleName: string,
+  phaseName: string,
   overrides: ModelOverrides = {}
 ): string | undefined {
   if (overrides.model) return overrides.model;
@@ -26,12 +26,12 @@ export function resolveModel(
     return tierConfig.model;
   }
 
-  const role = globalConfig.roles[roleName];
-  const tierName = typeof role === "string" ? role : undefined;
+  const phase = globalConfig.phases[phaseName];
+  const tierName = typeof phase === "string" ? phase : undefined;
   const tierConfig = tierName
     ? globalConfig.tiers[tierName]
-    : typeof role === "object"
-      ? role
+    : typeof phase === "object"
+      ? phase
       : undefined;
   return tierConfig?.model;
 }

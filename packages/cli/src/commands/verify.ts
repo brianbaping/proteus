@@ -73,7 +73,7 @@ export async function runVerify(
     return false;
   }
 
-  const model = resolveModel(globalConfig, "verify-fix", {
+  const model = resolveModel(globalConfig, "execute", {
     tier: options.tier,
     model: options.model,
   });

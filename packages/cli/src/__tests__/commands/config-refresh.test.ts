@@ -42,7 +42,7 @@ function makeConfig(tiers?: GlobalConfig["tiers"]): GlobalConfig {
       standard: { provider: "anthropic", model: "claude-sonnet-4-6" },
       advanced: { provider: "anthropic", model: "claude-opus-4-6" },
     },
-    roles: { scout: "fast" },
+    phases: { inspect: "fast" },
   };
 }
 

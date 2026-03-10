@@ -55,7 +55,7 @@ export async function runPlan(
     return false;
   }
 
-  const model = resolveModel(globalConfig, "plan-generator", { tier: options.tier, model: options.model });
+  const model = resolveModel(globalConfig, "plan", { tier: options.tier, model: options.model });
 
   reporter.log(`\n[${project.name}] Generating plan...\n`);
   reporter.log(`  Source: ${sourcePath}`);

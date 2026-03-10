@@ -13,10 +13,13 @@ const mockConfig: GlobalConfig = {
     standard: { provider: "anthropic", model: "claude-sonnet-4-6-20260320" },
     advanced: { provider: "anthropic", model: "claude-opus-4-6-20260320" },
   },
-  roles: {
-    lead: "advanced",
-    scout: "fast",
-    architect: "advanced",
+  phases: {
+    inspect: "fast",
+    style: "standard",
+    design: "advanced",
+    plan: "standard",
+    split: "standard",
+    execute: "advanced",
   },
 };
 
@@ -77,10 +80,10 @@ describe("SettingsDialog", () => {
       expect(mockReadGlobalConfig).toHaveBeenCalled();
     });
 
-    // Should show Providers tab by default
-    expect(screen.getByTestId("tab-providers")).toBeTruthy();
-    // Provider name input should appear
-    expect(screen.getByTestId("provider-name-anthropic")).toBeTruthy();
+    // Should show General tab by default
+    expect(screen.getByTestId("tab-general")).toBeTruthy();
+    // Max output tokens input should appear
+    expect(screen.getByTestId("max-output-tokens")).toBeTruthy();
   });
 
   it("shows loading state while config loads", async () => {
@@ -100,31 +103,35 @@ describe("SettingsDialog", () => {
     });
   });
 
-  it("switches between Providers, Tiers, and Roles tabs", async () => {
+  it("switches between General, Providers, Tiers, and Phases tabs", async () => {
     await renderDialog();
 
     await waitFor(() => {
-      expect(screen.getByTestId("tab-providers")).toBeTruthy();
+      expect(screen.getByTestId("tab-general")).toBeTruthy();
     });
+
+    // Switch to Providers
+    fireEvent.click(screen.getByText("Providers"));
+    expect(screen.getByTestId("tab-providers")).toBeTruthy();
 
     // Switch to Tiers
     fireEvent.click(screen.getByText("Tiers"));
     expect(screen.getByTestId("tab-tiers")).toBeTruthy();
 
-    // Switch to Roles
-    fireEvent.click(screen.getByText("Roles"));
-    expect(screen.getByTestId("tab-roles")).toBeTruthy();
+    // Switch to Phases
+    fireEvent.click(screen.getByText("Phases"));
+    expect(screen.getByTestId("tab-phases")).toBeTruthy();
 
-    // Switch back to Providers
-    fireEvent.click(screen.getByText("Providers"));
-    expect(screen.getByTestId("tab-providers")).toBeTruthy();
+    // Switch back to General
+    fireEvent.click(screen.getByText("General"));
+    expect(screen.getByTestId("tab-general")).toBeTruthy();
   });
 
   it("edits a tier model and saves with updated config", async () => {
     await renderDialog();
 
     await waitFor(() => {
-      expect(screen.getByTestId("tab-providers")).toBeTruthy();
+      expect(screen.getByTestId("tab-general")).toBeTruthy();
     });
 
     // Switch to Tiers tab
@@ -154,7 +161,7 @@ describe("SettingsDialog", () => {
     await renderDialog();
 
     await waitFor(() => {
-      expect(screen.getByTestId("tab-providers")).toBeTruthy();
+      expect(screen.getByTestId("tab-general")).toBeTruthy();
     });
 
     await act(async () => {
@@ -171,7 +178,7 @@ describe("SettingsDialog", () => {
     await renderDialog();
 
     await waitFor(() => {
-      expect(screen.getByTestId("tab-providers")).toBeTruthy();
+      expect(screen.getByTestId("tab-general")).toBeTruthy();
     });
 
     fireEvent.click(screen.getByText("Cancel"));
@@ -184,7 +191,7 @@ describe("SettingsDialog", () => {
     await renderDialog();
 
     await waitFor(() => {
-      expect(screen.getByTestId("tab-providers")).toBeTruthy();
+      expect(screen.getByTestId("tab-general")).toBeTruthy();
     });
 
     // Click the × button
@@ -198,8 +205,10 @@ describe("SettingsDialog", () => {
     await renderDialog();
 
     await waitFor(() => {
-      expect(screen.getByTestId("tab-providers")).toBeTruthy();
+      expect(screen.getByTestId("tab-general")).toBeTruthy();
     });
+
+    fireEvent.click(screen.getByText("Providers"));
 
     // Add provider
     fireEvent.click(screen.getByTestId("add-provider"));
@@ -222,60 +231,50 @@ describe("SettingsDialog", () => {
     });
   });
 
-  it("adds and removes a role", async () => {
+  it("displays phase names as read-only labels", async () => {
     await renderDialog();
 
     await waitFor(() => {
-      expect(screen.getByTestId("tab-providers")).toBeTruthy();
+      expect(screen.getByTestId("tab-general")).toBeTruthy();
     });
 
-    fireEvent.click(screen.getByText("Roles"));
+    fireEvent.click(screen.getByText("Phases"));
 
-    // Add role
-    fireEvent.click(screen.getByTestId("add-role"));
-    expect(screen.getByTestId("role-name-custom-role")).toBeTruthy();
-
-    // Remove it
-    fireEvent.click(screen.getByTestId("remove-role-custom-role"));
-
-    // Save and verify the custom role is not present
-    await act(async () => {
-      fireEvent.click(screen.getByText("Save"));
-    });
-
-    await waitFor(() => {
-      const saved = mockWriteGlobalConfig.mock.calls[0][0] as GlobalConfig;
-      expect(saved.roles).not.toHaveProperty("custom-role");
-    });
+    // Phase names should be static text, not editable inputs
+    const phaseName = screen.getByTestId("phase-name-inspect");
+    expect(phaseName.tagName).toBe("SPAN");
+    expect(phaseName.textContent).toBe("inspect");
   });
 
-  it("toggles a role between tier and custom mode", async () => {
+  it("toggles a phase between tier and custom mode", async () => {
     await renderDialog();
 
     await waitFor(() => {
-      expect(screen.getByTestId("tab-providers")).toBeTruthy();
+      expect(screen.getByTestId("tab-general")).toBeTruthy();
     });
 
-    fireEvent.click(screen.getByText("Roles"));
+    fireEvent.click(screen.getByText("Phases"));
 
-    // The "scout" role starts as tier string "fast"
-    const tierSelect = screen.getByTestId("role-tier-scout");
+    // The "inspect" phase starts as tier string "fast"
+    const tierSelect = screen.getByTestId("phase-tier-inspect");
     expect(tierSelect).toBeTruthy();
 
     // Toggle to custom
-    fireEvent.click(screen.getByTestId("role-custom-toggle-scout"));
+    fireEvent.click(screen.getByTestId("phase-custom-toggle-inspect"));
 
     // Now should show provider/model inputs
-    expect(screen.getByTestId("role-provider-scout")).toBeTruthy();
-    expect(screen.getByTestId("role-model-scout")).toBeTruthy();
+    expect(screen.getByTestId("phase-provider-inspect")).toBeTruthy();
+    expect(screen.getByTestId("phase-model-inspect")).toBeTruthy();
   });
 
   it("toggles API key visibility", async () => {
     await renderDialog();
 
     await waitFor(() => {
-      expect(screen.getByTestId("tab-providers")).toBeTruthy();
+      expect(screen.getByTestId("tab-general")).toBeTruthy();
     });
+
+    fireEvent.click(screen.getByText("Providers"));
 
     const apiKeyInput = screen.getByTestId("provider-apikey-anthropic") as HTMLInputElement;
     expect(apiKeyInput.type).toBe("password");
@@ -291,8 +290,10 @@ describe("SettingsDialog", () => {
     await renderDialog();
 
     await waitFor(() => {
-      expect(screen.getByTestId("tab-providers")).toBeTruthy();
+      expect(screen.getByTestId("tab-general")).toBeTruthy();
     });
+
+    fireEvent.click(screen.getByText("Providers"));
 
     const typeInput = screen.getByTestId("provider-type-anthropic");
     fireEvent.change(typeInput, { target: { value: "openai" } });
@@ -314,8 +315,10 @@ describe("SettingsDialog", () => {
     await renderDialog();
 
     await waitFor(() => {
-      expect(screen.getByTestId("tab-providers")).toBeTruthy();
+      expect(screen.getByTestId("tab-general")).toBeTruthy();
     });
+
+    fireEvent.click(screen.getByText("Providers"));
 
     const nameInput = screen.getByTestId("provider-name-anthropic");
     fireEvent.change(nameInput, { target: { value: "my-provider" } });
@@ -336,7 +339,7 @@ describe("SettingsDialog", () => {
     await renderDialog();
 
     await waitFor(() => {
-      expect(screen.getByTestId("tab-providers")).toBeTruthy();
+      expect(screen.getByTestId("tab-general")).toBeTruthy();
     });
 
     fireEvent.click(screen.getByText("Tiers"));
@@ -354,16 +357,16 @@ describe("SettingsDialog", () => {
     });
   });
 
-  it("changes a role tier selection", async () => {
+  it("changes a phase tier selection", async () => {
     await renderDialog();
 
     await waitFor(() => {
-      expect(screen.getByTestId("tab-providers")).toBeTruthy();
+      expect(screen.getByTestId("tab-general")).toBeTruthy();
     });
 
-    fireEvent.click(screen.getByText("Roles"));
+    fireEvent.click(screen.getByText("Phases"));
 
-    const tierSelect = screen.getByTestId("role-tier-scout");
+    const tierSelect = screen.getByTestId("phase-tier-inspect");
     fireEvent.change(tierSelect, { target: { value: "advanced" } });
 
     await act(async () => {
@@ -372,25 +375,25 @@ describe("SettingsDialog", () => {
 
     await waitFor(() => {
       const saved = mockWriteGlobalConfig.mock.calls[0][0] as GlobalConfig;
-      expect(saved.roles.scout).toBe("advanced");
+      expect(saved.phases.inspect).toBe("advanced");
     });
   });
 
-  it("edits custom role provider and model fields", async () => {
+  it("edits custom phase provider and model fields", async () => {
     await renderDialog();
 
     await waitFor(() => {
-      expect(screen.getByTestId("tab-providers")).toBeTruthy();
+      expect(screen.getByTestId("tab-general")).toBeTruthy();
     });
 
-    fireEvent.click(screen.getByText("Roles"));
+    fireEvent.click(screen.getByText("Phases"));
 
-    // Toggle scout to custom
-    fireEvent.click(screen.getByTestId("role-custom-toggle-scout"));
+    // Toggle inspect to custom
+    fireEvent.click(screen.getByTestId("phase-custom-toggle-inspect"));
 
     // Edit custom fields
-    fireEvent.change(screen.getByTestId("role-provider-scout"), { target: { value: "anthropic" } });
-    fireEvent.change(screen.getByTestId("role-model-scout"), { target: { value: "custom-model" } });
+    fireEvent.change(screen.getByTestId("phase-provider-inspect"), { target: { value: "anthropic" } });
+    fireEvent.change(screen.getByTestId("phase-model-inspect"), { target: { value: "custom-model" } });
 
     await act(async () => {
       fireEvent.click(screen.getByText("Save"));
@@ -398,46 +401,51 @@ describe("SettingsDialog", () => {
 
     await waitFor(() => {
       const saved = mockWriteGlobalConfig.mock.calls[0][0] as GlobalConfig;
-      expect(saved.roles.scout).toEqual({ provider: "anthropic", model: "custom-model" });
+      expect(saved.phases.inspect).toEqual({ provider: "anthropic", model: "custom-model" });
     });
   });
 
-  it("toggles a custom role back to tier mode", async () => {
-    // Start with a config that has a custom role
+  it("toggles a custom phase back to tier mode", async () => {
+    // Start with a config that has a custom phase
     const customConfig = structuredClone(mockConfig);
-    customConfig.roles.scout = { provider: "anthropic", model: "custom" };
+    customConfig.phases.inspect = { provider: "anthropic", model: "custom" };
     mockReadGlobalConfig.mockResolvedValue(customConfig);
 
     await renderDialog();
 
     await waitFor(() => {
-      expect(screen.getByTestId("tab-providers")).toBeTruthy();
+      expect(screen.getByTestId("tab-general")).toBeTruthy();
     });
 
-    fireEvent.click(screen.getByText("Roles"));
+    fireEvent.click(screen.getByText("Phases"));
 
-    // Scout should be in custom mode
-    expect(screen.getByTestId("role-provider-scout")).toBeTruthy();
+    // Inspect should be in custom mode
+    expect(screen.getByTestId("phase-provider-inspect")).toBeTruthy();
 
     // Toggle back to tier mode (uncheck custom)
-    fireEvent.click(screen.getByTestId("role-custom-toggle-scout"));
+    fireEvent.click(screen.getByTestId("phase-custom-toggle-inspect"));
 
     // Should now show tier dropdown
-    expect(screen.getByTestId("role-tier-scout")).toBeTruthy();
+    expect(screen.getByTestId("phase-tier-inspect")).toBeTruthy();
   });
 
-  it("renames a role on blur", async () => {
+
+  it("loads and saves maxOutputTokens", async () => {
+    const configWithTokens = structuredClone(mockConfig);
+    configWithTokens.maxOutputTokens = 64000;
+    mockReadGlobalConfig.mockResolvedValue(configWithTokens);
+
     await renderDialog();
 
     await waitFor(() => {
-      expect(screen.getByTestId("tab-providers")).toBeTruthy();
+      expect(screen.getByTestId("tab-general")).toBeTruthy();
     });
 
-    fireEvent.click(screen.getByText("Roles"));
+    const input = screen.getByTestId("max-output-tokens") as HTMLInputElement;
+    expect(input.value).toBe("64000");
 
-    const nameInput = screen.getByTestId("role-name-scout");
-    fireEvent.change(nameInput, { target: { value: "my-scout" } });
-    fireEvent.blur(nameInput);
+    // Change value
+    fireEvent.change(input, { target: { value: "32000" } });
 
     await act(async () => {
       fireEvent.click(screen.getByText("Save"));
@@ -445,8 +453,31 @@ describe("SettingsDialog", () => {
 
     await waitFor(() => {
       const saved = mockWriteGlobalConfig.mock.calls[0][0] as GlobalConfig;
-      expect(saved.roles).toHaveProperty("my-scout");
-      expect(saved.roles).not.toHaveProperty("scout");
+      expect(saved.maxOutputTokens).toBe(32000);
+    });
+  });
+
+  it("saves undefined maxOutputTokens when cleared", async () => {
+    const configWithTokens = structuredClone(mockConfig);
+    configWithTokens.maxOutputTokens = 64000;
+    mockReadGlobalConfig.mockResolvedValue(configWithTokens);
+
+    await renderDialog();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("tab-general")).toBeTruthy();
+    });
+
+    const input = screen.getByTestId("max-output-tokens") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "" } });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText("Save"));
+    });
+
+    await waitFor(() => {
+      const saved = mockWriteGlobalConfig.mock.calls[0][0] as GlobalConfig;
+      expect(saved.maxOutputTokens).toBeUndefined();
     });
   });
 
@@ -454,7 +485,7 @@ describe("SettingsDialog", () => {
     await renderDialog();
 
     await waitFor(() => {
-      expect(screen.getByTestId("tab-providers")).toBeTruthy();
+      expect(screen.getByTestId("tab-general")).toBeTruthy();
     });
 
     await act(async () => {

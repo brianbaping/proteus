@@ -10,8 +10,8 @@ export interface TierConfig {
   model: string;
 }
 
-// Role-to-tier or role-to-specific-model mapping
-export type RoleMapping = string | TierConfig;
+// Phase-to-tier or phase-to-specific-model mapping
+export type PhaseMapping = string | TierConfig;
 
 // Notification configuration
 export interface NotificationConfig {
@@ -25,8 +25,10 @@ export interface GlobalConfig {
   forgeVersion: string;
   providers: Record<string, ProviderConfig>;
   tiers: Record<string, TierConfig>;
-  roles: Record<string, RoleMapping>;
+  phases: Record<string, PhaseMapping>;
   notifications?: NotificationConfig;
+  /** Max output tokens per Claude Code response (sets CLAUDE_CODE_MAX_OUTPUT_TOKENS). */
+  maxOutputTokens?: number;
 }
 
 // Project entry in the registry
@@ -52,7 +54,7 @@ export interface ProjectConfig {
     readonly: true;
   };
   overrides?: {
-    roles?: Record<string, RoleMapping>;
+    phases?: Record<string, PhaseMapping>;
   };
   hooks?: Record<string, string>;
 }

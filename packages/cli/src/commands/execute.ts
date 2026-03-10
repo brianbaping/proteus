@@ -64,7 +64,7 @@ export async function runExecute(
     return false;
   }
 
-  const model = resolveModel(globalConfig, "execute-agent", { tier: options.tier, model: options.model });
+  const model = resolveModel(globalConfig, "execute", { tier: options.tier, model: options.model });
 
   const nonSharedTracks = ctx.tracks.filter((t) => t.discipline !== "shared");
 

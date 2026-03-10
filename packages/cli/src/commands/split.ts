@@ -56,7 +56,7 @@ export async function runSplit(
     return false;
   }
 
-  const model = resolveModel(globalConfig, "plan-generator", { tier: options.tier, model: options.model });
+  const model = resolveModel(globalConfig, "split", { tier: options.tier, model: options.model });
 
   reporter.log(`\n[${project.name}] Splitting into tracks...\n`);
   reporter.log(`  Source: ${project.entry.source}`);

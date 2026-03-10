@@ -26,7 +26,7 @@ describe("resolveApiKey", () => {
       forgeVersion: "1.0.0",
       providers: { anthropic: { type: "anthropic", apiKey: "$MY_CUSTOM_KEY" } },
       tiers: {},
-      roles: {},
+      phases: {},
     });
 
     const key = await resolveApiKey();
@@ -40,7 +40,7 @@ describe("resolveApiKey", () => {
         anthropic: { type: "anthropic", apiKey: "sk-direct-key" },
       },
       tiers: {},
-      roles: {},
+      phases: {},
     });
 
     const key = await resolveApiKey();
@@ -53,7 +53,7 @@ describe("resolveApiKey", () => {
       forgeVersion: "1.0.0",
       providers: { anthropic: { type: "anthropic", apiKey: "" } },
       tiers: {},
-      roles: {},
+      phases: {},
     });
 
     const key = await resolveApiKey();

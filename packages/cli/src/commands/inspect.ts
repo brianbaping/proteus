@@ -54,7 +54,7 @@ export async function runInspect(
     return false;
   }
 
-  const model = resolveModel(globalConfig, "scout", { tier: options.tier, model: options.model });
+  const model = resolveModel(globalConfig, "inspect", { tier: options.tier, model: options.model });
 
   reporter.log(`\n[${project.name}] Inspecting source...\n`);
   reporter.log(`  Source: ${sourcePath}`);

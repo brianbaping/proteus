@@ -55,7 +55,7 @@ export async function runDesign(
     return false;
   }
 
-  const model = resolveModel(globalConfig, "design-specialist", { tier: options.tier, model: options.model });
+  const model = resolveModel(globalConfig, "design", { tier: options.tier, model: options.model });
 
   reporter.log(`\n[${project.name}] Designing production architecture...\n`);
   reporter.log(`  Source: ${sourcePath}`);

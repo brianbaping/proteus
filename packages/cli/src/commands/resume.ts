@@ -61,7 +61,7 @@ export const resumeCommand = new Command("resume")
       process.exit(1);
     }
 
-    const model = resolveModel(globalConfig, "execute-agent", { tier: options.tier, model: options.model });
+    const model = resolveModel(globalConfig, "execute", { tier: options.tier, model: options.model });
 
     let ctx;
     try {

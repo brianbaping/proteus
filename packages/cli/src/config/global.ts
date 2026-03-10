@@ -35,17 +35,13 @@ export function getDefaultGlobalConfig(): GlobalConfig {
       standard: { provider: "anthropic", model: "claude-sonnet-4-6" },
       advanced: { provider: "anthropic", model: "claude-opus-4-6" },
     },
-    roles: {
-      scout: "fast",
-      "build-team": "fast",
-      "inspect-specialist": "standard",
-      synthesizer: "standard",
-      "style-lead": "standard",
-      "design-specialist": "advanced",
-      "plan-generator": "standard",
-      "execute-agent": "advanced",
-      "qa-agent": "standard",
-      "verify-fix": "standard",
+    phases: {
+      inspect: "fast",
+      style: "standard",
+      design: "advanced",
+      plan: "standard",
+      split: "standard",
+      execute: "advanced",
     },
   };
 }
@@ -55,7 +51,39 @@ export async function readGlobalConfig(): Promise<GlobalConfig | null> {
     return null;
   }
   const content = await readFile(CONFIG_PATH, "utf-8");
-  return JSON.parse(content) as GlobalConfig;
+  const raw = JSON.parse(content) as GlobalConfig & { roles?: Record<string, unknown> };
+
+  // Migrate legacy "roles" key → "phases"
+  if (!raw.phases && raw.roles) {
+    const ROLE_TO_PHASE: Record<string, string> = {
+      scout: "inspect",
+      "build-team": "inspect",
+      "inspect-specialist": "inspect",
+      synthesizer: "inspect",
+      "style-lead": "style",
+      "design-specialist": "design",
+      "plan-generator": "plan",
+      "execute-agent": "execute",
+      "qa-agent": "execute",
+      "verify-fix": "execute",
+    };
+    const phases: Record<string, unknown> = {};
+    for (const [role, mapping] of Object.entries(raw.roles)) {
+      const phase = ROLE_TO_PHASE[role];
+      if (phase && !phases[phase]) {
+        phases[phase] = mapping;
+      }
+    }
+    // Ensure all 6 phases exist with defaults
+    const defaults = getDefaultGlobalConfig().phases;
+    for (const [phase, tier] of Object.entries(defaults)) {
+      if (!phases[phase]) phases[phase] = tier;
+    }
+    raw.phases = phases as GlobalConfig["phases"];
+    delete raw.roles;
+  }
+
+  return raw as GlobalConfig;
 }
 
 export async function writeGlobalConfig(config: GlobalConfig): Promise<void> {

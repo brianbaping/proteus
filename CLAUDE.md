@@ -49,7 +49,7 @@ Cross-package imports use workspace names (`import { StageName } from "@proteus-
 | Stage | Agent Pattern | Model Tier | Key Output |
 |-------|---------------|------------|------------|
 | Inspect | Agent Team (scout + specialists) | fast | `01-inspect/features.json` |
-| Style | Single Lead (auto after inspect) | fast | `02-style/style-guide.json` + `style.md` |
+| Style | Single Lead (auto after inspect) | standard | `02-style/style-guide.json` + `style.md` |
 | Design | Agent Team (architect + specialists) | advanced | `02-design/design.md` + `design-meta.json` |
 | Plan | Single Lead | standard | `03-plan/plan.json` + `plan.md` |
 | Split | Single Lead | standard | `04-tracks/manifest.json` + track files |
@@ -103,7 +103,7 @@ For new pipeline stages, also: add prompt in `src/prompts/`, update `STAGE_ARTIF
 
 | File | Purpose |
 |------|---------|
-| `~/.proteus-forge/config.json` | Global: providers, tiers, role→tier mappings |
+| `~/.proteus-forge/config.json` | Global: providers, tiers, phase→tier mappings |
 | `~/.proteus-forge/projects.json` | Project registry: name → source/target paths |
 | `{target}/.proteus-forge/config.json` | Per-project: source path, overrides |
 | `{target}/.proteus-forge/costs.json` | Token usage per stage |

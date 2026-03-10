@@ -8,7 +8,7 @@ Bug log for GUI manual validation. See [`docs/gui-testing-guide.md`](gui-testing
 |----------|------|-------|--------|-----------|
 | Blocker  | 0    | 3     | 0      | 0         |
 | Bug      | 0    | 4     | 1      | 1         |
-| Cosmetic | 8    | 1     | 0      | 0         |
+| Cosmetic | 5    | 4     | 0      | 0         |
 
 ## Bugs
 
@@ -90,27 +90,27 @@ Bug log for GUI manual validation. See [`docs/gui-testing-guide.md`](gui-testing
 
 - **Layer:** UI
 - **Severity:** Cosmetic
-- **Status:** Open
+- **Status:** Fixed
 - **Steps to reproduce:**
   1. Run a pipeline stage from the GUI
   2. Observe messages in the AI Chat panel
   3. Long messages are truncated at a character limit
   4. Expected: full message text should be visible (with scrolling if needed)
 - **Root cause:** Chat message rendering applies a character length truncation.
-- **Fix:** Remove the character length truncation.
+- **Fix:** Replaced flat AIChatPanel with per-agent AgentActivityTree rendered in the phase canvas. Messages are fully visible in the scrollable canvas area with no truncation.
 
 ### BUG-008: AI Chat panel is not resizable
 
 - **Layer:** UI
 - **Severity:** Cosmetic
-- **Status:** Open
+- **Status:** Fixed
 - **Steps to reproduce:**
   1. Open the app
   2. AI Chat panel is fixed at 220px height
   3. No way to drag or resize the panel
   4. Expected: user should be able to resize the chat panel height
 - **Root cause:** AIChatPanel height is hardcoded to `h-[220px]` with no resize handle.
-- **Fix:** Add a drag handle to allow vertical resizing of the chat panel.
+- **Fix:** Replaced 220px AIChatPanel with a thin ~40px MessageStrip for sending messages. Agent activity now renders in the scrollable phase canvas via AgentActivityTree, so resizing is no longer needed.
 
 ### BUG-009: Phase progression state machine missing
 
@@ -135,13 +135,13 @@ Bug log for GUI manual validation. See [`docs/gui-testing-guide.md`](gui-testing
 
 - **Layer:** UI
 - **Severity:** Cosmetic
-- **Status:** Open
+- **Status:** Fixed
 - **Steps to reproduce:**
   1. Open any pipeline phase
   2. No way to select which model to use for the stage
-  3. Expected: a model dropdown in the ArtifactHeader, next to the title and badge (as shown in the HTML mock)
-- **Root cause:** ArtifactHeader doesn't include a model selector. The mock design had a dropdown in that position.
-- **Fix:** Add a model dropdown to ArtifactHeader that passes the selected model to the stage run options.
+  3. Expected: a way to configure which model runs for each phase
+- **Root cause:** Settings had a "Roles" tab mapping agent names (scout, design-specialist, etc.) to tiers, but these roles don't map to anything meaningful — all agents in a session share one model. The real unit of model selection is the pipeline phase.
+- **Fix:** Replaced Roles with Phases tab in Settings. Each phase (inspect, style, design, plan, split, execute) maps to a tier or custom model. `resolveModel()` now takes a phase name. Legacy `roles` configs are auto-migrated on read.
 
 ### BUG-011: No way to capture or select AI Chat log content
 

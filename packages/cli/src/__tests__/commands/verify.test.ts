@@ -176,7 +176,7 @@ describe("verify command", () => {
       forgeVersion: "1.0.0",
       providers: { anthropic: { type: "anthropic" as const, apiKey: "$ANTHROPIC_API_KEY" } },
       tiers: { standard: { provider: "anthropic", model: "claude-sonnet-4-6" } },
-      roles: { "verify-fix": "standard" },
+      phases: { execute: "standard" },
     };
 
     const mockSessionResult = {

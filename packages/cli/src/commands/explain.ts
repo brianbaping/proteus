@@ -54,7 +54,7 @@ export const explainCommand = new Command("explain")
 
     const globalConfig = await readGlobalConfig();
     const model = globalConfig
-      ? resolveModel(globalConfig, "plan-generator", { tier: options.tier, model: options.model })
+      ? resolveModel(globalConfig, "plan", { tier: options.tier, model: options.model })
       : undefined;
 
     const prompt = `You are answering a question about a Proteus Forge project's architecture and plan.

@@ -12,37 +12,37 @@ const makeConfig = (overrides?: Partial<GlobalConfig>): GlobalConfig => ({
     standard: { provider: "anthropic", model: "claude-sonnet-4-6" },
     advanced: { provider: "anthropic", model: "claude-opus-4-6" },
   },
-  roles: {
-    scout: "fast",
-    "design-specialist": "advanced",
-    "plan-generator": "standard",
+  phases: {
+    inspect: "fast",
+    design: "advanced",
+    plan: "standard",
   },
   ...overrides,
 });
 
 describe("resolveModel", () => {
-  it("returns model from role → tier → model chain", () => {
+  it("returns model from phase → tier → model chain", () => {
     const config = makeConfig();
-    expect(resolveModel(config, "scout")).toBe("claude-haiku-4-5");
-    expect(resolveModel(config, "design-specialist")).toBe("claude-opus-4-6");
-    expect(resolveModel(config, "plan-generator")).toBe("claude-sonnet-4-6");
+    expect(resolveModel(config, "inspect")).toBe("claude-haiku-4-5");
+    expect(resolveModel(config, "design")).toBe("claude-opus-4-6");
+    expect(resolveModel(config, "plan")).toBe("claude-sonnet-4-6");
   });
 
   it("overrides with --tier flag", () => {
     const config = makeConfig();
-    const model = resolveModel(config, "scout", { tier: "advanced" });
+    const model = resolveModel(config, "inspect", { tier: "advanced" });
     expect(model).toBe("claude-opus-4-6");
   });
 
   it("overrides with --model flag", () => {
     const config = makeConfig();
-    const model = resolveModel(config, "scout", { model: "custom-model-1" });
+    const model = resolveModel(config, "inspect", { model: "custom-model-1" });
     expect(model).toBe("custom-model-1");
   });
 
   it("--model takes precedence over --tier", () => {
     const config = makeConfig();
-    const model = resolveModel(config, "scout", {
+    const model = resolveModel(config, "inspect", {
       tier: "advanced",
       model: "custom-model-1",
     });
@@ -51,23 +51,23 @@ describe("resolveModel", () => {
 
   it("throws on unknown tier name", () => {
     const config = makeConfig();
-    expect(() => resolveModel(config, "scout", { tier: "turbo" })).toThrow(
+    expect(() => resolveModel(config, "inspect", { tier: "turbo" })).toThrow(
       'Unknown tier "turbo". Available: fast, standard, advanced'
     );
   });
 
-  it("returns undefined for unknown role", () => {
+  it("returns undefined for unknown phase", () => {
     const config = makeConfig();
-    expect(resolveModel(config, "nonexistent-role")).toBeUndefined();
+    expect(resolveModel(config, "nonexistent-phase")).toBeUndefined();
   });
 
-  it("resolves direct TierConfig role mapping", () => {
+  it("resolves direct TierConfig phase mapping", () => {
     const config = makeConfig({
-      roles: {
-        ...makeConfig().roles,
-        "direct-role": { provider: "anthropic", model: "direct-model" },
+      phases: {
+        ...makeConfig().phases,
+        "custom-phase": { provider: "anthropic", model: "direct-model" },
       },
     });
-    expect(resolveModel(config, "direct-role")).toBe("direct-model");
+    expect(resolveModel(config, "custom-phase")).toBe("direct-model");
   });
 });
