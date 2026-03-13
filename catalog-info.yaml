@@ -1,0 +1,11 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: proteus
+  description: "Proteus CLI - orchestrates Claude Code Agent Teams through a five-stage pipeline"
+  annotations:
+    github.com/project-slug: brianbaping/proteus
+spec:
+  type: service
+  lifecycle: experimental
+  owner: user:default/brianbaping
