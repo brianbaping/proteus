@@ -82,5 +82,6 @@ ${failedSteps.map((s) => `   - \`${s.command} ${s.args.join(" ")}\``).join("\n")
 - Do NOT change the project architecture or directory structure
 - Fix the actual underlying issues, not the symptoms
 - If a fix requires installing a missing dependency, use \`${packageManager}\` to install it
+- Do NOT introduce stub methods, TODO comments, or placeholder implementations as fixes
 `;
 }

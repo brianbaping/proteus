@@ -48,6 +48,7 @@ Break the design into implementable tasks. Each task should be:
 - **Atomic**: completable by one agent in one session
 - **Well-scoped**: clear file ownership, clear acceptance criteria
 - **Dependency-aware**: explicitly declares what it depends on
+- **No stubs allowed**: task descriptions must be specific enough that the implementing agent can write fully functional code. If a task would require stubbing a dependency that doesn't exist yet, that dependency must be a separate earlier-wave task
 
 For each service/module in the design, create tasks for:
 - Schema/data setup (if the service owns entities)
@@ -67,7 +68,7 @@ Each task gets a discipline: \`data\`, \`backend\`, \`frontend\`, \`devops\`, \`
 
 Each task gets a testing expectation:
 - \`"unit"\` — the implementing agent writes unit tests alongside the code
-- \`"integration"\` — the QA track writes integration tests after implementation
+- \`"integration"\` — the QA track writes integration tests after implementation. Describe the test as a behavioral scenario: "given X setup, when the user does Y, then Z is observable." Integration tests must exercise real data flow across component boundaries, not just mock individual classes.
 - \`"none"\` — infrastructure/config tasks that don't need tests (e.g., Dockerfile)
 
 ### Step 4: Organize Into Waves
@@ -79,6 +80,7 @@ Group tasks into execution waves based on dependencies:
 
 Rules:
 - No task in wave N may depend on a task in wave N or later
+- If task B needs types or interfaces produced by task A, task A must be in an earlier wave — no task should require forward declarations for same-wave dependencies
 - Tasks within the same wave can execute in parallel
 - Minimize the number of waves (maximize parallelism)
 
@@ -114,7 +116,8 @@ Create two files:
     {
       "wave": 1,
       "tasks": ["<task-IDs in this wave>"],
-      "rationale": "<Why these tasks are in this wave>"
+      "rationale": "<Why these tasks are in this wave>",
+      "runnableProof": "<What a user can do and observe after this wave to verify it works — not 'it compiles' but 'the user can X and see Y'. For foundational waves, 'the project builds and tests pass with zero errors' is acceptable.>"
     }
   ],
   "criticalPath": ["<task-IDs forming the longest dependency chain>"]

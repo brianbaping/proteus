@@ -184,9 +184,12 @@ Each teammate's spawn prompt should include:
 3. Their specific tasks from plan.json with full descriptions and acceptance criteria
 4. Their file ownership — they must NOT modify files outside their ownership
 5. That the source POC at ${sourcePath} is read-only reference (do not copy code)
-6. Testing expectations: if testingExpectation is "unit", write unit tests alongside code
+6. Testing expectations: if testingExpectation is "unit", write unit tests alongside code. Prefer behavioral assertions (given input X, the system produces observable output Y) over structural assertions (class Z has method W)
 7. To mark tasks complete on the shared task list when done
-8. Before marking a task complete: run \`npx tsc --noEmit\` in the target repo to catch type errors, and run any unit tests for their owned files. Fix all errors before marking done${styleSpawnInstruction}
+8. Before marking a task complete: run \`npx tsc --noEmit\` in the target repo to catch type errors, and run any unit tests for their owned files. Fix all errors before marking done
+9. Never write stub methods, TODO comments, or placeholder implementations. Every function must be fully functional. If a dependency does not exist yet, report it as blocked on the shared task list instead of stubbing it out. Do not use forward declarations or \`any\` casts for types you will call methods on — use real types and imports. If a type doesn't exist yet, report it as blocked
+10. When implementing features that involve data flow across components, refer to the dataFlows in the design partials. Implement every step in the flow — do not skip notification wiring, callback registration, or state propagation
+11. Read the Communication Contract section of design.md. All inter-component communication must follow the documented patterns — do not invent ad-hoc communication mechanisms${styleSpawnInstruction}
 
 ### Step 4: Create Tasks on Shared Task List
 
@@ -210,7 +213,14 @@ After all tasks are complete:
    b. Run \`<pm> install\` — must install cleanly with no errors
    c. For each script that exists in package.json, run: \`<pm> run build\`, \`<pm> run test\`, \`<pm> run lint\`
    d. If ANY check fails: diagnose the root cause, fix the code (yourself or delegate to the appropriate engineer), then re-run until all checks pass
-   e. Only proceed to step 3 after ALL checks pass
+   e. Run a seam audit — review boundaries between services/components and check for:
+      - Methods that exist but have empty or no-op bodies (stubs disguised as implementations)
+      - Event listeners or callbacks defined but never registered
+      - State that is written but never read, or read but never written
+      - API endpoints defined but never called by any client
+      - Change notifications that fire but have no subscriber
+      Fix any critical seam issues found. Document remaining minor issues in execute.md under a "Seam Audit" heading
+   f. Only proceed to step 3 after ALL checks pass and seam audit is complete
 3. Write a session summary to TWO files:
    - **${targetPath}/.proteus-forge/05-execute/session.json** — Machine-readable metadata
    - **${targetPath}/.proteus-forge/05-execute/execute.md** — Human-readable summary

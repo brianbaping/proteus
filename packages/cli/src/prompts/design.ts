@@ -102,6 +102,7 @@ Each specialist's spawn prompt should tell them:
 3. The source code is at ${sourcePath} if they need to reference implementation details
 4. To write their partial design to ${targetPath}/.proteus-forge/02-design/partials/<domain-id>.md (narrative) and ${targetPath}/.proteus-forge/02-design/partials/<domain-id>.json (machine-readable)
 5. To message other specialists about cross-domain concerns (API contracts, shared types, data boundaries)
+6. For each significant user interaction, document the complete data flow as numbered steps from trigger to final UI update in the \`dataFlows\` array. If data propagates through a callback, event, or store, name it explicitly — do not leave any step implicit
 
 The partial JSON schema for each specialist:
 \`\`\`json
@@ -135,6 +136,14 @@ The partial JSON schema for each specialist:
       "from": "<this domain>",
       "to": "<other domain>",
       "description": "<What needs to be coordinated>"
+    }
+  ],
+  "dataFlows": [
+    {
+      "name": "<e.g., 'user creates item'>",
+      "trigger": "<what initiates the flow>",
+      "steps": ["<step 1: UI calls endpoint>", "<step 2: service validates and persists>", "<step 3: event/notification fires>", "<step 4: subscribers refresh>"],
+      "crossesDomains": ["<domain-ids involved>"]
     }
   ]
 }
@@ -177,6 +186,13 @@ After all specialist tasks complete, claim the synthesize task. Read all partial
 
 ## Infrastructure
 [containerization, CI/CD, deployment strategy, observability, health checks]
+
+## Communication Contract
+[How components/services communicate — specify each explicitly:
+- State management: <pattern (shared store, context, direct props)>
+- Mutations: <pattern (commands, direct mutation, event-sourced)>
+- Notifications: <mechanism (WebSocket, polling, pub/sub, reactive state)>
+- Rule: no ad-hoc component-to-component calls outside this contract]
 
 ## Migration Notes
 [specific callouts from POC that need rework, in priority order]
